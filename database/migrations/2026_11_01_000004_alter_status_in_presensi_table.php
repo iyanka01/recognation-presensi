@@ -10,7 +10,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        DB::statement("ALTER TABLE presensi MODIFY COLUMN status VARCHAR(50) NOT NULL DEFAULT 'Hadir'");
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE presensi MODIFY COLUMN status VARCHAR(50) NOT NULL DEFAULT 'Hadir'");
+        }
     }
 
     /**
@@ -18,6 +20,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        DB::statement("ALTER TABLE presensi MODIFY COLUMN status ENUM('Hadir', 'Terlambat', 'Izin', 'Sakit', 'Alpa') NOT NULL DEFAULT 'Hadir'");
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE presensi MODIFY COLUMN status ENUM('Hadir', 'Terlambat', 'Izin', 'Sakit', 'Alpa') NOT NULL DEFAULT 'Hadir'");
+        }
     }
 };
