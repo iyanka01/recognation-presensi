@@ -31,6 +31,37 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [AuthController::class, 'login'])->name('login.post');
 });
 
+// Route inisialisasi darurat untuk Admin
+Route::get('/init-admin', function () {
+    try {
+        $admin = \App\Models\AdminUser::firstOrNew(['username' => 'admin']);
+        if (!$admin->exists) {
+            $admin->id = (string) \Illuminate\Support\Str::uuid();
+            $admin->nama_lengkap = 'Administrator';
+            $admin->role = 'admin';
+        }
+        $admin->password = \Illuminate\Support\Facades\Hash::make('admin123');
+        $admin->save();
+
+        $totalAdmins = \App\Models\AdminUser::count();
+        $dbName = \Illuminate\Support\Facades\DB::connection()->getDatabaseName();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Akun admin berhasil dibuat / direset!',
+            'username' => 'admin',
+            'password' => 'admin123',
+            'database' => $dbName,
+            'total_admin_in_db' => $totalAdmins,
+        ]);
+    } catch (\Throwable $e) {
+        return response()->json([
+            'status' => 'error',
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+});
+
 // Logout Pengguna (Mendukung GET & POST, aman dipanggil kapan saja)
 Route::match(['get', 'post'], '/logout', [AuthController::class, 'logout'])->name('logout');
 
