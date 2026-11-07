@@ -1,0 +1,23 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::table('guru', function (Blueprint $table) {
+            // 128-dimensi float array dari face-api.js, disimpan sebagai JSON text
+            $table->text('face_descriptor')->nullable()->after('foto_guru');
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::table('guru', function (Blueprint $table) {
+            $table->dropColumn('face_descriptor');
+        });
+    }
+};
