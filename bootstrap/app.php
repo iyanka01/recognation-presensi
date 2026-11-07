@@ -18,6 +18,9 @@ return Application::configure(basePath: dirname(__DIR__))
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Trust all proxies for Cloudflare & Railway SSL termination
+        $middleware->trustProxies(at: '*');
+
         // Kecualikan login dan logout dari validasi CSRF agar tidak pernah error 419
         $middleware->validateCsrfTokens(except: [
             'login',
