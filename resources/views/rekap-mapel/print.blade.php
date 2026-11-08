@@ -56,10 +56,11 @@
         .signature {
             float: right;
             text-align: center;
-            width: 200px;
+            width: 240px;
+            font-size: 12px;
         }
-        .signature p {
-            margin: 0 0 60px 0;
+        .signature-space {
+            height: 60px;
         }
         @media print {
             body { padding: 0; }
@@ -131,9 +132,11 @@
 
     <div class="footer">
         <div class="signature">
-            <p>{{ $pengaturan?->tempat ?? 'Tempat' }}, {{ now()->translatedFormat('d F Y') }}<br>Kepala Sekolah</p>
-            <p><br><br><br></p>
-            <p><strong>{{ $pengaturan?->nama_kepala ?? '(............................)' }}</strong>@if($pengaturan && $pengaturan->nip)<br>NIP. {{ $pengaturan->nip }}@endif</p>
+            <p style="margin: 0;">{{ $pengaturan?->tempat ?? 'Tempat' }}, {{ now()->translatedFormat('d F Y') }}</p>
+            <p style="margin: 4px 0 0 0; font-weight: bold;">Kepala Lembaga / Sekolah,</p>
+            <div class="signature-space"></div>
+            <p style="margin: 0; font-weight: bold; text-decoration: underline;">{{ $pengaturan?->nama_kepala ?? '....................................' }}</p>
+            <p style="margin: 2px 0 0 0; font-size: 11px;">NIP: {{ $pengaturan?->nip ?? '' }}</p>
         </div>
     </div>
 </body>

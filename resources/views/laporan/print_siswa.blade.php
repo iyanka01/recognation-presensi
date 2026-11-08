@@ -83,10 +83,11 @@
         .signature {
             float: right;
             text-align: center;
-            width: 200px;
+            width: 240px;
+            font-size: 12px;
         }
-        .signature p {
-            margin: 0 0 60px 0;
+        .signature-space {
+            height: 60px;
         }
         @media print {
             body { padding: 0; }
@@ -194,10 +195,11 @@
 
     <div class="footer">
         <div class="signature">
-            <p>{{ $pengaturan->tempat ?? $pengaturan->kabupaten ?? 'Tempat' }}, {{ \Carbon\Carbon::now()->translatedFormat('d F Y') }}</p>
-            <p style="font-weight: bold; margin-bottom: 60px;">Kepala Sekolah / Lembaga,</p>
-            <p style="font-weight: bold; text-decoration: underline; margin-bottom: 2px;">{{ $pengaturan->nama_kepala ?? '....................................' }}</p>
-            <span style="font-size: 11px; color: #555;">NIP: {{ $pengaturan->nip ?? '........................' }}</span>
+            <p style="margin: 0;">{{ $pengaturan->tempat ?? $pengaturan->kabupaten ?? 'Tempat' }}, {{ \Carbon\Carbon::now()->translatedFormat('d F Y') }}</p>
+            <p style="margin: 4px 0 0 0; font-weight: bold;">Kepala Lembaga / Sekolah,</p>
+            <div class="signature-space"></div>
+            <p style="margin: 0; font-weight: bold; text-decoration: underline;">{{ $pengaturan->nama_kepala ?? '....................................' }}</p>
+            <p style="margin: 2px 0 0 0; font-size: 11px;">NIP: {{ $pengaturan->nip ?? '' }}</p>
         </div>
     </div>
 

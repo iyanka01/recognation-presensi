@@ -208,4 +208,8 @@
             <p style="margin: 4px 0 0 0; font-weight: bold;">Kepala Lembaga / Sekolah,</p>
             <div class="signature-space"></div>
             <p style="margin: 0; font-weight: bold; text-decoration: underline;">{{ $pengaturan->nama_kepala ?? '....................................' }}</p>
-            <p style="margin: 2px 0 0 0; font-size: 11px; color: #555;">NIP:
+            <p style="margin: 2px 0 0 0; font-size: 11px;">NIP: {{ $pengaturan->nip ?? '' }}</p>
+        </div>
+    </div>
+</body>
+</html>
