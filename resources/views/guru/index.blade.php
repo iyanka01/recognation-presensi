@@ -218,6 +218,8 @@
                 </div>
             </div>
         </div>
+    </div>
+
     <!-- Modal Import Guru -->
     <div x-data="{ open: false }" 
          @open-guru-import-modal.window="open = true" 
