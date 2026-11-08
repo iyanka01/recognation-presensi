@@ -131,7 +131,7 @@
 
     <div class="footer">
         <div class="signature">
-            <p>{{ now()->translatedFormat('d F Y') }}<br>Kepala Sekolah</p>
+            <p>{{ $pengaturan?->tempat ?? 'Tempat' }}, {{ now()->translatedFormat('d F Y') }}<br>Kepala Sekolah</p>
             <p><br><br><br></p>
             <p><strong>{{ $pengaturan?->nama_kepala ?? '(............................)' }}</strong>@if($pengaturan && $pengaturan->nip)<br>NIP. {{ $pengaturan->nip }}@endif</p>
         </div>

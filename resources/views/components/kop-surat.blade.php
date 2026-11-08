@@ -70,6 +70,9 @@
 
         <p>
             {{ $cfg->alamat ?? 'Jl. Pendidikan No. 01, Wonogiri' }}
+            @if($cfg && $cfg->tempat)
+                — {{ $cfg->tempat }}
+            @endif
             @if($cfg && $cfg->no_telp)
                 • Telp: {{ $cfg->no_telp }}
             @endif

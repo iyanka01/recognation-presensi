@@ -29,6 +29,7 @@ class PengaturanLembagaController extends Controller
             'nip' => 'nullable|string|max:255',
             'no_telp' => 'nullable|string|max:255',
             'alamat' => 'nullable|string',
+            'tempat' => 'nullable|string|max:255',
             'latitude' => 'nullable|numeric|between:-90,90',
             'longitude' => 'nullable|numeric|between:-180,180',
             'radius_meter' => 'nullable|integer|min:10|max:50000',

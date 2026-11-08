@@ -177,7 +177,7 @@
         </div>
 
         <div class="signature-box">
-            <p style="margin: 0;">{{ $pengaturan->kabupaten ?? 'Tempat' }}, {{ \Carbon\Carbon::now()->translatedFormat('d F Y') }}</p>
+            <p style="margin: 0;">{{ $pengaturan->tempat ?? $pengaturan->kabupaten ?? 'Tempat' }}, {{ \Carbon\Carbon::now()->translatedFormat('d F Y') }}</p>
             <p style="margin: 4px 0 0 0; font-weight: bold;">Guru Yang Bersangkutan,</p>
             <div class="signature-space"></div>
             <p style="margin: 0; font-weight: bold; text-decoration: underline;">{{ $guru->nama_lengkap }}</p>

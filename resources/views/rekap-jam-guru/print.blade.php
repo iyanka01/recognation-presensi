@@ -133,7 +133,7 @@
         <h1>LAPORAN REKAPITULASI JUMLAH JAM MENGAJAR GURU</h1>
         <h2>{{ $pengaturan->nama_lembaga ?? 'SISTEM PRESENSI & JURNAL KBM' }}</h2>
         @if($pengaturan && $pengaturan->alamat)
-            <p>{{ $pengaturan->alamat }}</p>
+            <p>{{ $pengaturan->alamat }}@if($pengaturan->tempat) — {{ $pengaturan->tempat }}@endif</p>
         @endif
     </div>
 
@@ -204,7 +204,7 @@
     <!-- Tanda Tangan -->
     <div style="width: 100%; margin-top: 30px; clear: both;">
         <div class="signature-box">
-            <p style="margin: 0;">{{ $pengaturan->kabupaten ?? 'Tempat' }}, {{ \Carbon\Carbon::now()->translatedFormat('d F Y') }}</p>
+            <p style="margin: 0;">{{ $pengaturan->tempat ?? $pengaturan->kabupaten ?? 'Tempat' }}, {{ \Carbon\Carbon::now()->translatedFormat('d F Y') }}</p>
             <p style="margin: 4px 0 0 0; font-weight: bold;">Kepala Lembaga / Sekolah,</p>
             <div class="signature-space"></div>
             <p style="margin: 0; font-weight: bold; text-decoration: underline;">{{ $pengaturan->nama_kepala ?? '....................................' }}</p>

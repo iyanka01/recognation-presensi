@@ -24,6 +24,7 @@ class PengaturanLembaga extends Model
         'nip',
         'no_telp',
         'alamat',
+        'tempat',
         'latitude',
         'longitude',
         'radius_meter',

@@ -99,6 +99,15 @@
                 @error('alamat') <p class="text-xs text-rose-500 mt-1">{{ $message }}</p> @enderror
             </div>
 
+            <!-- Tempat / Kota -->
+            <div class="mt-4 space-y-2">
+                <label for="tempat" class="block text-sm font-medium text-slate-700">Tempat / Kota</label>
+                <input type="text" name="tempat" id="tempat" value="{{ old('tempat', $lembaga->tempat ?? '') }}" class="w-full px-4 py-2.5 bg-white border border-sky-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" placeholder="Misal: Wonogiri, Bondowoso, Jakarta">
+                <p class="text-xs text-slate-500">Nama kota/kabupaten yang akan muncul pada dokumen cetak (surat, laporan, dll).</p>
+                @error('tempat') <p class="text-xs text-rose-500 mt-1">{{ $message }}</p> @enderror
+            </div>
+
+
             <div class="mt-6 pt-6 border-t border-slate-100">
                 <h4 class="text-sm font-semibold text-slate-800 mb-4">Integrasi Bot Telegram</h4>
                 <p class="text-xs text-slate-500 mb-6">Token bot telegram digunakan untuk mengirim notifikasi absensi secara otomatis. Dapatkan dari BotFather.</p>

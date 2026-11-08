@@ -133,7 +133,7 @@
 
     <div class="footer">
         <div class="signature">
-            <p>{{ $pengaturan->kabupaten ?? 'Tempat' }}, {{ \Carbon\Carbon::now()->translatedFormat('d F Y') }}</p>
+            <p>{{ $pengaturan->tempat ?? $pengaturan->kabupaten ?? 'Tempat' }}, {{ \Carbon\Carbon::now()->translatedFormat('d F Y') }}</p>
             <p style="font-weight: bold; margin-bottom: 60px;">Kepala Sekolah / Lembaga,</p>
             <p style="font-weight: bold; text-decoration: underline; margin-bottom: 2px;">{{ $pengaturan->nama_kepala ?? '....................................' }}</p>
             <span style="font-size: 11px; color: #555;">NIP: {{ $pengaturan->nip ?? '........................' }}</span>
