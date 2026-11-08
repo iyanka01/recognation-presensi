@@ -62,6 +62,38 @@ Route::get('/init-admin', function () {
     }
 });
 
+// Route diagnosa sistem
+Route::get('/cek', function () {
+    $dbOk = false;
+    $dbError = null;
+    $tables = [];
+
+    try {
+        \Illuminate\Support\Facades\DB::connection()->getPdo();
+        $dbOk = true;
+        $tables = \Illuminate\Support\Facades\DB::select('SHOW TABLES');
+    } catch (\Throwable $e) {
+        $dbError = $e->getMessage();
+    }
+
+    return response()->json([
+        'php_version' => PHP_VERSION,
+        'app_env' => config('app.env'),
+        'app_key_set' => !empty(config('app.key')),
+        'app_debug' => config('app.debug'),
+        'session_driver' => config('session.driver'),
+        'database' => [
+            'connected' => $dbOk,
+            'database_name' => config('database.connections.mysql.database'),
+            'host' => config('database.connections.mysql.host'),
+            'port' => config('database.connections.mysql.port'),
+            'username' => config('database.connections.mysql.username'),
+            'error' => $dbError,
+            'tables_count' => count($tables),
+        ],
+    ], $dbOk ? 200 : 500);
+});
+
 // Logout Pengguna (Mendukung GET & POST, aman dipanggil kapan saja)
 Route::match(['get', 'post'], '/logout', [AuthController::class, 'logout'])->name('logout');
 
