@@ -108,3 +108,13 @@ Route::middleware('auth:web,guru')->group(function () {
     Route::get('rekap-mapel', [RekapMapelController::class, 'index'])->name('rekap-mapel.index');
     Route::get('rekap-mapel/print', [RekapMapelController::class, 'print'])->name('rekap-mapel.print');
 });
+
+// Fallback aman untuk melayani file upload storage jika symlink OS tidak tersedia
+Route::get('/storage/{path}', function ($path) {
+    $filePath = storage_path('app/public/' . $path);
+    if (!file_exists($filePath)) {
+        abort(404);
+    }
+    return response()->file($filePath);
+})->where('path', '.*');
+
