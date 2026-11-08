@@ -136,121 +136,162 @@ class SiswaController extends Controller
 
     public function downloadTemplate()
     {
-        $headers = [
-            "Content-type"        => "text/csv; charset=UTF-8",
-            "Content-Disposition" => "attachment; filename=template_import_siswa.csv",
-            "Pragma"              => "no-cache",
-            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
-            "Expires"             => "0"
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Data Siswa');
+
+        $columns = [
+            'A' => 'NIS',
+            'B' => 'NISN',
+            'C' => 'Nama Lengkap',
+            'D' => 'Jenis Kelamin (L/P)',
+            'E' => 'Agama',
+            'F' => 'Tempat Lahir',
+            'G' => 'Tanggal Lahir (DD-MM-YYYY)',
+            'H' => 'Kelas (Contoh: 10 RPL 1)',
+            'I' => 'No HP Wali'
         ];
 
-        $columns = ['NIS', 'NISN', 'Nama Lengkap', 'Jenis Kelamin (L/P)', 'Agama', 'Tempat Lahir', 'Tanggal Lahir (DD-MM-YYYY)', 'Kelas (Contoh: 10 RPL 1)', 'No HP Wali'];
+        // Header Styling
+        foreach ($columns as $col => $title) {
+            $sheet->setCellValue("{$col}1", $title);
+        }
+
+        $headerStyle = [
+            'font' => [
+                'bold' => true,
+                'color' => ['rgb' => 'FFFFFF'],
+                'size' => 11,
+            ],
+            'fill' => [
+                'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                'startColor' => ['rgb' => '0284C7'], // Sky 600
+            ],
+            'alignment' => [
+                'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
+                'vertical'   => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
+            ],
+        ];
+        $sheet->getStyle('A1:I1')->applyFromArray($headerStyle);
+        $sheet->getRowDimension(1)->setRowHeight(28);
+
         $dummySiswa = self::getDummySiswa();
+        $rowIdx = 2;
 
-        $callback = function() use ($columns, $dummySiswa) {
-            $file = fopen('php://output', 'w');
-            
-            // 1. Tulis UTF-8 BOM (\xEF\xBB\xBF) agar Excel membaca karakter khusus dengan benar
-            fwrite($file, "\xEF\xBB\xBF");
-            
-            // 2. Tulis directive 'sep=,' agar Excel pada Windows (locale Indonesia/Eropa) otomatis memisahkan kolom ke tabel A-I
-            fwrite($file, "sep=,\r\n");
-            
-            // 3. Tulis header kolom
-            fputcsv($file, $columns, ',');
-            
-            // 4. Tulis 30 data dummy siswa dengan format petik tunggal di depan ('...) agar angka 0 tidak hilang di Excel
-            foreach ($dummySiswa as $row) {
-                // Ubah format tanggal YYYY-MM-DD dummy ke DD-MM-YYYY (contoh: 07-07-2002)
-                $tglFmt = $row[6];
-                if (!empty($tglFmt) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $tglFmt)) {
-                    $tglFmt = \Carbon\Carbon::parse($tglFmt)->format('d-m-Y');
-                }
-
-                fputcsv($file, [
-                    "'" . $row[0],
-                    "'" . $row[1],
-                    $row[2],
-                    $row[3],
-                    $row[4],
-                    $row[5],
-                    $tglFmt,
-                    $row[7],
-                    "'" . $row[8],
-                ], ',');
+        foreach ($dummySiswa as $item) {
+            // Ubah format tanggal YYYY-MM-DD dummy ke DD-MM-YYYY (contoh: 07-07-2002)
+            $tglFmt = $item[6];
+            if (!empty($tglFmt) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $tglFmt)) {
+                $tglFmt = \Carbon\Carbon::parse($tglFmt)->format('d-m-Y');
             }
-            
-            fclose($file);
-        };
 
-        return response()->stream($callback, 200, $headers);
+            // Simpan NIS, NISN, No HP dengan format explicit TEXT dan diawali petik '
+            $sheet->setCellValueExplicit("A{$rowIdx}", "'" . $item[0], \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            $sheet->setCellValueExplicit("B{$rowIdx}", "'" . $item[1], \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            $sheet->setCellValue("C{$rowIdx}", $item[2]);
+            $sheet->setCellValue("D{$rowIdx}", $item[3]);
+            $sheet->setCellValue("E{$rowIdx}", $item[4]);
+            $sheet->setCellValue("F{$rowIdx}", $item[5]);
+            $sheet->setCellValueExplicit("G{$rowIdx}", $tglFmt, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            $sheet->setCellValue("H{$rowIdx}", $item[7]);
+            $sheet->setCellValueExplicit("I{$rowIdx}", "'" . $item[8], \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+
+            $rowIdx++;
+        }
+
+        // Auto-size columns
+        foreach (range('A', 'I') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+
+        return response()->streamDownload(function() use ($writer) {
+            $writer->save('php://output');
+        }, 'template_import_siswa.xlsx', [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Cache-Control' => 'max-age=0',
+        ]);
     }
 
     public function import(Request $request)
     {
         $request->validate([
-            'file_import' => 'required|mimes:csv,txt|max:4096'
+            'file_import' => 'required|file|mimes:xlsx,xls,csv,txt|max:8192'
         ]);
 
         $file = $request->file('file_import');
         $filePath = $file->getRealPath();
-        
-        ini_set('auto_detect_line_endings', true);
-
-        // Baca seluruh baris file
-        $lines = file($filePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-        if (empty($lines)) {
-            return redirect()->route('siswa.index')->with('error', 'File CSV kosong atau tidak valid.');
-        }
-
-        // 1. Bersihkan UTF-8 BOM jika ada di awal baris pertama
-        if (!empty($lines) && str_starts_with($lines[0], "\xEF\xBB\xBF")) {
-            $lines[0] = substr($lines[0], 3);
-        }
-
-        // 2. Jika baris pertama adalah directive 'sep=...', lewati baris tersebut
-        if (!empty($lines) && str_starts_with(strtolower(trim($lines[0])), 'sep=')) {
-            array_shift($lines);
-        }
-
-        if (empty($lines)) {
-            return redirect()->route('siswa.index')->with('error', 'File CSV tidak memiliki baris data yang valid.');
-        }
-
-        // 3. Deteksi delimiter berdasarkan baris header (apakah titik koma ';' atau koma ',')
-        $headerLine = $lines[0];
-        $delimiter = strpos($headerLine, ';') !== false ? ';' : ',';
+        $ext = strtolower($file->getClientOriginalExtension());
 
         // Helper untuk membersihkan nilai sel dari format formula Excel ="..." atau petik tunggal ' di awal
         $cleanValue = function($val) {
-            $val = trim($val ?? '');
+            $val = trim((string)($val ?? ''));
             if (str_starts_with($val, '="') && str_ends_with($val, '"')) {
                 $val = substr($val, 2, -1);
             }
-            // Hapus petik satu di awal jika ada (format '08123 / '0012)
             if (str_starts_with($val, "'")) {
                 $val = substr($val, 1);
             }
             return trim($val, "'\" \t\n\r\0\x0B");
         };
 
+        $rows = [];
+
+        // 1. Baca dengan PhpSpreadsheet jika format xlsx atau xls
+        if (in_array($ext, ['xlsx', 'xls'])) {
+            try {
+                $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($filePath);
+                $sheet = $spreadsheet->getActiveSheet();
+                $sheetData = $sheet->toArray(null, true, true, false);
+
+                foreach ($sheetData as $rIdx => $rData) {
+                    if ($rIdx === 0) continue; // Skip header
+                    $rows[] = array_values($rData);
+                }
+            } catch (\Throwable $e) {
+                return redirect()->route('siswa.index')->with('error', 'Gagal membaca file Excel: ' . $e->getMessage());
+            }
+        } else {
+            // 2. Baca file CSV
+            ini_set('auto_detect_line_endings', true);
+            $lines = file($filePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+            if (empty($lines)) {
+                return redirect()->route('siswa.index')->with('error', 'File CSV kosong atau tidak valid.');
+            }
+
+            if (!empty($lines) && str_starts_with($lines[0], "\xEF\xBB\xBF")) {
+                $lines[0] = substr($lines[0], 3);
+            }
+            if (!empty($lines) && str_starts_with(strtolower(trim($lines[0])), 'sep=')) {
+                array_shift($lines);
+            }
+
+            if (!empty($lines)) {
+                $headerLine = $lines[0];
+                $delimiter = strpos($headerLine, ';') !== false ? ';' : ',';
+
+                foreach ($lines as $index => $line) {
+                    if ($index === 0) continue; // Skip header
+                    $row = str_getcsv($line, $delimiter);
+                    if (count($row) < 8) {
+                        $altDelimiter = $delimiter === ',' ? ';' : ',';
+                        $row = str_getcsv($line, $altDelimiter);
+                    }
+                    $rows[] = $row;
+                }
+            }
+        }
+
+        if (empty($rows)) {
+            return redirect()->route('siswa.index')->with('error', 'File tidak memiliki baris data yang valid.');
+        }
+
         $sukses = 0;
         $gagal = 0;
 
-        foreach ($lines as $index => $line) {
-            if ($index === 0) continue; // Skip baris header
-
-            $row = str_getcsv($line, $delimiter);
-
-            // Jika masih kurang dari 8 kolom, coba delimiter alternatif
+        foreach ($rows as $row) {
             if (count($row) < 8) {
-                $altDelimiter = $delimiter === ',' ? ';' : ',';
-                $row = str_getcsv($line, $altDelimiter);
-            }
-
-            // Jika tetap gagal, berarti baris ini berantakan/kosong
-            if (count($row) < 8) {
-                \Log::info("Row Gagal: Kurang dari 8 kolom. Data:", (array)$row);
                 $gagal++;
                 continue;
             }
@@ -268,14 +309,11 @@ class SiswaController extends Controller
 
                 // Validasi data krusial
                 if (empty($nis) || empty($nama) || empty($namaKelas)) {
-                    \Log::info("Row Gagal: NIS/Nama/Kelas kosong. Data:", (array)$row);
                     $gagal++;
                     continue;
                 }
 
-                // Normalisasi NISN (jika kosong biarkan null)
                 $nisn = $nisn === '' ? null : $nisn;
-                // Normalisasi no HP
                 $noHp = $noHp === '' ? null : $noHp;
 
                 // Parsing Tanggal Lahir (Mendukung DD-MM-YYYY misal: 07-07-2002, DD/MM/YYYY, maupun YYYY-MM-DD)
@@ -283,13 +321,12 @@ class SiswaController extends Controller
                 if (!empty($tanggal)) {
                     try {
                         if (preg_match('/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4})$/', $tanggal, $m)) {
-                            // Format: DD-MM-YYYY (contoh: 07-07-2002)
                             $parsedTanggal = sprintf('%04d-%02d-%02d', $m[3], $m[2], $m[1]);
                         } else {
                             $parsedTanggal = \Carbon\Carbon::parse($tanggal)->format('Y-m-d');
                         }
                     } catch (\Exception $e) {
-                        // Jika format tidak dikenali, gunakan default tanggal hari ini
+                        // fallback
                     }
                 }
 
