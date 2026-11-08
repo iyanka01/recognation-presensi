@@ -144,7 +144,7 @@ class SiswaController extends Controller
             "Expires"             => "0"
         ];
 
-        $columns = ['NIS', 'NISN', 'Nama Lengkap', 'Jenis Kelamin (L/P)', 'Agama', 'Tempat Lahir', 'Tanggal Lahir (YYYY-MM-DD)', 'Kelas (Contoh: 10 RPL 1)', 'No HP Wali'];
+        $columns = ['NIS', 'NISN', 'Nama Lengkap', 'Jenis Kelamin (L/P)', 'Agama', 'Tempat Lahir', 'Tanggal Lahir (DD-MM-YYYY)', 'Kelas (Contoh: 10 RPL 1)', 'No HP Wali'];
         $dummySiswa = self::getDummySiswa();
 
         $callback = function() use ($columns, $dummySiswa) {
@@ -159,18 +159,24 @@ class SiswaController extends Controller
             // 3. Tulis header kolom
             fputcsv($file, $columns, ',');
             
-            // 4. Tulis 30 data dummy siswa dengan format formula string ="..." agar angka 0 di depan (NISN & No HP) tidak hilang
+            // 4. Tulis 30 data dummy siswa dengan format petik tunggal di depan ('...) agar angka 0 tidak hilang di Excel
             foreach ($dummySiswa as $row) {
+                // Ubah format tanggal YYYY-MM-DD dummy ke DD-MM-YYYY (contoh: 07-07-2002)
+                $tglFmt = $row[6];
+                if (!empty($tglFmt) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $tglFmt)) {
+                    $tglFmt = \Carbon\Carbon::parse($tglFmt)->format('d-m-Y');
+                }
+
                 fputcsv($file, [
-                    $row[0],
-                    '="' . $row[1] . '"',
+                    "'" . $row[0],
+                    "'" . $row[1],
                     $row[2],
                     $row[3],
                     $row[4],
                     $row[5],
-                    $row[6],
+                    $tglFmt,
                     $row[7],
-                    '="' . $row[8] . '"',
+                    "'" . $row[8],
                 ], ',');
             }
             
@@ -215,11 +221,15 @@ class SiswaController extends Controller
         $headerLine = $lines[0];
         $delimiter = strpos($headerLine, ';') !== false ? ';' : ',';
 
-        // Helper untuk membersihkan nilai sel dari format formula Excel ="..." atau petik '
+        // Helper untuk membersihkan nilai sel dari format formula Excel ="..." atau petik tunggal ' di awal
         $cleanValue = function($val) {
             $val = trim($val ?? '');
             if (str_starts_with($val, '="') && str_ends_with($val, '"')) {
                 $val = substr($val, 2, -1);
+            }
+            // Hapus petik satu di awal jika ada (format '08123 / '0012)
+            if (str_starts_with($val, "'")) {
+                $val = substr($val, 1);
             }
             return trim($val, "'\" \t\n\r\0\x0B");
         };
@@ -268,11 +278,16 @@ class SiswaController extends Controller
                 // Normalisasi no HP
                 $noHp = $noHp === '' ? null : $noHp;
 
-                // Parsing Tanggal Lahir yang aman
+                // Parsing Tanggal Lahir (Mendukung DD-MM-YYYY misal: 07-07-2002, DD/MM/YYYY, maupun YYYY-MM-DD)
                 $parsedTanggal = \Carbon\Carbon::now()->format('Y-m-d');
                 if (!empty($tanggal)) {
                     try {
-                        $parsedTanggal = \Carbon\Carbon::parse($tanggal)->format('Y-m-d');
+                        if (preg_match('/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4})$/', $tanggal, $m)) {
+                            // Format: DD-MM-YYYY (contoh: 07-07-2002)
+                            $parsedTanggal = sprintf('%04d-%02d-%02d', $m[3], $m[2], $m[1]);
+                        } else {
+                            $parsedTanggal = \Carbon\Carbon::parse($tanggal)->format('Y-m-d');
+                        }
                     } catch (\Exception $e) {
                         // Jika format tidak dikenali, gunakan default tanggal hari ini
                     }
