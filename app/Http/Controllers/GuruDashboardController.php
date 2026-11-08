@@ -53,6 +53,16 @@ class GuruDashboardController extends Controller
             ->whereDate('tanggal', $today)
             ->first();
 
+        // Cek apakah guru terkunci karena tidak absen pulang hari sebelumnya
+        $lockedPresensi = Presensi::where('user_type', 'guru')
+            ->where('user_id', $guru->id)
+            ->whereDate('tanggal', '<', $today)
+            ->whereNotNull('jam_masuk')
+            ->whereNull('jam_pulang')
+            ->where('is_unlocked', false)
+            ->orderBy('tanggal', 'desc')
+            ->first();
+
         // Pengaturan jam sekolah guru hari ini (dengan fallback jika hari belum diatur)
         $pengaturanJam = PengaturanJam::where('tipe', 'guru')
             ->where('hari', $hariIni)
@@ -65,6 +75,7 @@ class GuruDashboardController extends Controller
             'stat'             => $stat,
             'pengaturan'       => PengaturanLembaga::first(),
             'presensiHariIni'  => $presensiHariIni,
+            'lockedPresensi'   => $lockedPresensi,
             'pengaturanJam'    => $pengaturanJam,
         ]);
     }

@@ -70,6 +70,29 @@
         </div>
     </div>
 
+    {{-- Alert Terkunci karena tidak absen pulang --}}
+    @if(isset($lockedPresensi) && $lockedPresensi)
+    @php
+        $tglLockedStr = \Carbon\Carbon::parse($lockedPresensi->tanggal)->locale('id')->isoFormat('dddd, D MMMM Y');
+    @endphp
+    <div class="bg-gradient-to-r from-rose-50 to-red-50 border border-rose-200 rounded-2xl p-4 flex items-start gap-3 shadow-sm">
+        <div class="w-9 h-9 rounded-xl bg-rose-500/15 border border-rose-300/40 flex items-center justify-center shrink-0 text-rose-600 mt-0.5">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+            </svg>
+        </div>
+        <div class="flex-1 min-w-0">
+            <h4 class="font-bold text-rose-900 text-sm">Presensi Anda Terkunci</h4>
+            <p class="text-xs text-rose-800/90 mt-0.5 leading-relaxed">
+                Anda tidak melakukan absen pulang pada hari <strong>{{ $tglLockedStr }}</strong>. Sistem mengunci absen masuk Anda hari ini sampai diizinkan oleh admin.
+            </p>
+            <div class="mt-2 text-xs font-semibold text-rose-700 bg-white/70 border border-rose-200/60 rounded-xl px-3 py-1.5 inline-flex items-center gap-1.5">
+                <span>💬 Silakan hubungi <strong>Administrator Sekolah</strong> untuk membuka kunci kehadiran Anda.</span>
+            </div>
+        </div>
+    </div>
+    @endif
+
     {{-- ======== 2 KARTU ABSENSI MANDIRI (MASUK & PULANG) ======== --}}
     <div class="grid grid-cols-2 gap-2.5">
         {{-- Jam Masuk --}}
@@ -94,6 +117,16 @@
             </div>
             @endif
         </div>
+        @elseif(isset($lockedPresensi) && $lockedPresensi)
+        <button type="button" onclick="openModal('masuk')" class="bg-rose-50/80 hover:bg-rose-100/70 rounded-2xl p-3 border border-rose-200 shadow-sm flex items-center gap-2.5 transition-all active:scale-95 text-left">
+            <div class="w-9 h-9 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+            </div>
+            <div class="min-w-0">
+                <p class="text-[10px] text-rose-500 font-bold uppercase leading-none">Jam Masuk</p>
+                <p class="text-xs font-bold text-rose-700 mt-0.5">Terkunci (Hubungi Admin) 🔒</p>
+            </div>
+        </button>
         @else
         <button type="button" onclick="openModal('masuk')" class="bg-white hover:bg-emerald-50/50 rounded-2xl p-3 border border-slate-200 shadow-sm flex items-center gap-2.5 transition-all active:scale-95 text-left">
             <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
@@ -491,6 +524,8 @@ const CURRENT_GURU_ID = '{{ auth()->guard("guru")->user()->id }}';
 const CURRENT_GURU    = @json(auth()->guard('guru')->user()->nama_lengkap);
 const HAS_FACE        = {{ auth()->guard('guru')->user()->face_descriptor ? 'true' : 'false' }};
 const HAS_MASUK       = {{ ($presensiHariIni && $presensiHariIni->jam_masuk) ? 'true' : 'false' }};
+const IS_LOCKED       = {{ (isset($lockedPresensi) && $lockedPresensi) ? 'true' : 'false' }};
+const LOCKED_DATE     = @json(isset($lockedPresensi) && $lockedPresensi ? \Carbon\Carbon::parse($lockedPresensi->tanggal)->locale('id')->isoFormat('dddd, D MMMM Y') : '');
 const GURU_DESCRIPTOR = {!! auth()->guard('guru')->user()->face_descriptor ?: 'null' !!};
 
 // Koordinat Sekolah dari Pengaturan Lembaga
@@ -529,6 +564,35 @@ async function openModal(tipe) {
     const icon  = document.getElementById('face-modal-icon');
     const title = document.getElementById('face-modal-title');
     const sub   = document.getElementById('face-modal-subtitle');
+
+    // Cek apakah guru terkunci karena tidak absen pulang di hari sebelumnya
+    if (tipe === 'masuk' && IS_LOCKED) {
+        modal.classList.remove('hidden');
+        document.getElementById('face-loading').classList.add('hidden');
+        document.getElementById('face-camera-section').classList.add('hidden');
+        icon.className = 'w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center text-rose-600';
+        title.textContent = 'Presensi Terkunci';
+        sub.textContent = 'Tidak absen pulang di hari sebelumnya';
+
+        const box = document.getElementById('face-result');
+        box.className = 'mt-3 rounded-2xl p-5 text-center border bg-rose-50 border-rose-200';
+        box.innerHTML = `
+            <div class="w-14 h-14 mx-auto mb-3 rounded-full bg-rose-100 flex items-center justify-center">
+                <svg class="w-7 h-7 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                </svg>
+            </div>
+            <p class="font-bold text-rose-800 text-sm mb-1">Presensi Anda Terkunci</p>
+            <p class="text-xs text-rose-600 mb-3 leading-relaxed">
+                Anda tidak melakukan <strong>absen pulang</strong> pada hari <strong>${LOCKED_DATE}</strong>.<br>
+                Sistem mengunci absensi masuk Anda hari ini.
+            </p>
+            <div class="p-3 bg-white/80 rounded-xl border border-rose-200/70 text-xs font-semibold text-rose-700">
+                💬 Silakan hubungi <strong>Administrator Sekolah</strong> untuk membuka kunci presensi Anda.
+            </div>`;
+        box.classList.remove('hidden');
+        return;
+    }
 
     // Jika wajah belum terdaftar — tampilkan panel daftar wajah di dalam modal
     if (!HAS_FACE || !myDescriptor) {

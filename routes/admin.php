@@ -97,6 +97,7 @@ Route::middleware('auth:web')->group(function () {
     Route::get('scan', [PresensiController::class, 'scan'])->name('presensi.scan');
     Route::post('scan/process', [PresensiController::class, 'processScan'])->name('presensi.process');
     Route::post('presensi/bulk-delete', [PresensiController::class, 'bulkDestroy'])->name('presensi.bulkDestroy');
+    Route::post('presensi/{id}/unlock', [PresensiController::class, 'unlock'])->name('presensi.unlock');
     Route::get('presensi', [PresensiController::class, 'index'])->name('presensi.index');
 
     // Mata Pelajaran

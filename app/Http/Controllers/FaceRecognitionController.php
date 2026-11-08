@@ -33,12 +33,23 @@ class FaceRecognitionController extends Controller
             ->where('hari', $hariIni)
             ->first();
 
+        // Cek apakah guru terkunci karena tidak absen pulang hari sebelumnya
+        $lockedPresensi = Presensi::where('user_type', 'guru')
+            ->where('user_id', $guru->id)
+            ->whereDate('tanggal', '<', $today)
+            ->whereNotNull('jam_masuk')
+            ->whereNull('jam_pulang')
+            ->where('is_unlocked', false)
+            ->orderBy('tanggal', 'desc')
+            ->first();
+
         // Apakah guru sudah daftar wajah
         $hasFace = !empty($guru->face_descriptor);
 
         return view('face-recognition.scan', [
             'guru'            => $guru,
             'presensiHariIni' => $presensiHariIni,
+            'lockedPresensi'  => $lockedPresensi,
             'pengaturanJam'   => $pengaturanJam,
             'pengaturan'      => PengaturanLembaga::first(),
             'hasFace'         => $hasFace,
@@ -168,6 +179,25 @@ class FaceRecognitionController extends Controller
         }
 
         // Proses absen masuk
+        // Cek apakah ada presensi hari sebelumnya di mana guru absen masuk tapi TIDAK absen pulang dan belum di-unlock
+        $lockedPresensi = Presensi::where('user_type', 'guru')
+            ->where('user_id', $guru->id)
+            ->whereDate('tanggal', '<', $today)
+            ->whereNotNull('jam_masuk')
+            ->whereNull('jam_pulang')
+            ->where('is_unlocked', false)
+            ->orderBy('tanggal', 'desc')
+            ->first();
+
+        if ($lockedPresensi) {
+            $tglLocked = Carbon::parse($lockedPresensi->tanggal)->locale('id')->isoFormat('dddd, D MMMM Y');
+            return response()->json([
+                'success' => false,
+                'is_locked' => true,
+                'message' => "🔒 Absensi Ditolak: Anda tidak melakukan absen pulang pada hari {$tglLocked}. Silakan hubungi Administrator untuk membuka kunci kehadiran Anda.",
+            ]);
+        }
+
         $status = $jam_sekarang > $pengaturan->jam_terlambat ? 'Terlambat' : 'Hadir';
 
         Presensi::create([
@@ -315,6 +345,25 @@ class FaceRecognitionController extends Controller
             ->first();
 
         if ($request->tipe === 'masuk') {
+            // Cek apakah ada presensi hari sebelumnya di mana guru absen masuk tapi TIDAK absen pulang dan belum di-unlock
+            $lockedPresensi = Presensi::where('user_type', 'guru')
+                ->where('user_id', $guru->id)
+                ->whereDate('tanggal', '<', $today)
+                ->whereNotNull('jam_masuk')
+                ->whereNull('jam_pulang')
+                ->where('is_unlocked', false)
+                ->orderBy('tanggal', 'desc')
+                ->first();
+
+            if ($lockedPresensi) {
+                $tglLocked = Carbon::parse($lockedPresensi->tanggal)->locale('id')->isoFormat('dddd, D MMMM Y');
+                return response()->json([
+                    'success' => false,
+                    'is_locked' => true,
+                    'message' => "🔒 Absensi Ditolak: Anda tidak melakukan absen pulang pada hari {$tglLocked}. Silakan hubungi Administrator untuk membuka kunci kehadiran Anda.",
+                ]);
+            }
+
             if ($presensi && $presensi->jam_masuk) {
                 return response()->json([
                     'success' => false,

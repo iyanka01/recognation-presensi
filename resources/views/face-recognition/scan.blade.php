@@ -143,6 +143,23 @@
                     </div>
                 </div>
             </div>
+
+            @if(isset($lockedPresensi) && $lockedPresensi && (!$presensiHariIni || !$presensiHariIni->jam_masuk))
+            @php
+                $tglLockedStr = \Carbon\Carbon::parse($lockedPresensi->tanggal)->locale('id')->isoFormat('dddd, D MMMM Y');
+            @endphp
+            <div class="mt-3 bg-rose-500/30 border border-rose-300/40 rounded-xl p-3 flex items-start gap-2.5 text-white">
+                <svg class="w-5 h-5 text-rose-200 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                </svg>
+                <div class="text-xs">
+                    <p class="font-bold text-white">Presensi Anda Terkunci!</p>
+                    <p class="text-rose-100 text-[11px] mt-0.5">
+                        Anda tidak melakukan absen pulang pada hari <strong>{{ $tglLockedStr }}</strong>. Hubungi Administrator untuk membuka kunci kehadiran Anda.
+                    </p>
+                </div>
+            </div>
+            @endif
         </div>
     </div>
 

@@ -75,6 +75,7 @@
                         <th class="p-4 font-semibold">Jam Pulang</th>
                         <th class="p-4 font-semibold">Status</th>
                         <th class="p-4 font-semibold text-center">Lokasi Presensi (GPS)</th>
+                        <th class="p-4 font-semibold text-center">Aksi / Status Kunci</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-sky-50 text-sm">
@@ -140,10 +141,30 @@
                                 <span class="text-xs text-slate-400 italic">Tanpa GPS</span>
                             @endif
                         </td>
+                        <td class="p-4 text-center">
+                            @if($p->user_type === 'guru' && $p->jam_masuk && !$p->jam_pulang)
+                                @if($p->is_unlocked)
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200" title="Dibuka oleh {{ $p->unlocked_by ?? 'Admin' }}">
+                                        <svg class="w-3 h-3 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg>
+                                        Kunci Dibuka
+                                    </span>
+                                @else
+                                    <form action="{{ route('presensi.unlock', $p->id) }}" method="POST" onsubmit="return confirm('Buka kunci presensi untuk {{ $p->user ? addslashes($p->user->nama_lengkap) : 'Guru' }}? Guru ini akan diizinkan absen masuk kembali.');" class="inline-block">
+                                        @csrf
+                                        <button type="submit" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-sm shadow-amber-200 transition-all active:scale-95">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg>
+                                            <span>Buka Kunci</span>
+                                        </button>
+                                    </form>
+                                @endif
+                            @else
+                                <span class="text-xs text-slate-300">-</span>
+                            @endif
+                        </td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="8" class="p-8 text-center">
+                        <td colspan="9" class="p-8 text-center">
                             <div class="flex flex-col items-center justify-center">
                                 <svg class="w-12 h-12 text-slate-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                                 <p class="text-slate-500 font-medium">Belum ada data presensi pada tanggal ini.</p>

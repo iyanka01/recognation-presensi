@@ -6,6 +6,7 @@ use App\Models\Guru;
 use App\Models\Presensi;
 use App\Models\Siswa;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 
 class PresensiController extends Controller
@@ -172,6 +173,26 @@ class PresensiController extends Controller
         }
 
         // First scan of the day -> Check In
+        if ($userType === 'guru') {
+            $lockedPresensi = Presensi::where('user_type', 'guru')
+                ->where('user_id', $user->id)
+                ->whereDate('tanggal', '<', $today)
+                ->whereNotNull('jam_masuk')
+                ->whereNull('jam_pulang')
+                ->where('is_unlocked', false)
+                ->orderBy('tanggal', 'desc')
+                ->first();
+
+            if ($lockedPresensi) {
+                $tglLocked = Carbon::parse($lockedPresensi->tanggal)->locale('id')->isoFormat('dddd, D MMMM Y');
+                return response()->json([
+                    'success' => false,
+                    'is_locked' => true,
+                    'message' => "🔒 Presensi Ditolak: {$user->nama_lengkap} tidak melakukan absen pulang pada hari {$tglLocked}. Hubungi Administrator untuk membuka kunci kehadiran.",
+                ]);
+            }
+        }
+
         $status = 'Hadir';
         if ($jam_sekarang > $pengaturan->jam_terlambat) {
             $status = 'Terlambat';
@@ -211,6 +232,24 @@ class PresensiController extends Controller
             'user_name' => $user->nama_lengkap,
             'message' => "Presensi MASUK berhasil. Selamat datang, {$user->nama_lengkap}!" . ($status == 'Terlambat' ? ' (Terlambat)' : '')
         ]);
+    }
+
+    public function unlock($id)
+    {
+        $presensi = Presensi::findOrFail($id);
+
+        $adminName = Auth::user() ? (Auth::user()->nama_lengkap ?? Auth::user()->username ?? 'Admin') : 'Admin';
+
+        $presensi->update([
+            'is_unlocked' => true,
+            'unlocked_at' => Carbon::now(),
+            'unlocked_by' => $adminName,
+        ]);
+
+        $guruNama = $presensi->user ? $presensi->user->nama_lengkap : 'Guru';
+        $tglFmt = Carbon::parse($presensi->tanggal)->locale('id')->isoFormat('D MMMM Y');
+
+        return redirect()->back()->with('success', "Kunci presensi untuk {$guruNama} pada tanggal {$tglFmt} berhasil dibuka. Guru sekarang dapat melakukan absen masuk kembali.");
     }
 
     public function bulkDestroy(Request $request)
