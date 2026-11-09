@@ -6,9 +6,9 @@
 <div class="space-y-6" x-data="siswaPageController()">
     <!-- Top Action Bar -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div class="relative w-full sm:w-96">
-            <input type="text" x-model="searchQuery" placeholder="Cari nama, NIS, atau kelas siswa..." class="w-full pl-10 pr-4 py-2.5 bg-white border border-sky-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-400/30 focus:border-sky-400 transition-all shadow-sm">
-            <svg class="w-5 h-5 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+        <div>
+            <h2 class="text-xl font-bold text-slate-800">Master Data Siswa</h2>
+            <p class="text-xs text-slate-500 mt-0.5">Kelola data siswa, rombel, dan cetak ID Card.</p>
         </div>
         <div class="flex items-center gap-2 w-full sm:w-auto flex-wrap sm:flex-nowrap">
             <button type="button" @click="openSyncModal()" class="px-4 py-2.5 bg-sky-500 hover:bg-sky-600 text-white font-medium text-sm rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm shadow-sky-200 w-full sm:w-auto">
@@ -26,69 +26,48 @@
         </div>
     </div>
 
-    <!-- Filter Buttons: Pilih Kelas Utama & Sub Kelas / Rombel -->
-    <div class="bg-white/90 backdrop-blur-sm rounded-2xl p-4 sm:p-5 border border-sky-100 shadow-sm space-y-3.5">
-        
-        <!-- Baris 1: Filter Tingkat Kelas (Button Utama) -->
-        <div class="flex flex-col sm:flex-row sm:items-center gap-2.5">
-            <div class="flex items-center gap-1.5 min-w-36 text-slate-700 font-bold text-xs uppercase tracking-wider">
-                <svg class="w-4 h-4 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-                Pilih Kelas:
-            </div>
-            <div class="flex items-center gap-2 flex-wrap">
-                <button type="button" 
-                        @click="selectTingkat('')" 
-                        :class="!selectedTingkat ? 'bg-sky-600 text-white shadow-sm shadow-sky-300 font-bold ring-2 ring-sky-300' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium'"
-                        class="px-3.5 py-1.5 rounded-xl text-xs transition-all flex items-center gap-1.5 cursor-pointer">
-                    Semua Kelas
-                </button>
-
-                @foreach($tingkatList as $t)
-                    @php
-                        $tClean = \Illuminate\Support\Str::startsWith(strtolower($t), 'kelas') ? $t : 'Kelas ' . $t;
-                        $countInTingkat = $kelasList->where('tingkat', $t)->sum('siswa_count');
-                    @endphp
-                    <button type="button" 
-                            @click="selectTingkat('{{ addslashes($t) }}')" 
-                            :class="selectedTingkat === '{{ addslashes($t) }}' ? 'bg-sky-600 text-white shadow-sm shadow-sky-300 font-bold ring-2 ring-sky-300' : 'bg-slate-100 hover:bg-sky-50 hover:text-sky-700 text-slate-700 font-medium'"
-                            class="px-3.5 py-1.5 rounded-xl text-xs transition-all flex items-center gap-1.5 cursor-pointer">
-                        <span>{{ $tClean }}</span>
-                        <span class="px-1.5 py-0.5 rounded-full text-[10px]" :class="selectedTingkat === '{{ addslashes($t) }}' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'">
-                            {{ $countInTingkat }}
-                        </span>
-                    </button>
-                @endforeach
-            </div>
+    <!-- Filter Bar Model Dropdown Bertingkat -->
+    <div class="bg-white/90 backdrop-blur-sm rounded-2xl p-4 sm:p-5 border border-sky-100 shadow-sm space-y-3">
+        <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+                Filter & Pencarian Siswa
+            </span>
+            <button type="button" @click="resetFilter()" x-show="selectedTingkat || selectedKelasId || searchQuery" class="text-xs text-rose-500 hover:text-rose-700 font-semibold flex items-center gap-1 cursor-pointer transition-colors">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                Reset Semua Filter
+            </button>
         </div>
 
-        <!-- Baris 2: Sub-Filter Pilih Rombel (Muncul ketika Tingkat diklik!) -->
-        <div x-show="selectedTingkat" x-transition class="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center gap-2.5">
-            <div class="flex items-center gap-1.5 min-w-36 text-emerald-700 font-bold text-xs uppercase tracking-wider">
-                <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-                Pilih Rombel:
+        <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+            <!-- 1. Input Pencarian Teks -->
+            <div class="sm:col-span-5 relative">
+                <input type="text" x-model="searchQuery" placeholder="Cari nama, NIS, atau rombel siswa..." class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-sky-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-400/30 focus:border-sky-400 transition-all">
+                <svg class="w-5 h-5 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
             </div>
-            <div class="flex items-center gap-2 flex-wrap">
-                <button type="button" 
-                        @click="selectRombel('')" 
-                        :class="!selectedKelasId ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-300 font-bold ring-2 ring-emerald-300' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium'"
-                        class="px-3 py-1.5 rounded-xl text-xs transition-all cursor-pointer">
-                    Semua Rombel
-                </button>
 
-                <template x-for="r in availableRombels" :key="r.id">
-                    <button type="button" 
-                            @click="selectRombel(r.id)" 
-                            :class="selectedKelasId === r.id ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-300 font-bold ring-2 ring-emerald-300' : 'bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 text-slate-700 font-medium'"
-                            class="px-3 py-1.5 rounded-xl text-xs transition-all flex items-center gap-1.5 cursor-pointer">
-                        <span x-text="r.nama_rombel"></span>
-                        <span class="px-1.5 py-0.5 rounded-full text-[10px]" :class="selectedKelasId === r.id ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'" x-text="r.siswa_count"></span>
-                    </button>
-                </template>
+            <!-- 2. Dropdown 1: Pilih Tingkat / Kelas Utama -->
+            <div class="sm:col-span-3.5 sm:col-span-3 relative">
+                <select x-model="selectedTingkat" @change="onTingkatChange()" class="w-full px-3.5 py-2.5 bg-white border border-sky-200 rounded-xl text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-400/30 focus:border-sky-400 transition-all cursor-pointer">
+                    <option value="">-- Semua Kelas --</option>
+                    @foreach($tingkatList as $t)
+                        @php
+                            $tClean = \Illuminate\Support\Str::startsWith(strtolower($t), 'kelas') ? $t : 'Kelas ' . $t;
+                            $countInTingkat = $kelasList->where('tingkat', $t)->sum('siswa_count');
+                        @endphp
+                        <option value="{{ $t }}">{{ $tClean }} ({{ $countInTingkat }} Siswa)</option>
+                    @endforeach
+                </select>
+            </div>
 
-                <button type="button" @click="resetFilter()" class="px-2.5 py-1 text-xs text-rose-500 hover:bg-rose-50 rounded-lg transition-colors ml-auto flex items-center gap-1 cursor-pointer">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                    Reset Filter
-                </button>
+            <!-- 3. Dropdown 2: Pilih Sub-Kelas / Rombel (Menyesuaikan dengan Kelas yang dipilih) -->
+            <div class="sm:col-span-3.5 sm:col-span-4 relative">
+                <select x-model="selectedKelasId" :disabled="!selectedTingkat" class="w-full px-3.5 py-2.5 bg-white border border-sky-200 rounded-xl text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-400/30 focus:border-sky-400 transition-all cursor-pointer disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed">
+                    <option value="" x-text="selectedTingkat ? '-- Semua Rombel (' + (selectedTingkat.toLowerCase().startsWith('kelas') ? selectedTingkat : 'Kelas ' + selectedTingkat) + ') --' : '-- Pilih Kelas Dulu --'"></option>
+                    <template x-for="r in availableRombels" :key="r.id">
+                        <option :value="r.id" x-text="r.nama_rombel + ' (' + r.siswa_count + ' siswa)'"></option>
+                    </template>
+                </select>
             </div>
         </div>
     </div>
@@ -378,6 +357,10 @@ function siswaPageController() {
         get availableRombels() {
             if (!this.selectedTingkat) return [];
             return this.allClasses.filter(k => k.tingkat === this.selectedTingkat);
+        },
+
+        onTingkatChange() {
+            this.selectedKelasId = '';
         },
 
         selectTingkat(tingkat) {
