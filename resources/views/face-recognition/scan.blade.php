@@ -365,7 +365,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
 <script>
 const MODEL_URL  = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model';
-const THRESHOLD  = 0.50;
+const THRESHOLD  = 0.53;
 const CSRF       = '{{ csrf_token() }}';
 const HAS_FACE   = {{ $hasFace ? 'true' : 'false' }};
 
@@ -582,18 +582,19 @@ async function detectLoop() {
     const scanLine= document.getElementById('scan-line');
     const statusEl= document.getElementById('cam-status-text');
 
-    const detections = await faceapi
-        .detectAllFaces(mainVideo, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 }))
+    // Gunakan inputSize: 416 & scoreThreshold: 0.38 agar langsung mendeteksi wajah di HP pada jarak selfie normal
+    const detection = await faceapi
+        .detectSingleFace(mainVideo, new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.38 }))
         .withFaceLandmarks()
-        .withFaceDescriptors();
+        .withFaceDescriptor();
 
-    if (detections.length > 0) {
+    if (detection) {
         ring.classList.add('detected');
         ring.classList.remove('matched');
         scanLine.style.display = 'none';
 
         if (!isProcessing && allDescriptors.length > 0) {
-            const q = detections[0].descriptor;
+            const q = detection.descriptor;
             let best = null, bestDist = Infinity;
             for (const g of allDescriptors) {
                 const d = faceapi.euclideanDistance(q, g.face_descriptor);
@@ -622,7 +623,7 @@ async function detectLoop() {
         statusEl.textContent = 'Arahkan wajah ke dalam oval';
     }
 
-    setTimeout(detectLoop, 300);
+    setTimeout(detectLoop, 200);
 }
 
 // ===================== PROSES ABSENSI =====================
@@ -719,7 +720,7 @@ function startRegDetect() {
     async function detect() {
         if (!regStream) return;
         const det = await faceapi.detectSingleFace(regVideo,
-            new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 }));
+            new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.38 }));
         if (det) {
             regOval.style.borderColor = 'rgba(34,197,94,0.9)';
             regStatus.textContent = '✓ Wajah terdeteksi – siap di-capture!';
@@ -755,7 +756,7 @@ async function captureAndSave() {
 
     try {
         const det = await faceapi
-            .detectSingleFace(regVideo, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 }))
+            .detectSingleFace(regVideo, new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.38 }))
             .withFaceLandmarks()
             .withFaceDescriptor();
 
