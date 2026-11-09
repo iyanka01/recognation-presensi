@@ -3,30 +3,150 @@
 @section('title', 'Data Siswa')
 
 @section('content')
-<div class="space-y-6" x-data="telegramSyncBulk('siswa')">
+<div class="space-y-6" x-data="{
+    ...telegramSyncBulk('siswa'),
+    selectedTingkat: '{{ request('tingkat', '') }}',
+    selectedKelasId: '{{ request('kelas_id', '') }}',
+    searchQuery: '{{ request('q', '') }}',
+    
+    allClasses: @json($kelasList),
+    
+    get availableRombels() {
+        if (!this.selectedTingkat) return [];
+        return this.allClasses.filter(k => k.tingkat === this.selectedTingkat);
+    },
+
+    selectTingkat(tingkat) {
+        if (this.selectedTingkat === tingkat) {
+            this.selectedTingkat = '';
+            this.selectedKelasId = '';
+        } else {
+            this.selectedTingkat = tingkat;
+            this.selectedKelasId = '';
+        }
+    },
+
+    selectRombel(kelasId) {
+        if (this.selectedKelasId === kelasId) {
+            this.selectedKelasId = '';
+        } else {
+            this.selectedKelasId = kelasId;
+        }
+    },
+
+    resetFilter() {
+        this.selectedTingkat = '';
+        this.selectedKelasId = '';
+        this.searchQuery = '';
+    },
+
+    isRowVisible(tingkat, kelasId, searchText) {
+        if (this.selectedTingkat && tingkat !== this.selectedTingkat) {
+            return false;
+        }
+        if (this.selectedKelasId && kelasId !== this.selectedKelasId) {
+            return false;
+        }
+        if (this.searchQuery) {
+            const query = this.searchQuery.toLowerCase();
+            if (!searchText.toLowerCase().includes(query)) {
+                return false;
+            }
+        }
+        return true;
+    }
+}">
+    <!-- Top Action Bar -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div class="relative w-full sm:w-96">
-            <input type="text" placeholder="Cari siswa..." class="w-full pl-10 pr-4 py-2.5 bg-white border border-sky-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-400/30 focus:border-sky-400 transition-all shadow-sm">
+            <input type="text" x-model="searchQuery" placeholder="Cari nama, NIS, atau kelas siswa..." class="w-full pl-10 pr-4 py-2.5 bg-white border border-sky-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-400/30 focus:border-sky-400 transition-all shadow-sm">
             <svg class="w-5 h-5 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
         </div>
         <div class="flex items-center gap-2 w-full sm:w-auto flex-wrap sm:flex-nowrap">
-            <button type="button" @click="openSyncModal()" class="px-5 py-2.5 bg-sky-500 hover:bg-sky-600 text-white font-medium rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm shadow-sky-200 w-full sm:w-auto">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+            <button type="button" @click="openSyncModal()" class="px-4 py-2.5 bg-sky-500 hover:bg-sky-600 text-white font-medium text-sm rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm shadow-sky-200 w-full sm:w-auto">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
                 Sinkronkan Telegram
             </button>
-            <button type="button" @click="$dispatch('open-import-modal')" class="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-medium rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm shadow-emerald-200 w-full sm:w-auto">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-                Import
+            <button type="button" @click="$dispatch('open-import-modal')" class="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-medium text-sm rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm shadow-emerald-200 w-full sm:w-auto">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                Import Excel
             </button>
-            <a href="{{ route('siswa.create') }}" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-medium rounded-xl flex items-center gap-2 transition-all shadow-sm shadow-amber-300/40 w-full sm:w-auto justify-center">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+            <a href="{{ route('siswa.create') }}" class="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-medium text-sm rounded-xl flex items-center gap-2 transition-all shadow-sm shadow-amber-300/40 w-full sm:w-auto justify-center">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                 Tambah Siswa
             </a>
         </div>
     </div>
 
-    <!-- Data Table -->
-    <div x-data="{ selected: [], selectAll: false, toggleAll() { this.selectAll = !this.selectAll; if (this.selectAll) { this.selected = Array.from(document.querySelectorAll('.siswa-checkbox')).map(cb => cb.value); } else { this.selected = []; } } }" class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-sky-100 overflow-hidden">
+    <!-- Filter Buttons: Pilih Kelas Utama & Sub Kelas / Rombel -->
+    <div class="bg-white/90 backdrop-blur-sm rounded-2xl p-4 sm:p-5 border border-sky-100 shadow-sm space-y-3.5">
+        
+        <!-- Baris 1: Filter Tingkat Kelas (Button Utama) -->
+        <div class="flex flex-col sm:flex-row sm:items-center gap-2.5">
+            <div class="flex items-center gap-1.5 min-w-36 text-slate-700 font-bold text-xs uppercase tracking-wider">
+                <svg class="w-4 h-4 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                Pilih Kelas:
+            </div>
+            <div class="flex items-center gap-2 flex-wrap">
+                <button type="button" 
+                        @click="selectTingkat('')" 
+                        :class="!selectedTingkat ? 'bg-sky-600 text-white shadow-sm shadow-sky-300 font-bold ring-2 ring-sky-300' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium'"
+                        class="px-3.5 py-1.5 rounded-xl text-xs transition-all flex items-center gap-1.5 cursor-pointer">
+                    Semua Kelas
+                </button>
+
+                @foreach($tingkatList as $t)
+                    @php
+                        $tClean = \Illuminate\Support\Str::startsWith(strtolower($t), 'kelas') ? $t : 'Kelas ' . $t;
+                        $countInTingkat = $kelasList->where('tingkat', $t)->sum('siswa_count');
+                    @endphp
+                    <button type="button" 
+                            @click="selectTingkat('{{ addslashes($t) }}')" 
+                            :class="selectedTingkat === '{{ addslashes($t) }}' ? 'bg-sky-600 text-white shadow-sm shadow-sky-300 font-bold ring-2 ring-sky-300' : 'bg-slate-100 hover:bg-sky-50 hover:text-sky-700 text-slate-700 font-medium'"
+                            class="px-3.5 py-1.5 rounded-xl text-xs transition-all flex items-center gap-1.5 cursor-pointer">
+                        <span>{{ $tClean }}</span>
+                        <span class="px-1.5 py-0.5 rounded-full text-[10px]" :class="selectedTingkat === '{{ addslashes($t) }}' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'">
+                            {{ $countInTingkat }}
+                        </span>
+                    </button>
+                @endforeach
+            </div>
+        </div>
+
+        <!-- Baris 2: Sub-Filter Pilih Rombel (Muncul ketika Tingkat diklik!) -->
+        <div x-show="selectedTingkat" x-transition class="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center gap-2.5">
+            <div class="flex items-center gap-1.5 min-w-36 text-emerald-700 font-bold text-xs uppercase tracking-wider">
+                <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                Pilih Rombel:
+            </div>
+            <div class="flex items-center gap-2 flex-wrap">
+                <button type="button" 
+                        @click="selectRombel('')" 
+                        :class="!selectedKelasId ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-300 font-bold ring-2 ring-emerald-300' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium'"
+                        class="px-3 py-1.5 rounded-xl text-xs transition-all cursor-pointer">
+                    Semua Rombel
+                </button>
+
+                <template x-for="r in availableRombels" :key="r.id">
+                    <button type="button" 
+                            @click="selectRombel(r.id)" 
+                            :class="selectedKelasId === r.id ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-300 font-bold ring-2 ring-emerald-300' : 'bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 text-slate-700 font-medium'"
+                            class="px-3 py-1.5 rounded-xl text-xs transition-all flex items-center gap-1.5 cursor-pointer">
+                        <span x-text="r.nama_rombel"></span>
+                        <span class="px-1.5 py-0.5 rounded-full text-[10px]" :class="selectedKelasId === r.id ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'" x-text="r.siswa_count"></span>
+                    </button>
+                </template>
+
+                <button type="button" @click="resetFilter()" class="px-2.5 py-1 text-xs text-rose-500 hover:bg-rose-50 rounded-lg transition-colors ml-auto flex items-center gap-1 cursor-pointer">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    Reset Filter
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Table Siswa -->
+    <div x-data="{ selected: [], selectAll: false, toggleAll() { this.selectAll = !this.selectAll; if (this.selectAll) { this.selected = Array.from(document.querySelectorAll('.siswa-checkbox:not([style*=\'display: none\'])')).map(cb => cb.value); } else { this.selected = []; } } }" class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-sky-100 overflow-hidden">
         
         <!-- Bulk Delete Action Bar -->
         <div x-show="selected.length > 0" x-transition class="bg-rose-50/80 px-6 py-3 border-b border-rose-100 flex items-center justify-between" style="display: none;">
@@ -55,7 +175,7 @@
                         <th class="p-4 font-semibold w-16 text-center">No</th>
                         <th class="p-4 font-semibold">Siswa</th>
                         <th class="p-4 font-semibold">NIS/NISN</th>
-                        <th class="p-4 font-semibold">Kelas</th>
+                        <th class="p-4 font-semibold">Kelas & Rombel</th>
                         <th class="p-4 font-semibold">L/P</th>
                         <th class="p-4 font-semibold">Status</th>
                         <th class="p-4 font-semibold text-right">Aksi</th>
@@ -63,7 +183,14 @@
                 </thead>
                 <tbody class="divide-y divide-sky-50 text-sm">
                     @forelse($siswa as $index => $s)
-                    <tr class="hover:bg-sky-50/30 transition-colors" :class="{'bg-rose-50/30': selected.includes('{{ $s->id }}')}">
+                    @php
+                        $tRow = $s->kelas ? $s->kelas->tingkat : '';
+                        $kRow = $s->kelas_id ?? '';
+                        $searchStr = $s->nama_lengkap . ' ' . $s->nis . ' ' . $s->nisn . ' ' . ($s->kelas ? ($s->kelas->tingkat . ' ' . $s->kelas->nama_rombel) : '');
+                    @endphp
+                    <tr x-show="isRowVisible('{{ addslashes($tRow) }}', '{{ addslashes($kRow) }}', '{{ addslashes($searchStr) }}')"
+                        class="hover:bg-sky-50/30 transition-colors" 
+                        :class="{'bg-rose-50/30': selected.includes('{{ $s->id }}')}">
                         <td class="p-4 text-center">
                             <input type="checkbox" value="{{ $s->id }}" x-model="selected" class="siswa-checkbox w-4 h-4 rounded border-sky-200 text-sky-600 focus:ring-sky-500">
                         </td>
@@ -78,21 +205,23 @@
                                     </div>
                                 @endif
                                 <div>
-                                    <div class="font-medium text-slate-800">{{ $s->nama_lengkap }}</div>
+                                    <div class="font-bold text-slate-800">{{ $s->nama_lengkap }}</div>
                                 </div>
                             </div>
                         </td>
                         <td class="p-4">
-                            <div class="text-slate-800 font-medium">{{ $s->nis ?? '-' }}</div>
-                            <div class="text-xs text-slate-500">{{ $s->nisn ?? '-' }}</div>
+                            <div class="text-slate-800 font-medium font-mono text-xs">{{ $s->nis ?? '-' }}</div>
+                            <div class="text-[11px] text-slate-500 font-mono">{{ $s->nisn ?? '-' }}</div>
                         </td>
                         <td class="p-4 font-medium text-slate-800">
                             @if($s->kelas)
-                                <span class="inline-flex px-2.5 py-1 rounded-md bg-sky-50 text-sky-700 font-medium border border-sky-100">
-                                    {{ $s->kelas->tingkat }} - {{ $s->kelas->nama_rombel }}
-                                </span>
+                                <button type="button" @click="selectTingkat('{{ addslashes($s->kelas->tingkat) }}'); selectRombel('{{ $s->kelas_id }}')" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-sky-50 hover:bg-sky-100 text-sky-700 font-semibold border border-sky-200 transition-colors text-xs" title="Filter rombel ini">
+                                    <span>{{ $s->kelas->tingkat }}</span>
+                                    <span>•</span>
+                                    <span>{{ $s->kelas->nama_rombel }}</span>
+                                </button>
                             @else
-                                <span class="text-slate-400">-</span>
+                                <span class="text-slate-400 text-xs italic">Tanpa Kelas</span>
                             @endif
                         </td>
                         <td class="p-4">
@@ -182,42 +311,42 @@
     </div>
 
     <!-- Modal Import -->
-<div x-data="{ open: false }" 
-     @open-import-modal.window="open = true" 
-     @keydown.escape.window="open = false" 
-     class="relative z-50" 
-     aria-labelledby="modal-title" 
-     role="dialog" 
-     aria-modal="true" 
-     x-show="open" 
-     style="display: none;">
-    
-    <div x-show="open" x-transition.opacity class="fixed inset-0 bg-sky-900/40 backdrop-blur-sm transition-opacity"></div>
+    <div x-data="{ open: false }" 
+         @open-import-modal.window="open = true" 
+         @keydown.escape.window="open = false" 
+         class="relative z-50" 
+         aria-labelledby="modal-title" 
+         role="dialog" 
+         aria-modal="true" 
+         x-show="open" 
+         style="display: none;">
+        
+        <div x-show="open" x-transition.opacity class="fixed inset-0 bg-sky-900/40 backdrop-blur-sm transition-opacity"></div>
 
-    <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
-        <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
-            <div x-show="open" 
-                 x-transition:enter="ease-out duration-300" 
-                 x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" 
-                 x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" 
-                 x-transition:leave="ease-in duration-200" 
-                 x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" 
-                 x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                 class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
-                
-                <form action="{{ route('siswa.import') }}" method="POST" enctype="multipart/form-data">
-                    @csrf
-                    <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
-                        <div class="sm:flex sm:items-start">
-                            <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-emerald-100 sm:mx-0 sm:h-10 sm:w-10">
-                                <svg class="h-6 w-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-                                </svg>
-                            </div>
-                            <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left w-full">
-                                <h3 class="text-base font-semibold leading-6 text-slate-900" id="modal-title">Import Data Siswa</h3>
-                                <p class="text-sm text-slate-500 mb-2">Pilih file Excel (.xlsx) atau CSV untuk mengunggah data siswa secara massal. Format penomoran (NIS, NISN, No HP) menggunakan tanda petik satu di depan (misal: <code>'0081...</code>) dan format tanggal lahir menggunakan <strong>DD-MM-YYYY</strong> (contoh: <code>07-07-2002</code>).</p>
-                                    
+        <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+            <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+                <div x-show="open" 
+                     x-transition:enter="ease-out duration-300" 
+                     x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" 
+                     x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" 
+                     x-transition:leave="ease-in duration-200" 
+                     x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" 
+                     x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                     class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
+                    
+                    <form action="{{ route('siswa.import') }}" method="POST" enctype="multipart/form-data">
+                        @csrf
+                        <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                            <div class="sm:flex sm:items-start">
+                                <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-emerald-100 sm:mx-0 sm:h-10 sm:w-10">
+                                    <svg class="h-6 w-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                                    </svg>
+                                </div>
+                                <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left w-full">
+                                    <h3 class="text-base font-semibold leading-6 text-slate-900" id="modal-title">Import Data Siswa</h3>
+                                    <p class="text-sm text-slate-500 mb-2">Pilih file Excel (.xlsx) atau CSV untuk mengunggah data siswa secara massal. Format penomoran (NIS, NISN, No HP) menggunakan tanda petik satu di depan (misal: <code>'0081...</code>) dan format tanggal lahir menggunakan <strong>DD-MM-YYYY</strong> (contoh: <code>07-07-2002</code>).</p>
+                                        
                                     <a href="{{ route('siswa.downloadTemplate') }}" class="inline-flex items-center gap-2 text-xs sm:text-sm text-emerald-700 hover:text-emerald-800 font-bold mb-5 bg-emerald-50 hover:bg-emerald-100 px-3.5 py-2.5 rounded-xl transition-all border border-emerald-200 shadow-sm">
                                         <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                                         <span>Download Template Excel (.xlsx)</span>
@@ -230,16 +359,16 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="bg-sky-50/50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
-                        <button type="submit" class="inline-flex w-full justify-center rounded-xl bg-emerald-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-500 sm:ml-3 sm:w-auto transition-colors">Mulai Import</button>
-                        <button type="button" @click="open = false" class="mt-3 inline-flex w-full justify-center rounded-xl bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50 sm:mt-0 sm:w-auto transition-colors">Batal</button>
-                    </div>
-                </form>
+                        <div class="bg-sky-50/50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+                            <button type="submit" class="inline-flex w-full justify-center rounded-xl bg-emerald-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-500 sm:ml-3 sm:w-auto transition-colors">Mulai Import</button>
+                            <button type="button" @click="open = false" class="mt-3 inline-flex w-full justify-center rounded-xl bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50 sm:mt-0 sm:w-auto transition-colors">Batal</button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
-</div>
+
     <!-- Telegram Sync Modal -->
     <div x-show="syncModalOpen" 
          class="relative z-50" 

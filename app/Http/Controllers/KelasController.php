@@ -10,9 +10,10 @@ class KelasController extends Controller
 {
     public function index()
     {
-        $kelas = Kelas::with('wali_kelas')->orderBy('tingkat')->orderBy('nama_rombel')->get();
+        $kelasList = Kelas::with('wali_kelas')->withCount('siswa')->orderBy('tingkat')->orderBy('nama_rombel')->get();
+        $groupedKelas = $kelasList->groupBy('tingkat');
         $gurus = Guru::all();
-        return view('kelas.index', compact('kelas', 'gurus'));
+        return view('kelas.index', compact('groupedKelas', 'gurus', 'kelasList'));
     }
 
     public function store(Request $request)

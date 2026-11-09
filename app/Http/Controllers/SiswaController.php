@@ -9,10 +9,34 @@ use Illuminate\Support\Facades\Storage;
 
 class SiswaController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $siswa = Siswa::with('kelas')->latest()->get();
-        return view('siswa.index', compact('siswa'));
+        $query = Siswa::with('kelas');
+
+        if ($request->filled('tingkat')) {
+            $query->whereHas('kelas', function ($q) use ($request) {
+                $q->where('tingkat', $request->tingkat);
+            });
+        }
+
+        if ($request->filled('kelas_id')) {
+            $query->where('kelas_id', $request->kelas_id);
+        }
+
+        if ($request->filled('q')) {
+            $search = $request->q;
+            $query->where(function ($q) use ($search) {
+                $q->where('nama_lengkap', 'like', "%{$search}%")
+                  ->orWhere('nis', 'like', "%{$search}%")
+                  ->orWhere('nisn', 'like', "%{$search}%");
+            });
+        }
+
+        $siswa = $query->latest()->get();
+        $kelasList = Kelas::withCount('siswa')->orderBy('tingkat')->orderBy('nama_rombel')->get();
+        $tingkatList = $kelasList->pluck('tingkat')->unique()->values();
+
+        return view('siswa.index', compact('siswa', 'kelasList', 'tingkatList'));
     }
 
     public function create()
