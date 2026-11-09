@@ -24,7 +24,7 @@ use App\Http\Controllers\SiswaPasswordController;
 // - Jika Belum Login (Tamu / Wali Murid) -> Langsung diarahkan ke Login Portal Siswa (siswa.login)
 Route::get('/siswa', function () {
     if (auth()->guard('web')->check()) {
-        return app(\App\Http\Controllers\SiswaController::class)->index();
+        return app(\App\Http\Controllers\SiswaController::class)->index(request());
     }
     if (auth()->guard('siswa')->check()) {
         return redirect()->route('siswa.dashboard');

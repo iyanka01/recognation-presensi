@@ -9,8 +9,9 @@ use Illuminate\Support\Facades\Storage;
 
 class SiswaController extends Controller
 {
-    public function index(Request $request)
+    public function index(?Request $request = null)
     {
+        $request = $request ?? request();
         $query = Siswa::with('kelas');
 
         if ($request->filled('tingkat')) {
