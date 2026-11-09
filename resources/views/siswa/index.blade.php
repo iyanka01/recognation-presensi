@@ -3,59 +3,7 @@
 @section('title', 'Data Siswa')
 
 @section('content')
-<div class="space-y-6" x-data="{
-    ...telegramSyncBulk('siswa'),
-    selectedTingkat: '{{ request('tingkat', '') }}',
-    selectedKelasId: '{{ request('kelas_id', '') }}',
-    searchQuery: '{{ request('q', '') }}',
-    
-    allClasses: @json($kelasList),
-    
-    get availableRombels() {
-        if (!this.selectedTingkat) return [];
-        return this.allClasses.filter(k => k.tingkat === this.selectedTingkat);
-    },
-
-    selectTingkat(tingkat) {
-        if (this.selectedTingkat === tingkat) {
-            this.selectedTingkat = '';
-            this.selectedKelasId = '';
-        } else {
-            this.selectedTingkat = tingkat;
-            this.selectedKelasId = '';
-        }
-    },
-
-    selectRombel(kelasId) {
-        if (this.selectedKelasId === kelasId) {
-            this.selectedKelasId = '';
-        } else {
-            this.selectedKelasId = kelasId;
-        }
-    },
-
-    resetFilter() {
-        this.selectedTingkat = '';
-        this.selectedKelasId = '';
-        this.searchQuery = '';
-    },
-
-    isRowVisible(tingkat, kelasId, searchText) {
-        if (this.selectedTingkat && tingkat !== this.selectedTingkat) {
-            return false;
-        }
-        if (this.selectedKelasId && kelasId !== this.selectedKelasId) {
-            return false;
-        }
-        if (this.searchQuery) {
-            const query = this.searchQuery.toLowerCase();
-            if (!searchText.toLowerCase().includes(query)) {
-                return false;
-            }
-        }
-        return true;
-    }
-}">
+<div class="space-y-6" x-data="siswaPageController()">
     <!-- Top Action Bar -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div class="relative w-full sm:w-96">
@@ -416,4 +364,62 @@
         </div>
     </div>
 </div>
+
+<script>
+function siswaPageController() {
+    const baseSync = typeof telegramSyncBulk === 'function' ? telegramSyncBulk('siswa') : {};
+    return {
+        ...baseSync,
+        selectedTingkat: '{{ request('tingkat', '') }}',
+        selectedKelasId: '{{ request('kelas_id', '') }}',
+        searchQuery: '{{ request('q', '') }}',
+        allClasses: @json($kelasList),
+
+        get availableRombels() {
+            if (!this.selectedTingkat) return [];
+            return this.allClasses.filter(k => k.tingkat === this.selectedTingkat);
+        },
+
+        selectTingkat(tingkat) {
+            if (this.selectedTingkat === tingkat) {
+                this.selectedTingkat = '';
+                this.selectedKelasId = '';
+            } else {
+                this.selectedTingkat = tingkat;
+                this.selectedKelasId = '';
+            }
+        },
+
+        selectRombel(kelasId) {
+            if (this.selectedKelasId === kelasId) {
+                this.selectedKelasId = '';
+            } else {
+                this.selectedKelasId = kelasId;
+            }
+        },
+
+        resetFilter() {
+            this.selectedTingkat = '';
+            this.selectedKelasId = '';
+            this.searchQuery = '';
+        },
+
+        isRowVisible(tingkat, kelasId, searchText) {
+            if (this.selectedTingkat && tingkat !== this.selectedTingkat) {
+                return false;
+            }
+            if (this.selectedKelasId && kelasId !== this.selectedKelasId) {
+                return false;
+            }
+            if (this.searchQuery) {
+                const query = this.searchQuery.toLowerCase();
+                if (!searchText.toLowerCase().includes(query)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+    };
+}
+</script>
 @endsection
