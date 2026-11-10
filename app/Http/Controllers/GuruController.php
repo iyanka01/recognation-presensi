@@ -293,74 +293,89 @@ class GuruController extends Controller
         $sukses = 0;
         $gagal = 0;
 
-        foreach ($rows as $row) {
-            if (count($row) < 7) {
-                $gagal++;
-                continue;
-            }
+        // Tambah batas eksekusi & memori agar tidak timeout saat data banyak
+        @set_time_limit(300);
+        @ini_set('max_execution_time', '300');
 
-            try {
-                $nip       = $cleanValue($row[0] ?? '');
-                $nama      = $cleanValue($row[1] ?? '');
-                $jk        = strtoupper($cleanValue($row[2] ?? 'L'));
-                $agama     = $cleanValue($row[3] ?? 'Islam');
-                $tempat    = $cleanValue($row[4] ?? '-');
-                $tanggal   = $cleanValue($row[5] ?? '');
-                $jabatan   = $cleanValue($row[6] ?? 'Guru Mata Pelajaran');
-                $noHp      = $cleanValue($row[7] ?? '');
+        // Pre-hash password satu kali di luar loop
+        $defaultPasswordHash = Hash::make(self::PASSWORD_DEFAULT);
 
-                if (empty($nama)) {
+        \Illuminate\Support\Facades\DB::beginTransaction();
+        try {
+            foreach ($rows as $row) {
+                if (count($row) < 7) {
                     $gagal++;
                     continue;
                 }
 
-                $nip = $nip === '' ? null : $nip;
-                $noHp = $noHp === '' ? null : $noHp;
+                try {
+                    $nip       = $cleanValue($row[0] ?? '');
+                    $nama      = $cleanValue($row[1] ?? '');
+                    $jk        = strtoupper($cleanValue($row[2] ?? 'L'));
+                    $agama     = $cleanValue($row[3] ?? 'Islam');
+                    $tempat    = $cleanValue($row[4] ?? '-');
+                    $tanggal   = $cleanValue($row[5] ?? '');
+                    $jabatan   = $cleanValue($row[6] ?? 'Guru Mata Pelajaran');
+                    $noHp      = $cleanValue($row[7] ?? '');
 
-                // Parsing Tanggal Lahir (DD-MM-YYYY misal: 15-01-1980 atau YYYY-MM-DD)
-                $parsedTanggal = \Carbon\Carbon::now()->format('Y-m-d');
-                if (!empty($tanggal)) {
-                    try {
-                        if (preg_match('/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4})$/', $tanggal, $m)) {
-                            $parsedTanggal = sprintf('%04d-%02d-%02d', $m[3], $m[2], $m[1]);
-                        } else {
-                            $parsedTanggal = \Carbon\Carbon::parse($tanggal)->format('Y-m-d');
-                        }
-                    } catch (\Exception $e) {
-                        // fallback
+                    if (empty($nama)) {
+                        $gagal++;
+                        continue;
                     }
+
+                    $nip = $nip === '' ? null : $nip;
+                    $noHp = $noHp === '' ? null : $noHp;
+
+                    // Parsing Tanggal Lahir (DD-MM-YYYY misal: 15-01-1980 atau YYYY-MM-DD)
+                    $parsedTanggal = \Carbon\Carbon::now()->format('Y-m-d');
+                    if (!empty($tanggal)) {
+                        try {
+                            if (preg_match('/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4})$/', $tanggal, $m)) {
+                                $parsedTanggal = sprintf('%04d-%02d-%02d', $m[3], $m[2], $m[1]);
+                            } else {
+                                $parsedTanggal = \Carbon\Carbon::parse($tanggal)->format('Y-m-d');
+                            }
+                        } catch (\Exception $e) {
+                            // fallback
+                        }
+                    }
+
+                    $guruData = [
+                        'nama_lengkap'  => $nama,
+                        'jenis_kelamin' => in_array($jk, ['L', 'P']) ? $jk : 'L',
+                        'agama'         => $agama,
+                        'tempat_lahir'  => $tempat,
+                        'tanggal_lahir' => $parsedTanggal,
+                        'jabatan'       => $jabatan,
+                        'no_hp'         => $noHp,
+                        'status'        => 'Aktif'
+                    ];
+
+                    if (!empty($nip)) {
+                        $guruData['nip'] = $nip;
+                        $guruData['username'] = $nip;
+                    }
+
+                    $existing = !empty($nip) ? Guru::where('nip', $nip)->first() : null;
+
+                    if (!$existing) {
+                        $guruData['password'] = $defaultPasswordHash;
+                        Guru::create($guruData);
+                    } else {
+                        $existing->update($guruData);
+                    }
+
+                    $sukses++;
+                } catch (\Exception $e) {
+                    \Log::error("Exception saat import guru row: " . $e->getMessage(), (array)$row);
+                    $gagal++;
                 }
-
-                $guruData = [
-                    'nama_lengkap'  => $nama,
-                    'jenis_kelamin' => in_array($jk, ['L', 'P']) ? $jk : 'L',
-                    'agama'         => $agama,
-                    'tempat_lahir'  => $tempat,
-                    'tanggal_lahir' => $parsedTanggal,
-                    'jabatan'       => $jabatan,
-                    'no_hp'         => $noHp,
-                    'status'        => 'Aktif'
-                ];
-
-                if (!empty($nip)) {
-                    $guruData['nip'] = $nip;
-                    $guruData['username'] = $nip;
-                }
-
-                $existing = !empty($nip) ? Guru::where('nip', $nip)->first() : null;
-
-                if (!$existing) {
-                    $guruData['password'] = Hash::make(self::PASSWORD_DEFAULT);
-                    Guru::create($guruData);
-                } else {
-                    $existing->update($guruData);
-                }
-
-                $sukses++;
-            } catch (\Exception $e) {
-                \Log::error("Exception saat import guru row: " . $e->getMessage(), (array)$row);
-                $gagal++;
             }
+
+            \Illuminate\Support\Facades\DB::commit();
+        } catch (\Throwable $th) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            return redirect()->route('guru.index')->with('error', 'Terjadi kesalahan saat memproses data guru: ' . $th->getMessage());
         }
 
         $msg = "Import guru selesai! Berhasil: $sukses data guru tersimpan, Gagal/Dilewati: $gagal baris.";

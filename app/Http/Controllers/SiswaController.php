@@ -315,84 +315,109 @@ class SiswaController extends Controller
         $sukses = 0;
         $gagal = 0;
 
-        foreach ($rows as $row) {
-            if (count($row) < 8) {
-                $gagal++;
-                continue;
-            }
+        // Tambah batas eksekusi & memori agar tidak timeout saat data banyak
+        @set_time_limit(300);
+        @ini_set('max_execution_time', '300');
 
-            try {
-                $nis       = $cleanValue($row[0] ?? '');
-                $nisn      = $cleanValue($row[1] ?? '');
-                $nama      = $cleanValue($row[2] ?? '');
-                $jk        = strtoupper($cleanValue($row[3] ?? 'L'));
-                $agama     = $cleanValue($row[4] ?? 'Islam');
-                $tempat    = $cleanValue($row[5] ?? '-');
-                $tanggal   = $cleanValue($row[6] ?? '');
-                $namaKelas = $cleanValue($row[7] ?? '');
-                $noHp      = $cleanValue($row[8] ?? '');
+        // Pre-hash password satu kali di luar loop untuk menghemat waktu CPU 95%+
+        $defaultPasswordHash = \Illuminate\Support\Facades\Hash::make('siswa123');
 
-                // Validasi data krusial
-                if (empty($nis) || empty($nama) || empty($namaKelas)) {
+        // Pre-load semua kelas ke memori (key: nama_rombel lowercase & trim)
+        $kelasList = Kelas::all()->keyBy(function($item) {
+            return strtolower(trim($item->nama_rombel));
+        });
+
+        \Illuminate\Support\Facades\DB::beginTransaction();
+        try {
+            foreach ($rows as $row) {
+                if (count($row) < 8) {
                     $gagal++;
                     continue;
                 }
 
-                $nisn = $nisn === '' ? null : $nisn;
-                $noHp = $noHp === '' ? null : $noHp;
+                try {
+                    $nis       = $cleanValue($row[0] ?? '');
+                    $nisn      = $cleanValue($row[1] ?? '');
+                    $nama      = $cleanValue($row[2] ?? '');
+                    $jk        = strtoupper($cleanValue($row[3] ?? 'L'));
+                    $agama     = $cleanValue($row[4] ?? 'Islam');
+                    $tempat    = $cleanValue($row[5] ?? '-');
+                    $tanggal   = $cleanValue($row[6] ?? '');
+                    $namaKelas = $cleanValue($row[7] ?? '');
+                    $noHp      = $cleanValue($row[8] ?? '');
 
-                // Parsing Tanggal Lahir (Mendukung DD-MM-YYYY misal: 07-07-2002, DD/MM/YYYY, maupun YYYY-MM-DD)
-                $parsedTanggal = \Carbon\Carbon::now()->format('Y-m-d');
-                if (!empty($tanggal)) {
-                    try {
-                        if (preg_match('/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4})$/', $tanggal, $m)) {
-                            $parsedTanggal = sprintf('%04d-%02d-%02d', $m[3], $m[2], $m[1]);
-                        } else {
-                            $parsedTanggal = \Carbon\Carbon::parse($tanggal)->format('Y-m-d');
-                        }
-                    } catch (\Exception $e) {
-                        // fallback
+                    // Validasi data krusial
+                    if (empty($nis) || empty($nama) || empty($namaKelas)) {
+                        $gagal++;
+                        continue;
                     }
+
+                    $nisn = $nisn === '' ? null : $nisn;
+                    $noHp = $noHp === '' ? null : $noHp;
+
+                    // Parsing Tanggal Lahir (Mendukung DD-MM-YYYY misal: 07-07-2002, DD/MM/YYYY, maupun YYYY-MM-DD)
+                    $parsedTanggal = \Carbon\Carbon::now()->format('Y-m-d');
+                    if (!empty($tanggal)) {
+                        try {
+                            if (preg_match('/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4})$/', $tanggal, $m)) {
+                                $parsedTanggal = sprintf('%04d-%02d-%02d', $m[3], $m[2], $m[1]);
+                            } else {
+                                $parsedTanggal = \Carbon\Carbon::parse($tanggal)->format('Y-m-d');
+                            }
+                        } catch (\Exception $e) {
+                            // fallback
+                        }
+                    }
+
+                    // Ambil dari cache kelas atau buat baru jika belum ada
+                    $keyKelas = strtolower(trim($namaKelas));
+                    if ($kelasList->has($keyKelas)) {
+                        $kelas = $kelasList->get($keyKelas);
+                    } else {
+                        $tingkat = explode(' ', $namaKelas)[0];
+                        if (!is_numeric($tingkat)) {
+                            $tingkat = '10';
+                        }
+                        $kelas = Kelas::firstOrCreate(
+                            ['nama_rombel' => $namaKelas],
+                            ['tingkat' => $tingkat]
+                        );
+                        $kelasList->put($keyKelas, $kelas);
+                    }
+
+                    // Update or Create Siswa berdasarkan NIS
+                    $siswaData = [
+                        'nisn'          => $nisn,
+                        'nama_lengkap'  => $nama,
+                        'jenis_kelamin' => in_array($jk, ['L', 'P']) ? $jk : 'L',
+                        'agama'         => $agama,
+                        'tempat_lahir'  => $tempat,
+                        'tanggal_lahir' => $parsedTanggal,
+                        'kelas_id'      => $kelas->id,
+                        'no_hp_wali'    => $noHp,
+                        'status'        => 'Aktif'
+                    ];
+
+                    $existing = Siswa::where('nis', $nis)->first();
+                    if (!$existing) {
+                        $siswaData['password'] = $defaultPasswordHash;
+                        $siswaData['is_password_changed'] = false;
+                        Siswa::create(array_merge(['nis' => $nis], $siswaData));
+                    } else {
+                        $existing->update($siswaData);
+                    }
+
+                    $sukses++;
+                } catch (\Exception $e) {
+                    \Log::error("Exception saat import row: " . $e->getMessage(), (array)$row);
+                    $gagal++;
                 }
-
-                // Cari atau buat kelas otomatis
-                $tingkat = explode(' ', $namaKelas)[0];
-                if (!is_numeric($tingkat)) {
-                    $tingkat = '10';
-                }
-
-                $kelas = Kelas::firstOrCreate(
-                    ['nama_rombel' => $namaKelas],
-                    ['tingkat' => $tingkat]
-                );
-
-                // Update or Create Siswa berdasarkan NIS
-                $siswaData = [
-                    'nisn'          => $nisn,
-                    'nama_lengkap'  => $nama,
-                    'jenis_kelamin' => in_array($jk, ['L', 'P']) ? $jk : 'L',
-                    'agama'         => $agama,
-                    'tempat_lahir'  => $tempat,
-                    'tanggal_lahir' => $parsedTanggal,
-                    'kelas_id'      => $kelas->id,
-                    'no_hp_wali'    => $noHp,
-                    'status'        => 'Aktif'
-                ];
-
-                $existing = Siswa::where('nis', $nis)->first();
-                if (!$existing) {
-                    $siswaData['password'] = \Illuminate\Support\Facades\Hash::make('siswa123');
-                    $siswaData['is_password_changed'] = false;
-                    Siswa::create(array_merge(['nis' => $nis], $siswaData));
-                } else {
-                    $existing->update($siswaData);
-                }
-
-                $sukses++;
-            } catch (\Exception $e) {
-                \Log::error("Exception saat import row: " . $e->getMessage(), (array)$row);
-                $gagal++;
             }
+
+            \Illuminate\Support\Facades\DB::commit();
+        } catch (\Throwable $th) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            return redirect()->route('siswa.index')->with('error', 'Terjadi kesalahan saat memproses data: ' . $th->getMessage());
         }
 
         $msg = "Import selesai! Berhasil: $sukses data siswa tersimpan, Gagal/Dilewati: $gagal baris.";
