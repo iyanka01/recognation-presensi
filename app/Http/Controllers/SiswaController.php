@@ -374,10 +374,17 @@ class SiswaController extends Controller
                     if ($kelasList->has($keyKelas)) {
                         $kelas = $kelasList->get($keyKelas);
                     } else {
-                        $tingkat = explode(' ', $namaKelas)[0];
-                        if (!is_numeric($tingkat)) {
-                            $tingkat = '10';
+                        // Deteksi tingkat secara cerdas:
+                        // 1. Cek angka di awal nama rombel (misal "8-B", "8 B", "8B", "10 RPL", "7.1", "12-IPA")
+                        $tingkat = '10'; // default fallback
+                        if (preg_match('/^(\d+)/', trim($namaKelas), $matches)) {
+                            $tingkat = $matches[1];
+                        } elseif (preg_match('/^(X|XI|XII|VII|VIII|IX)\b/i', trim($namaKelas), $matches)) {
+                            $rom = strtoupper($matches[1]);
+                            $romMap = ['VII' => '7', 'VIII' => '8', 'IX' => '9', 'X' => '10', 'XI' => '11', 'XII' => '12'];
+                            $tingkat = $romMap[$rom] ?? $rom;
                         }
+
                         $kelas = Kelas::firstOrCreate(
                             ['nama_rombel' => $namaKelas],
                             ['tingkat' => $tingkat]
