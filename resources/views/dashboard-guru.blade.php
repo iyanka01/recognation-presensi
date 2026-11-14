@@ -194,14 +194,6 @@
                 <span class="text-xs font-bold text-slate-800 mt-2 leading-tight">Jadwal</span>
             </a>
 
-            {{-- 3. Monitoring --}}
-            <a href="{{ route('monitoring-kbm.index') }}" class="flex flex-col items-center justify-start group">
-                <div class="w-14 h-14 rounded-2xl bg-emerald-50 group-hover:bg-emerald-100 border border-emerald-100/90 flex items-center justify-center transition-all duration-200 group-hover:scale-105 shadow-sm p-3 relative">
-                    <img src="https://cdn-icons-png.flaticon.com/512/1534/1534938.png" alt="Monitoring" class="w-8 h-8 object-contain">
-                    <span class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-500 rounded-full animate-ping"></span>
-                </div>
-                <span class="text-xs font-bold text-slate-800 mt-2 leading-tight">Monitoring</span>
-            </a>
 
             {{-- 4. Scan Wajah --}}
             <a href="{{ route('guru.face-scan') }}" class="flex flex-col items-center justify-start group">
@@ -945,14 +937,25 @@ async function doAbsen() {
     try {
         const res  = await fetch(ABSEN_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN },
+            headers: { 
+                'Content-Type': 'application/json', 
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': CSRF_TOKEN 
+            },
             body: JSON.stringify({
                 tipe: currentTipe,
                 latitude: lat,
                 longitude: lng
             })
         });
-        const data = await res.json();
+
+        let data;
+        try {
+            data = await res.json();
+        } catch(jsonErr) {
+            data = { success: false, message: 'Server merespons status ' + res.status + ' (' + res.statusText + ')' };
+        }
+
         showFaceResult(data);
 
         if (data.success) {
@@ -964,7 +967,8 @@ async function doAbsen() {
             setTimeout(() => { isProcessing = false; }, 3500);
         }
     } catch(e) {
-        showFaceResult({ success: false, message: 'Koneksi gagal, silakan coba lagi.' });
+        console.error('Absen fetch error:', e);
+        showFaceResult({ success: false, message: e.message || 'Koneksi gagal, silakan coba lagi.' });
         setTimeout(() => { isProcessing = false; }, 3500);
     }
 }

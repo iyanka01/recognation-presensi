@@ -158,9 +158,13 @@ class FaceRecognitionController extends Controller
 
             // Proses absen pulang
             $presensi->jam_pulang = $jam_sekarang;
-            if ($request->filled('latitude') && $request->filled('longitude')) {
+            if (\Illuminate\Support\Facades\Schema::hasColumn('presensi', 'latitude') && $request->filled('latitude')) {
                 $presensi->latitude = $request->latitude;
+            }
+            if (\Illuminate\Support\Facades\Schema::hasColumn('presensi', 'longitude') && $request->filled('longitude')) {
                 $presensi->longitude = $request->longitude;
+            }
+            if (\Illuminate\Support\Facades\Schema::hasColumn('presensi', 'distance_meter')) {
                 $presensi->distance_meter = $geoCheck['distance'];
             }
             $presensi->save();
@@ -180,14 +184,17 @@ class FaceRecognitionController extends Controller
 
         // Proses absen masuk
         // Cek apakah ada presensi hari sebelumnya di mana guru absen masuk tapi TIDAK absen pulang dan belum di-unlock
-        $lockedPresensi = Presensi::where('user_type', 'guru')
+        $lockedQuery = Presensi::where('user_type', 'guru')
             ->where('user_id', $guru->id)
             ->whereDate('tanggal', '<', $today)
             ->whereNotNull('jam_masuk')
-            ->whereNull('jam_pulang')
-            ->where('is_unlocked', false)
-            ->orderBy('tanggal', 'desc')
-            ->first();
+            ->whereNull('jam_pulang');
+
+        if (\Illuminate\Support\Facades\Schema::hasColumn('presensi', 'is_unlocked')) {
+            $lockedQuery->where('is_unlocked', false);
+        }
+
+        $lockedPresensi = $lockedQuery->orderBy('tanggal', 'desc')->first();
 
         if ($lockedPresensi) {
             $tglLocked = Carbon::parse($lockedPresensi->tanggal)->locale('id')->isoFormat('dddd, D MMMM Y');
@@ -200,16 +207,24 @@ class FaceRecognitionController extends Controller
 
         $status = $jam_sekarang > $pengaturan->jam_terlambat ? 'Terlambat' : 'Hadir';
 
-        Presensi::create([
-            'user_type'      => 'guru',
-            'user_id'        => $guru->id,
-            'tanggal'        => $today,
-            'jam_masuk'      => $jam_sekarang,
-            'status'         => $status,
-            'latitude'       => $request->latitude,
-            'longitude'      => $request->longitude,
-            'distance_meter' => $geoCheck['distance'],
-        ]);
+        $insertData = [
+            'user_type' => 'guru',
+            'user_id'   => $guru->id,
+            'tanggal'   => $today,
+            'jam_masuk' => $jam_sekarang,
+            'status'    => $status,
+        ];
+        if (\Illuminate\Support\Facades\Schema::hasColumn('presensi', 'latitude')) {
+            $insertData['latitude'] = $request->latitude;
+        }
+        if (\Illuminate\Support\Facades\Schema::hasColumn('presensi', 'longitude')) {
+            $insertData['longitude'] = $request->longitude;
+        }
+        if (\Illuminate\Support\Facades\Schema::hasColumn('presensi', 'distance_meter')) {
+            $insertData['distance_meter'] = $geoCheck['distance'];
+        }
+
+        Presensi::create($insertData);
 
         // Kirim notifikasi Telegram ke Guru
         $telegramSent = $this->sendTelegramNotification($guru, 'masuk', $jam_sekarang, $status, 'Face Recognition (Wajah)');
@@ -291,161 +306,184 @@ class FaceRecognitionController extends Controller
     // Absensi manual masuk/pulang dari dashboard guru
     public function absenManual(Request $request)
     {
-        $request->validate([
-            'tipe'      => 'required|in:masuk,pulang',
-            'latitude'  => 'nullable|numeric',
-            'longitude' => 'nullable|numeric',
-        ]);
-
-        $guru    = Auth::guard('guru')->user();
-        $today   = Carbon::today()->toDateString();
-        $hariIni = Carbon::now()->locale('id')->dayName;
-        $jam     = Carbon::now()->format('H:i:s');
-
-        // Cek hari libur
-        $hariLibur = HariLibur::where('tanggal', $today)->first();
-        if ($hariLibur) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Hari ini adalah hari libur: ' . $hariLibur->keterangan,
+        try {
+            $request->validate([
+                'tipe'      => 'required|in:masuk,pulang',
+                'latitude'  => 'nullable|numeric',
+                'longitude' => 'nullable|numeric',
             ]);
-        }
 
-        // Cek Geofencing GPS Radius (Tolak jika di luar radius)
-        $geoCheck = $this->validateGeofence($request);
-        if (!$geoCheck['valid']) {
-            return response()->json([
-                'success' => false,
-                'message' => $geoCheck['error'],
-            ]);
-        }
+            $guru    = Auth::guard('guru')->user();
+            if (!$guru) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Sesi login telah berakhir. Silakan login kembali.',
+                ], 401);
+            }
 
-        // Wajah harus sudah terdaftar
-        if (empty($guru->face_descriptor)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Wajah Anda belum terdaftar di sistem. Silakan daftarkan wajah terlebih dahulu melalui menu Absen Wajah.',
-            ]);
-        }
+            $today   = Carbon::today()->toDateString();
+            $hariIni = Carbon::now()->locale('id')->dayName;
+            $jam     = Carbon::now()->format('H:i:s');
 
-        // Cek pengaturan jam (dengan fallback jika hari belum diatur)
-        $pengaturan = PengaturanJam::where('tipe', 'guru')->where('hari', $hariIni)->first()
-            ?: PengaturanJam::where('tipe', 'guru')->first();
-        if (!$pengaturan) {
-            return response()->json([
-                'success' => false,
-                'message' => "Jadwal absensi untuk guru belum diatur oleh admin.",
-            ]);
-        }
+            // Cek hari libur
+            $hariLibur = HariLibur::where('tanggal', $today)->first();
+            if ($hariLibur) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Hari ini adalah hari libur: ' . $hariLibur->keterangan,
+                ]);
+            }
 
-        // Cek presensi hari ini
-        $presensi = Presensi::where('user_type', 'guru')
-            ->where('user_id', $guru->id)
-            ->whereDate('tanggal', $today)
-            ->first();
+            // Cek Geofencing GPS Radius (Tolak jika di luar radius)
+            $geoCheck = $this->validateGeofence($request);
+            if (!$geoCheck['valid']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $geoCheck['error'],
+                ]);
+            }
 
-        if ($request->tipe === 'masuk') {
-            // Cek apakah ada presensi hari sebelumnya di mana guru absen masuk tapi TIDAK absen pulang dan belum di-unlock
-            $lockedPresensi = Presensi::where('user_type', 'guru')
+            // Wajah harus sudah terdaftar
+            if (empty($guru->face_descriptor)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Wajah Anda belum terdaftar di sistem. Silakan daftarkan wajah terlebih dahulu melalui menu Absen Wajah.',
+                ]);
+            }
+
+            // Cek pengaturan jam (dengan fallback jika hari belum diatur)
+            $pengaturan = PengaturanJam::where('tipe', 'guru')->where('hari', $hariIni)->first()
+                ?: PengaturanJam::where('tipe', 'guru')->first();
+            if (!$pengaturan) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Jadwal absensi untuk guru belum diatur oleh admin.",
+                ]);
+            }
+
+            // Cek presensi hari ini
+            $presensi = Presensi::where('user_type', 'guru')
                 ->where('user_id', $guru->id)
-                ->whereDate('tanggal', '<', $today)
-                ->whereNotNull('jam_masuk')
-                ->whereNull('jam_pulang')
-                ->where('is_unlocked', false)
-                ->orderBy('tanggal', 'desc')
+                ->whereDate('tanggal', $today)
                 ->first();
 
-            if ($lockedPresensi) {
-                $tglLocked = Carbon::parse($lockedPresensi->tanggal)->locale('id')->isoFormat('dddd, D MMMM Y');
+            if ($request->tipe === 'masuk') {
+                // Cek apakah ada presensi hari sebelumnya di mana guru absen masuk tapi TIDAK absen pulang dan belum di-unlock
+                $lockedQuery = Presensi::where('user_type', 'guru')
+                    ->where('user_id', $guru->id)
+                    ->whereDate('tanggal', '<', $today)
+                    ->whereNotNull('jam_masuk')
+                    ->whereNull('jam_pulang');
+
+                if (\Illuminate\Support\Facades\Schema::hasColumn('presensi', 'is_unlocked')) {
+                    $lockedQuery->where('is_unlocked', false);
+                }
+
+                $lockedPresensi = $lockedQuery->orderBy('tanggal', 'desc')->first();
+
+                if ($lockedPresensi) {
+                    $tglLocked = Carbon::parse($lockedPresensi->tanggal)->locale('id')->isoFormat('dddd, D MMMM Y');
+                    return response()->json([
+                        'success' => false,
+                        'is_locked' => true,
+                        'message' => "🔒 Absensi Ditolak: Anda tidak melakukan absen pulang pada hari {$tglLocked}. Silakan hubungi Administrator untuk membuka kunci kehadiran Anda.",
+                    ]);
+                }
+
+                if ($presensi && $presensi->jam_masuk) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Anda sudah absen masuk hari ini pukul ' . substr($presensi->jam_masuk, 0, 5) . '.',
+                    ]);
+                }
+                if ($jam < $pengaturan->jam_mulai) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Belum waktunya absen masuk. Absen dibuka jam ' . substr($pengaturan->jam_mulai, 0, 5) . '.',
+                    ]);
+                }
+                $status = $jam > $pengaturan->jam_terlambat ? 'Terlambat' : 'Hadir';
+
+                $dataPayload = [
+                    'jam_masuk' => $jam,
+                    'status'    => $status,
+                ];
+                if (\Illuminate\Support\Facades\Schema::hasColumn('presensi', 'latitude')) {
+                    $dataPayload['latitude'] = $request->latitude;
+                }
+                if (\Illuminate\Support\Facades\Schema::hasColumn('presensi', 'longitude')) {
+                    $dataPayload['longitude'] = $request->longitude;
+                }
+                if (\Illuminate\Support\Facades\Schema::hasColumn('presensi', 'distance_meter')) {
+                    $dataPayload['distance_meter'] = $geoCheck['distance'];
+                }
+
+                if ($presensi) {
+                    $presensi->update($dataPayload);
+                } else {
+                    $dataPayload['user_type'] = 'guru';
+                    $dataPayload['user_id']   = $guru->id;
+                    $dataPayload['tanggal']   = $today;
+                    Presensi::create($dataPayload);
+                }
+
+                // Kirim notifikasi Telegram ke Guru
+                $telegramSent = $this->sendTelegramNotification($guru, 'masuk', $jam, $status, 'Verifikasi Wajah (Dashboard)');
+
                 return response()->json([
-                    'success' => false,
-                    'is_locked' => true,
-                    'message' => "🔒 Absensi Ditolak: Anda tidak melakukan absen pulang pada hari {$tglLocked}. Silakan hubungi Administrator untuk membuka kunci kehadiran Anda.",
+                    'success'       => true,
+                    'telegram_sent' => $telegramSent,
+                    'message'       => 'Absensi masuk berhasil pukul ' . substr($jam, 0, 5) . '. Status: ' . $status . ($telegramSent ? ' (Notifikasi Telegram terkirim)' : ''),
                 ]);
             }
 
-            if ($presensi && $presensi->jam_masuk) {
+            // Tipe pulang
+            if (!$presensi) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Anda sudah absen masuk hari ini pukul ' . substr($presensi->jam_masuk, 0, 5) . '.',
+                    'message' => 'Anda belum absen masuk hari ini.',
                 ]);
             }
-            if ($jam < $pengaturan->jam_mulai) {
+            if ($presensi->jam_pulang) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Belum waktunya absen masuk. Absen dibuka jam ' . substr($pengaturan->jam_mulai, 0, 5) . '.',
+                    'message' => 'Anda sudah absen pulang hari ini pukul ' . substr($presensi->jam_pulang, 0, 5) . '.',
                 ]);
             }
-            $status = $jam > $pengaturan->jam_terlambat ? 'Terlambat' : 'Hadir';
+            if ($jam < $pengaturan->jam_pulang) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Belum waktunya absen pulang. Absen pulang dibuka jam ' . substr($pengaturan->jam_pulang, 0, 5) . '.',
+                ]);
+            }
 
-            if ($presensi) {
-                // Update record yang sudah ada tapi belum ada jam_masuk
-                $presensi->update([
-                    'jam_masuk'      => $jam,
-                    'status'         => $status,
-                    'latitude'       => $request->latitude,
-                    'longitude'      => $request->longitude,
-                    'distance_meter' => $geoCheck['distance'],
-                ]);
-            } else {
-                // Buat record baru jika belum ada
-                Presensi::create([
-                    'user_type'      => 'guru',
-                    'user_id'        => $guru->id,
-                    'tanggal'        => $today,
-                    'jam_masuk'      => $jam,
-                    'status'         => $status,
-                    'latitude'       => $request->latitude,
-                    'longitude'      => $request->longitude,
-                    'distance_meter' => $geoCheck['distance'],
-                ]);
+            $presensi->jam_pulang = $jam;
+            if (\Illuminate\Support\Facades\Schema::hasColumn('presensi', 'latitude') && $request->filled('latitude')) {
+                $presensi->latitude = $request->latitude;
             }
+            if (\Illuminate\Support\Facades\Schema::hasColumn('presensi', 'longitude') && $request->filled('longitude')) {
+                $presensi->longitude = $request->longitude;
+            }
+            if (\Illuminate\Support\Facades\Schema::hasColumn('presensi', 'distance_meter')) {
+                $presensi->distance_meter = $geoCheck['distance'];
+            }
+            $presensi->save();
 
             // Kirim notifikasi Telegram ke Guru
-            $telegramSent = $this->sendTelegramNotification($guru, 'masuk', $jam, $status, 'Verifikasi Wajah (Dashboard)');
+            $telegramSent = $this->sendTelegramNotification($guru, 'pulang', $jam, $presensi->status, 'Verifikasi Wajah (Dashboard)');
 
             return response()->json([
                 'success'       => true,
                 'telegram_sent' => $telegramSent,
-                'message'       => 'Absensi masuk berhasil pukul ' . substr($jam, 0, 5) . '. Status: ' . $status . ($telegramSent ? ' (Notifikasi Telegram terkirim)' : ''),
+                'message'       => 'Absensi pulang berhasil pukul ' . substr($jam, 0, 5) . '. Hati-hati di jalan! 🚪' . ($telegramSent ? ' (Notifikasi Telegram terkirim)' : ''),
             ]);
-        }
-
-        // Tipe pulang
-        if (!$presensi) {
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('absenManual error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
             return response()->json([
                 'success' => false,
-                'message' => 'Anda belum absen masuk hari ini.',
-            ]);
+                'message' => 'Gagal memproses absensi: ' . $e->getMessage(),
+            ], 500);
         }
-        if ($presensi->jam_pulang) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Anda sudah absen pulang hari ini pukul ' . substr($presensi->jam_pulang, 0, 5) . '.',
-            ]);
-        }
-        if ($jam < $pengaturan->jam_pulang) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Belum waktunya absen pulang. Absen pulang dibuka jam ' . substr($pengaturan->jam_pulang, 0, 5) . '.',
-            ]);
-        }
-        $presensi->jam_pulang = $jam;
-        if ($request->filled('latitude') && $request->filled('longitude')) {
-            $presensi->latitude = $request->latitude;
-            $presensi->longitude = $request->longitude;
-            $presensi->distance_meter = $geoCheck['distance'];
-        }
-        $presensi->save();
-
-        // Kirim notifikasi Telegram ke Guru
-        $telegramSent = $this->sendTelegramNotification($guru, 'pulang', $jam, $presensi->status, 'Verifikasi Wajah (Dashboard)');
-
-        return response()->json([
-            'success'       => true,
-            'telegram_sent' => $telegramSent,
-            'message'       => 'Absensi pulang berhasil pukul ' . substr($jam, 0, 5) . '. Hati-hati di jalan! 🚪' . ($telegramSent ? ' (Notifikasi Telegram terkirim)' : ''),
-        ]);
     }
 
     /**
