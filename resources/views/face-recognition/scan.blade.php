@@ -839,11 +839,13 @@ async function captureAndSave() {
         }
 
         // Cek langsung di sisi client apakah wajah ini sudah terdaftar atas nama guru lain
-        const currentGuruId = Number('{{ $guru->id }}');
+        const currentGuruId = String('{{ $guru->id }}').trim();
         for (const g of allDescriptors) {
-            if (Number(g.id) !== currentGuruId && g.face_descriptor && g.face_descriptor.length === 128) {
+            // Bandingkan UUID sebagai string murni agar akun sendiri tidak keliru dianggap akun lain
+            if (String(g.id).trim() !== currentGuruId && g.face_descriptor && g.face_descriptor.length === 128) {
                 const dist = faceapi.euclideanDistance(det.descriptor, g.face_descriptor);
-                if (dist < 0.45) {
+                // Threshold ketat (0.36): Hanya tolak jika wajah benar-benar identik orang yang sama
+                if (dist < 0.36) {
                     statusEl.textContent = `❌ Pendaftaran Ditolak: Wajah ini sudah terdaftar atas nama ${g.nama_lengkap} (NIP: ${g.nip || '-'}). Satu wajah hanya boleh untuk 1 akun guru!`;
                     statusEl.className = 'text-xs text-center font-medium mb-3 text-rose-600';
                     btn.disabled = false;

@@ -261,7 +261,7 @@ class FaceRecognitionController extends Controller
             ->select('id', 'nama_lengkap', 'nip', 'face_descriptor')
             ->get();
 
-        $threshold = 0.45; // Ambang batas kemiripan wajah (jarak < 0.45 menunjukkan orang yang sama)
+        $threshold = 0.36; // Ambang batas ketat kemiripan wajah (hanya tolak jika jarak < 0.36 yang menunjukkan orang yang benar-benar sama)
         $matchedGuru = null;
         $minDistance = 999.0;
 
