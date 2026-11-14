@@ -293,6 +293,32 @@ class FaceRecognitionController extends Controller
             ]);
         }
 
+        // Simpan snapshot foto wajah jika dikirim
+        if ($request->filled('image')) {
+            try {
+                $imageData = $request->input('image');
+                // Hapus data:image/jpeg;base64, atau data:image/png;base64,
+                if (preg_match('/^data:image\/(\w+);base64,/', $imageData, $type)) {
+                    $imageData = substr($imageData, strpos($imageData, ',') + 1);
+                    $type = strtolower($type[1]); // jpg, png, jpeg
+                    $imageData = base64_decode($imageData);
+
+                    if ($imageData !== false) {
+                        // Hapus foto lama jika ada
+                        if ($guru->foto_wajah && \Illuminate\Support\Facades\Storage::disk('public')->exists($guru->foto_wajah)) {
+                            \Illuminate\Support\Facades\Storage::disk('public')->delete($guru->foto_wajah);
+                        }
+
+                        $fileName = 'foto_wajah/face_' . $guru->id . '_' . time() . '.' . ($type === 'png' ? 'png' : 'jpg');
+                        \Illuminate\Support\Facades\Storage::disk('public')->put($fileName, $imageData);
+                        $guru->foto_wajah = $fileName;
+                    }
+                }
+            } catch (\Throwable $e) {
+                \Log::warning("Gagal menyimpan foto wajah guru: " . $e->getMessage());
+            }
+        }
+
         // Simpan face descriptor
         $guru->face_descriptor = json_encode($newDescriptor);
         $guru->save();
@@ -300,6 +326,7 @@ class FaceRecognitionController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Wajah berhasil didaftarkan!',
+            'foto_wajah' => $guru->foto_wajah ? asset('storage/' . $guru->foto_wajah) : null,
         ]);
     }
 

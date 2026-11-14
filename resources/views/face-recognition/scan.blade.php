@@ -855,12 +855,28 @@ async function captureAndSave() {
             }
         }
 
-        statusEl.textContent = '💾 Menyimpan data wajah ke server...';
+        statusEl.textContent = '💾 Menyimpan data & foto wajah ke server...';
+
+        // Ambil snapshot gambar dari video kamera pendaftaran
+        let capturedImageBase64 = null;
+        try {
+            const snapCanvas = document.createElement('canvas');
+            snapCanvas.width = regVideo.videoWidth || 480;
+            snapCanvas.height = regVideo.videoHeight || 480;
+            const ctx = snapCanvas.getContext('2d');
+            ctx.drawImage(regVideo, 0, 0, snapCanvas.width, snapCanvas.height);
+            capturedImageBase64 = snapCanvas.toDataURL('image/jpeg', 0.85);
+        } catch (canvasErr) {
+            console.warn('Gagal membuat snapshot canvas:', canvasErr);
+        }
 
         const res = await fetch('{{ route("guru.face-save") }}', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
-            body: JSON.stringify({ descriptor: Array.from(det.descriptor) })
+            body: JSON.stringify({
+                descriptor: Array.from(det.descriptor),
+                image: capturedImageBase64
+            })
         });
         const data = await res.json();
 

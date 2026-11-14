@@ -110,8 +110,26 @@ class GuruController extends Controller
         if ($guru->foto_guru) {
             Storage::disk('public')->delete($guru->foto_guru);
         }
+        if ($guru->foto_wajah) {
+            Storage::disk('public')->delete($guru->foto_wajah);
+        }
         $guru->delete();
         return redirect()->route('guru.index')->with('success', 'Data guru berhasil dihapus!');
+    }
+
+    public function resetFace($id)
+    {
+        $guru = Guru::findOrFail($id);
+
+        if ($guru->foto_wajah && Storage::disk('public')->exists($guru->foto_wajah)) {
+            Storage::disk('public')->delete($guru->foto_wajah);
+        }
+
+        $guru->face_descriptor = null;
+        $guru->foto_wajah = null;
+        $guru->save();
+
+        return redirect()->route('guru.index')->with('success', "Data scan wajah guru {$guru->nama_lengkap} berhasil direset! Guru dapat mendaftarkan wajahnya kembali.");
     }
 
     public function printIdCard($id)
@@ -132,6 +150,9 @@ class GuruController extends Controller
         foreach ($gurus as $guru) {
             if ($guru->foto_guru) {
                 Storage::disk('public')->delete($guru->foto_guru);
+            }
+            if ($guru->foto_wajah) {
+                Storage::disk('public')->delete($guru->foto_wajah);
             }
             $guru->delete();
         }

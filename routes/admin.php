@@ -43,6 +43,7 @@ Route::middleware('auth:web')->group(function () {
     // Master Guru
     Route::post('guru/bulk-delete', [GuruController::class, 'bulkDestroy'])->name('guru.bulkDestroy');
     Route::get('guru/{id}/id-card', [GuruController::class, 'printIdCard'])->name('guru.id-card');
+    Route::post('guru/{id}/reset-face', [GuruController::class, 'resetFace'])->name('guru.reset-face');
     Route::post('guru/import', [GuruController::class, 'import'])->name('guru.import');
     Route::get('guru/download-template', [GuruController::class, 'downloadTemplate'])->name('guru.downloadTemplate');
     Route::resource('guru', GuruController::class)->whereUuid('guru')->except(['show']);

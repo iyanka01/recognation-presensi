@@ -70,15 +70,38 @@
                         <td class="p-4 text-center font-medium text-slate-500">{{ $index + 1 }}</td>
                         <td class="p-4">
                             <div class="flex items-center gap-3">
-                                @if($g->foto_guru)
-                                    <img src="{{ asset('storage/' . $g->foto_guru) }}" alt="{{ $g->nama_lengkap }}" class="w-10 h-10 rounded-full object-cover border border-slate-200">
-                                @else
-                                    <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200 text-slate-400">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-                                    </div>
-                                @endif
+                                <div class="relative group cursor-pointer" 
+                                     @if($g->foto_wajah)
+                                     @click="$dispatch('preview-face', { name: '{{ addslashes($g->nama_lengkap) }}', nip: '{{ $g->nip ?? '-' }}', photo: '{{ asset('storage/' . $g->foto_wajah) }}', registeredAt: '{{ $g->updated_at ? $g->updated_at->format('d M Y H:i') : '-' }}' })"
+                                     title="Klik untuk melihat foto pendaftaran wajah"
+                                     @else
+                                     title="{{ $g->foto_guru ? 'Foto Profil Guru' : 'Belum Ada Foto' }}"
+                                     @endif>
+                                    @if($g->foto_wajah)
+                                        <img src="{{ asset('storage/' . $g->foto_wajah) }}" alt="{{ $g->nama_lengkap }}" class="w-10 h-10 rounded-full object-cover border-2 border-emerald-400 shadow-sm ring-2 ring-emerald-100 group-hover:scale-105 transition-transform">
+                                        <span class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full flex items-center justify-center text-white" title="Wajah Terdaftar">
+                                            <svg class="w-2 h-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                                        </span>
+                                    @elseif($g->foto_guru)
+                                        <img src="{{ asset('storage/' . $g->foto_guru) }}" alt="{{ $g->nama_lengkap }}" class="w-10 h-10 rounded-full object-cover border border-slate-200">
+                                    @else
+                                        <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200 text-slate-400">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                                        </div>
+                                    @endif
+                                </div>
                                 <div>
                                     <div class="font-medium text-slate-800">{{ $g->nama_lengkap }}</div>
+                                    @if($g->foto_wajah || $g->face_descriptor)
+                                        <span class="inline-flex items-center gap-1 text-[10px] text-emerald-600 font-semibold mt-0.5">
+                                            <svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3"/></svg>
+                                            Wajah Terdaftar
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center gap-1 text-[10px] text-slate-400 font-medium mt-0.5">
+                                            Belum scan wajah
+                                        </span>
+                                    @endif
                                 </div>
                             </div>
                         </td>
@@ -99,7 +122,25 @@
                             </span>
                         </td>
                         <td class="p-4">
-                            <div class="flex items-center justify-end gap-2">
+                            <div class="flex items-center justify-end gap-1.5 sm:gap-2">
+                                {{-- Tombol Reset Wajah --}}
+                                @if(!empty($g->face_descriptor) || !empty($g->foto_wajah))
+                                <form action="{{ route('guru.reset-face', $g->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin mereset pendaftaran wajah untuk guru {{ addslashes($g->nama_lengkap) }}?\n\nGuru harus memindai ulang wajahnya untuk absensi.');" class="inline">
+                                    @csrf
+                                    <button type="submit" class="p-2 text-amber-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors" title="Reset Pendaftaran Wajah">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                        </svg>
+                                    </button>
+                                </form>
+                                @else
+                                <button type="button" disabled class="p-2 text-slate-300 cursor-not-allowed rounded-lg" title="Wajah belum didaftarkan">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                    </svg>
+                                </button>
+                                @endif
+
                                 <button type="button" @click="$dispatch('open-qr', { id: '{{ $g->id }}', name: '{{ addslashes($g->nama_lengkap) }}', code: '{{ $g->nip ?? 'N/A' }}', printUrl: '{{ route('guru.id-card', $g->id) }}' })" class="p-2 text-sky-500 hover:bg-sky-50 rounded-lg transition-colors" title="Lihat QR Code">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
                                 </button>
@@ -124,6 +165,51 @@
                     @endforelse
                 </tbody>
             </table>
+        </div>
+    </div>
+
+    <!-- Modal Preview Foto Wajah Guru -->
+    <div x-data="{ open: false, data: null }"
+         x-on:preview-face.window="
+            data = $event.detail;
+            open = true;
+         "
+         x-show="open" 
+         class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4"
+         style="display: none;"
+         x-transition.opacity>
+        
+        <div @click.away="open = false" class="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-fade-in" x-transition.scale.origin.bottom>
+            <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
+                <div class="flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                    <h3 class="font-bold text-slate-800 text-sm">Foto Pendaftaran Wajah</h3>
+                </div>
+                <button @click="open = false" class="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200 rounded-full transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            
+            <div class="p-6 flex flex-col items-center text-center">
+                <div class="relative w-44 h-44 rounded-2xl overflow-hidden border-4 border-emerald-100 shadow-md mb-4 bg-slate-100 flex items-center justify-center">
+                    <img :src="data?.photo" :alt="data?.name" class="w-full h-full object-cover">
+                    <span class="absolute bottom-2 right-2 bg-emerald-600/90 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                        Terverifikasi
+                    </span>
+                </div>
+                <h4 class="font-bold text-base text-slate-800" x-text="data?.name"></h4>
+                <p class="text-slate-500 text-xs mt-0.5">NIP: <span class="font-medium text-slate-700" x-text="data?.nip"></span></p>
+                <div class="mt-3 px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-xl text-[11px] text-slate-500">
+                    Waktu Scan: <span class="font-semibold text-slate-700" x-text="data?.registeredAt"></span>
+                </div>
+            </div>
+            
+            <div class="px-5 py-3.5 bg-slate-50 border-t border-slate-100 flex justify-end">
+                <button type="button" @click="open = false" class="w-full py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs rounded-xl transition-all shadow-sm">
+                    Tutup
+                </button>
+            </div>
         </div>
     </div>
 
