@@ -39,134 +39,144 @@
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
                 <thead>
-                    <tr class="bg-sky-50/50 border-b border-sky-100 text-slate-500 text-xs uppercase tracking-wider">
-                        <th class="p-4 font-semibold w-16 text-center">No</th>
-                        <th class="p-4 font-semibold">Nama / Identitas</th>
-                        <th class="p-4 font-semibold">Tanggal</th>
-                        <th class="p-4 font-semibold text-center">Status</th>
-                        <th class="p-4 font-semibold">Keterangan</th>
-                        <th class="p-4 font-semibold text-center">Bukti</th>
-                        <th class="p-4 font-semibold text-center">Persetujuan</th>
-                        <th class="p-4 font-semibold text-center w-36">Aksi</th>
+                    <tr class="bg-slate-50/80 border-b border-slate-100 text-slate-500 text-xs uppercase tracking-wider font-semibold">
+                        <th class="py-4 px-4 w-12 text-center">No</th>
+                        <th class="py-4 px-4">Nama & Identitas</th>
+                        <th class="py-4 px-4 w-40">Tanggal</th>
+                        <th class="py-4 px-4 w-32">Kategori</th>
+                        <th class="py-4 px-4">Alasan & Lampiran</th>
+                        <th class="py-4 px-4 w-36 text-center">Status</th>
+                        <th class="py-4 px-4 w-32 text-center">Aksi</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-sky-50 text-sm">
+                <tbody class="divide-y divide-slate-100 text-sm">
                     @forelse($izins as $idx => $izin)
                     @php
                         $user = $izin->user_type == 'siswa' ? \App\Models\Siswa::find($izin->user_id) : \App\Models\Guru::find($izin->user_id);
                         if(!$user) continue;
                         
                         $isToday = \Carbon\Carbon::parse($izin->tanggal)->isToday();
-                        $statusColor = match($izin->status) {
-                            'Izin' => 'bg-sky-100 text-sky-700',
-                            'Sakit' => 'bg-amber-100 text-amber-700',
-                            'Alpa' => 'bg-rose-100 text-rose-700',
-                            'Dinas Luar' => 'bg-emerald-100 text-emerald-700',
-                            'Cuti' => 'bg-purple-100 text-purple-700',
-                            'Dispensasi' => 'bg-teal-100 text-teal-700',
-                            default => 'bg-slate-100 text-slate-700'
+                        $statusBadge = match($izin->status) {
+                            'Izin' => 'bg-sky-50 text-sky-700 border-sky-200',
+                            'Sakit' => 'bg-amber-50 text-amber-700 border-amber-200',
+                            'Alpa' => 'bg-rose-50 text-rose-700 border-rose-200',
+                            'Dinas Luar' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                            'Cuti' => 'bg-purple-50 text-purple-700 border-purple-200',
+                            'Dispensasi' => 'bg-teal-50 text-teal-700 border-teal-200',
+                            default => 'bg-slate-50 text-slate-700 border-slate-200'
                         };
 
                         $approval = $izin->status_approval ?? 'approved';
-                        $approvalBadge = match($approval) {
-                            'pending' => 'bg-amber-50 text-amber-700 border-amber-200',
-                            'rejected' => 'bg-rose-50 text-rose-700 border-rose-200',
-                            default => 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                        };
-                        $approvalText = match($approval) {
-                            'pending' => 'Menunggu',
-                            'rejected' => 'Ditolak',
-                            default => 'Disetujui'
-                        };
                     @endphp
-                    <tr class="hover:bg-sky-50/30 transition-colors {{ !$isToday ? 'opacity-90' : '' }}">
-                        <td class="p-4 text-center text-slate-400 font-medium">{{ $idx + 1 }}</td>
-                        <td class="p-4">
+                    <tr class="hover:bg-slate-50/60 transition-colors">
+                        {{-- No --}}
+                        <td class="py-4 px-4 text-center text-slate-400 font-medium text-xs">{{ $idx + 1 }}</td>
+
+                        {{-- Nama & Identitas --}}
+                        <td class="py-4 px-4">
                             <div class="flex items-center gap-3">
-                                <div class="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold shrink-0">
-                                    {{ substr($user->nama_lengkap, 0, 1) }}
+                                <div class="w-9 h-9 rounded-full bg-slate-100 border border-slate-200/80 flex items-center justify-center text-slate-600 font-bold text-xs shrink-0">
+                                    {{ strtoupper(substr($user->nama_lengkap, 0, 1)) }}
                                 </div>
-                                <div>
-                                    <div class="font-bold text-slate-800">{{ $user->nama_lengkap }}</div>
-                                    <div class="text-xs text-slate-500 flex items-center gap-2">
-                                        <span class="uppercase tracking-wider text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100">{{ $izin->user_type }}</span>
-                                        @if($izin->user_type == 'siswa')
-                                            NIS: {{ $user->nis }}
-                                        @else
-                                            NIP: {{ $user->nip }}
-                                        @endif
+                                <div class="min-w-0">
+                                    <div class="font-bold text-slate-800 text-sm leading-snug truncate">{{ $user->nama_lengkap }}</div>
+                                    <div class="text-[11px] text-slate-500 flex items-center gap-1.5 mt-0.5">
+                                        <span class="uppercase font-extrabold text-[9px] px-1.5 py-0.5 rounded {{ $izin->user_type == 'siswa' ? 'bg-sky-100 text-sky-700' : 'bg-emerald-100 text-emerald-700' }}">
+                                            {{ $izin->user_type }}
+                                        </span>
+                                        <span>{{ $izin->user_type == 'siswa' ? 'NIS: ' . ($user->nis ?? '-') : 'NIP: ' . ($user->nip ?? '-') }}</span>
                                     </div>
                                 </div>
                             </div>
                         </td>
-                        <td class="p-4">
-                            <div class="font-medium text-slate-700">{{ \Carbon\Carbon::parse($izin->tanggal)->locale('id')->isoFormat('D MMMM YYYY') }}</div>
-                            <div class="text-xs text-slate-500">{{ \Carbon\Carbon::parse($izin->tanggal)->locale('id')->dayName }}</div>
+
+                        {{-- Tanggal --}}
+                        <td class="py-4 px-4 whitespace-nowrap">
+                            <div class="font-semibold text-slate-800 text-xs">{{ \Carbon\Carbon::parse($izin->tanggal)->locale('id')->isoFormat('D MMM YYYY') }}</div>
+                            <div class="text-[11px] text-slate-400">{{ \Carbon\Carbon::parse($izin->tanggal)->locale('id')->dayName }}</div>
                         </td>
-                        <td class="p-4 text-center">
-                            <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold {{ $statusColor }}">
+
+                        {{-- Kategori --}}
+                        <td class="py-4 px-4">
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold border {{ $statusBadge }}">
                                 {{ $izin->status }}
                             </span>
                         </td>
-                        <td class="p-4">
-                            <div class="text-slate-600 truncate max-w-xs" title="{{ $izin->keterangan ?? '-' }}">
-                                {{ $izin->keterangan ?? '-' }}
+
+                        {{-- Alasan & Lampiran Bukti Terpadu --}}
+                        <td class="py-4 px-4">
+                            <div class="text-xs text-slate-700 leading-relaxed font-normal max-w-sm">
+                                {{ $izin->keterangan ?: 'Tidak ada keterangan tambahan.' }}
                             </div>
-                            @if($izin->catatan_approval)
-                            <div class="text-[11px] text-slate-400 mt-0.5 italic truncate max-w-xs" title="{{ $izin->catatan_approval }}">
-                                Catatan: {{ $izin->catatan_approval }}
-                            </div>
-                            @endif
-                        </td>
-                        <td class="p-4 text-center">
+
                             @if($izin->bukti)
-                            <a href="{{ Storage::url($izin->bukti) }}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition-colors">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                Lihat File
-                            </a>
-                            @else
-                            <span class="text-xs text-slate-300 italic">-</span>
+                            <div class="mt-1.5">
+                                <a href="{{ Storage::url($izin->bukti) }}" target="_blank"
+                                   class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition-colors">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+                                    <span>Lampiran Bukti</span>
+                                </a>
+                            </div>
+                            @endif
+
+                            @if($izin->catatan_approval)
+                            <div class="text-[11px] text-slate-400 mt-1 italic">
+                                Info: {{ $izin->catatan_approval }}
+                            </div>
                             @endif
                         </td>
-                        <td class="p-4 text-center">
-                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold border {{ $approvalBadge }}">
-                                @if($approval === 'pending')
-                                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-                                @elseif($approval === 'rejected')
-                                    <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-                                @else
-                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                @endif
-                                {{ $approvalText }}
-                            </span>
+
+                        {{-- Status Persetujuan --}}
+                        <td class="py-4 px-4 text-center whitespace-nowrap">
+                            @if($approval === 'pending')
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                    <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                                    <span>Menunggu</span>
+                                </span>
+                            @elseif($approval === 'rejected')
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                                    <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                                    <span>Ditolak</span>
+                                </span>
+                            @else
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                    <span>Disetujui</span>
+                                </span>
+                            @endif
                         </td>
-                        <td class="p-4 text-center">
-                            <div class="flex items-center justify-center gap-1.5">
-                                {{-- Tombol Setujui (Approve) --}}
+
+                        {{-- Aksi Modern & Rapi --}}
+                        <td class="py-4 px-4 text-center whitespace-nowrap">
+                            <div class="inline-flex items-center justify-center gap-1 bg-slate-50 p-1 rounded-xl border border-slate-200/60 shadow-sm">
+                                {{-- Tombol Setujui --}}
                                 @if($approval !== 'approved')
                                 <form action="{{ route('izin.approve', $izin->id) }}" method="POST" onsubmit="return confirm('Setujui pengajuan izin ini?');" class="inline">
                                     @csrf
-                                    <button type="submit" class="p-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-lg transition-colors border border-emerald-200" title="Setujui (Approve)">
+                                    <button type="submit" class="p-1.5 hover:bg-emerald-100 text-emerald-600 rounded-lg transition-all" title="Setujui (Approve)">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
                                     </button>
                                 </form>
                                 @endif
 
-                                {{-- Tombol Tolak (Reject) --}}
+                                {{-- Tombol Tolak --}}
                                 @if($approval !== 'rejected')
                                 <form action="{{ route('izin.reject', $izin->id) }}" method="POST" onsubmit="return confirm('Tolak permohonan izin ini? Status akan ditandai Ditolak.');" class="inline">
                                     @csrf
-                                    <button type="submit" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition-colors border border-rose-200" title="Tolak">
+                                    <button type="submit" class="p-1.5 hover:bg-rose-100 text-rose-600 rounded-lg transition-all" title="Tolak">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
                                     </button>
                                 </form>
                                 @endif
 
+                                {{-- Garis Pemisah Kecil --}}
+                                <span class="w-[1px] h-4 bg-slate-200 mx-0.5"></span>
+
                                 {{-- Tombol Hapus --}}
                                 <form action="{{ route('izin.destroy', $izin->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus data perizinan ini secara permanen?');" class="inline">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors" title="Hapus Permanen">
+                                    <button type="submit" class="p-1.5 hover:bg-slate-200 text-slate-400 hover:text-rose-600 rounded-lg transition-all" title="Hapus Data">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                     </button>
                                 </form>
