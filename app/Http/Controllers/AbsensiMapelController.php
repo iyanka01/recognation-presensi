@@ -23,6 +23,16 @@ class AbsensiMapelController extends Controller
         $tanggal = $request->query('tanggal', Carbon::today()->toDateString());
         $hari = Carbon::parse($tanggal)->locale('id')->dayName;
 
+        // Cek apakah guru sudah melakukan absensi masuk hari ini
+        $today = Carbon::today()->toDateString();
+        $presensiHariIni = \App\Models\Presensi::where('user_type', 'guru')
+            ->where('user_id', $guru->id)
+            ->whereDate('tanggal', $today)
+            ->whereNotNull('jam_masuk')
+            ->first();
+
+        $sudahAbsenMasuk = (bool) $presensiHariIni;
+
         $jadwals = JadwalPelajaran::with(['kelas', 'mataPelajaran'])
             ->where('guru_id', $guru->id)
             ->where('hari', $hari)
@@ -32,7 +42,7 @@ class AbsensiMapelController extends Controller
         // Status pengisian absensi per jadwal pada tanggal terpilih
         $now = Carbon::now();
         $tanggalObj = Carbon::parse($tanggal);
-        $isToday = ($tanggal === Carbon::today()->toDateString());
+        $isToday = ($tanggal === $today);
 
         foreach ($jadwals as $j) {
             $j->total_terisi = PresensiMapel::where('jadwal_id', $j->id)->whereDate('tanggal', $tanggal)->count();
@@ -43,15 +53,19 @@ class AbsensiMapelController extends Controller
             $end   = $tanggalObj->copy()->setTimeFromTimeString($j->jam_selesai);
             
             if ($isToday) {
-                $j->can_absen = $now->between($start, $end);
+                // Guru HANYA bisa absen jika SUDAH melakukan absen masuk hari ini
+                $j->can_absen = $sudahAbsenMasuk && $now->between($start, $end);
+                $j->belum_absen_masuk = !$sudahAbsenMasuk;
                 $j->is_past   = $now->gt($end);
                 $j->is_future = $now->lt($start);
             } elseif ($tanggalObj->startOfDay()->gt(Carbon::today())) {
                 $j->can_absen = false;
+                $j->belum_absen_masuk = false;
                 $j->is_past   = false;
                 $j->is_future = true;
             } else {
                 $j->can_absen = false;
+                $j->belum_absen_masuk = false;
                 $j->is_past   = true;
                 $j->is_future = false;
             }
@@ -61,6 +75,7 @@ class AbsensiMapelController extends Controller
             'jadwals' => $jadwals,
             'tanggal' => $tanggal,
             'hari' => $hari,
+            'sudahAbsenMasuk' => $sudahAbsenMasuk,
             'pengaturan' => PengaturanLembaga::first(),
         ]);
     }
@@ -80,6 +95,22 @@ class AbsensiMapelController extends Controller
         }
 
         $tanggal = $request->query('tanggal', Carbon::today()->toDateString());
+        $isToday = ($tanggal === Carbon::today()->toDateString());
+
+        // LOGIKA UTAMA: Cek apakah guru sudah melakukan absensi masuk hari ini
+        if ($isToday) {
+            $presensiHariIni = \App\Models\Presensi::where('user_type', 'guru')
+                ->where('user_id', $guru->id)
+                ->whereDate('tanggal', Carbon::today()->toDateString())
+                ->whereNotNull('jam_masuk')
+                ->first();
+
+            if (!$presensiHariIni) {
+                return redirect()->route('dashboard')
+                    ->with('error', '⚠️ Akses Ditolak: Anda belum melakukan Absensi Masuk hari ini. Silakan tap "Jam Masuk" untuk absen terlebih dahulu sebelum mengisi absensi mata pelajaran!');
+            }
+        }
+
         $hariPilihan = Carbon::parse($tanggal)->locale('id')->dayName;
 
         // Cek apakah hari dan jam saat ini cocok dengan jam pelajaran
@@ -88,7 +119,6 @@ class AbsensiMapelController extends Controller
         $start = $tanggalObj->copy()->setTimeFromTimeString($jadwal->jam_mulai);
         $end   = $tanggalObj->copy()->setTimeFromTimeString($jadwal->jam_selesai);
 
-        $isToday = ($tanggal === Carbon::today()->toDateString());
         $isHariCocok = (strtolower($jadwal->hari) === strtolower($hariPilihan));
         $canAbsen = $isToday && $isHariCocok && $now->between($start, $end);
 
@@ -146,8 +176,24 @@ class AbsensiMapelController extends Controller
             abort(403, 'Anda tidak memiliki akses ke jadwal pelajaran ini.');
         }
 
-        // Validasi waktu pelajaran di sisi server
         $tanggal = $request->input('tanggal', Carbon::today()->toDateString());
+        $isToday = ($tanggal === Carbon::today()->toDateString());
+
+        // LOGIKA UTAMA: Guru WAJIB sudah absen masuk hari ini sebelum menyimpan absensi mapel
+        if ($isToday) {
+            $presensiHariIni = \App\Models\Presensi::where('user_type', 'guru')
+                ->where('user_id', $guru->id)
+                ->whereDate('tanggal', Carbon::today()->toDateString())
+                ->whereNotNull('jam_masuk')
+                ->first();
+
+            if (!$presensiHariIni) {
+                return redirect()->route('dashboard')
+                    ->with('error', '⚠️ Gagal Menyimpan: Anda belum melakukan Absensi Masuk hari ini. Silakan tap "Jam Masuk" terlebih dahulu!');
+            }
+        }
+
+        // Validasi waktu pelajaran di sisi server
         $hariPilihan = Carbon::parse($tanggal)->locale('id')->dayName;
 
         $now = Carbon::now();
@@ -155,7 +201,6 @@ class AbsensiMapelController extends Controller
         $start = $tanggalObj->copy()->setTimeFromTimeString($jadwal->jam_mulai);
         $end   = $tanggalObj->copy()->setTimeFromTimeString($jadwal->jam_selesai);
 
-        $isToday = ($tanggal === Carbon::today()->toDateString());
         $isHariCocok = (strtolower($jadwal->hari) === strtolower($hariPilihan));
         $canAbsen = $isToday && $isHariCocok && $now->between($start, $end);
 

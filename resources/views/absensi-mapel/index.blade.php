@@ -102,8 +102,12 @@
                         </svg>
                     </button>
 
-                    <div class="w-12 h-12 mx-auto mt-1 mb-2.5 rounded-full {{ $j->is_future ? 'bg-sky-100 text-sky-600' : 'bg-amber-100 text-amber-600' }} flex items-center justify-center">
-                        @if($j->is_future)
+                    <div class="w-12 h-12 mx-auto mt-1 mb-2.5 rounded-full {{ ($j->belum_absen_masuk ?? false) ? 'bg-amber-100 text-amber-600' : ($j->is_future ? 'bg-sky-100 text-sky-600' : 'bg-slate-100 text-slate-600') }} flex items-center justify-center">
+                        @if($j->belum_absen_masuk ?? false)
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                        </svg>
+                        @elseif($j->is_future)
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
@@ -114,19 +118,34 @@
                         @endif
                     </div>
                     <h3 class="text-sm sm:text-base font-extrabold text-slate-800 mb-1">
-                        {{ $j->is_future ? 'Belum Waktunya Absensi' : 'Tidak Dapat Mengakses Absensi' }}
+                        @if($j->belum_absen_masuk ?? false)
+                            Wajib Absen Masuk Dulu
+                        @elseif($j->is_future)
+                            Belum Waktunya Absensi
+                        @else
+                            Tidak Dapat Mengakses Absensi
+                        @endif
                     </h3>
                     <p class="text-[11px] sm:text-xs text-slate-500 mb-2 leading-snug">
                         Jam pelajaran <strong>{{ $j->mataPelajaran?->nama_mapel }}</strong> adalah
                         <strong class="text-slate-700">{{ substr($j->jam_mulai, 0, 5) }} – {{ substr($j->jam_selesai, 0, 5) }}</strong>.
                     </p>
                     <div class="text-[11px] sm:text-xs text-slate-600 bg-slate-50 border border-slate-100 rounded-xl p-2.5 mb-3 leading-relaxed">
-                        @if($j->is_future)
+                        @if($j->belum_absen_masuk ?? false)
+                            <span class="text-amber-800 font-medium">Anda belum melakukan <strong>Absensi Masuk</strong> hari ini. Silakan lakukan absen masuk terlebih dahulu sebelum mengisi absensi kelas.</span>
+                        @elseif($j->is_future)
                             <span>Belum waktunya jam pelajaran. Absensi hanya dapat dilakukan saat jam pelajaran berlangsung.</span>
                         @else
                             <span>Anda sudah melewati batas waktu absensi. Absensi hanya dapat dilakukan saat jam pelajaran berlangsung.</span>
                         @endif
                     </div>
+                    @if($j->belum_absen_masuk ?? false)
+                    <a href="{{ route('guru.dashboard') }}"
+                       class="w-full mb-2 inline-flex items-center justify-center gap-1.5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 active:scale-95 text-white text-xs sm:text-sm font-bold rounded-xl transition-all shadow-md shadow-emerald-500/20">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
+                        Ke Dashboard untuk Absen Masuk
+                    </a>
+                    @endif
                     <button type="button"
                             onclick="this.closest('#popup-expired-{{ $j->id }}').classList.add('hidden')"
                             class="w-full py-2.5 bg-slate-800 hover:bg-slate-900 active:scale-95 text-white text-xs sm:text-sm font-bold rounded-xl transition-all shadow-md">

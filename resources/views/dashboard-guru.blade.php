@@ -319,8 +319,12 @@
                             </svg>
                         </button>
 
-                        <div class="w-12 h-12 mx-auto mt-1 mb-2.5 rounded-full {{ $j->is_future ? 'bg-sky-100 text-sky-600' : 'bg-amber-100 text-amber-600' }} flex items-center justify-center">
-                            @if($j->is_future)
+                        <div class="w-12 h-12 mx-auto mt-1 mb-2.5 rounded-full {{ $j->belum_absen_masuk ? 'bg-rose-100 text-rose-600' : ($j->is_future ? 'bg-sky-100 text-sky-600' : 'bg-amber-100 text-amber-600') }} flex items-center justify-center">
+                            @if($j->belum_absen_masuk)
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                            </svg>
+                            @elseif($j->is_future)
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
@@ -331,22 +335,31 @@
                             @endif
                         </div>
                         <h3 class="text-sm sm:text-base font-extrabold text-slate-800 mb-1">
-                            {{ $j->is_future ? 'Belum Waktunya Absensi' : 'Tidak Dapat Mengakses Absensi' }}
+                            {{ $j->belum_absen_masuk ? 'Wajib Absen Masuk Terlebih Dahulu' : ($j->is_future ? 'Belum Waktunya Absensi' : 'Tidak Dapat Mengakses Absensi') }}
                         </h3>
                         <p class="text-[11px] sm:text-xs text-slate-500 mb-2 leading-snug">
                             Jam pelajaran <strong>{{ $j->mataPelajaran?->nama_mapel }}</strong> adalah
                             <strong class="text-slate-700">{{ substr($j->jam_mulai,0,5) }} – {{ substr($j->jam_selesai,0,5) }}</strong>.
                         </p>
-                        <div class="text-[11px] sm:text-xs text-slate-600 bg-slate-50 border border-slate-100 rounded-xl p-2.5 mb-3 leading-relaxed">
-                            @if($j->is_future)
+                        <div class="text-[11px] sm:text-xs {{ $j->belum_absen_masuk ? 'text-rose-700 bg-rose-50 border-rose-100' : 'text-slate-600 bg-slate-50 border-slate-100' }} border rounded-xl p-2.5 mb-3 leading-relaxed">
+                            @if($j->belum_absen_masuk)
+                                <span>Anda <strong>belum melakukan Absensi Masuk hari ini</strong>. Sistem mewajibkan guru absen masuk terlebih dahulu sebelum dapat mengisi absensi mapel.</span>
+                            @elseif($j->is_future)
                                 <span>Belum waktunya jam pelajaran. Absensi hanya dapat dilakukan saat jam pelajaran berlangsung.</span>
                             @else
                                 <span>Anda sudah melewati batas waktu absensi. Absensi hanya dapat dilakukan saat jam pelajaran berlangsung.</span>
                             @endif
                         </div>
+                        @if($j->belum_absen_masuk)
+                        <button type="button"
+                                onclick="this.closest('[id^=popup-dash]').classList.add('hidden'); openModal('masuk');"
+                                class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs sm:text-sm font-bold rounded-xl transition-all shadow-md mb-2 flex items-center justify-center gap-1.5">
+                            <span>Absen Masuk Sekarang →</span>
+                        </button>
+                        @endif
                         <button type="button"
                                 onclick="this.closest('[id^=popup-dash]').classList.add('hidden')"
-                                class="w-full py-2.5 bg-slate-800 hover:bg-slate-900 active:scale-95 text-white text-xs sm:text-sm font-bold rounded-xl transition-all shadow-md">
+                                class="w-full py-2.5 {{ $j->belum_absen_masuk ? 'bg-slate-100 hover:bg-slate-200 text-slate-700' : 'bg-slate-800 hover:bg-slate-900 text-white' }} active:scale-95 text-xs sm:text-sm font-bold rounded-xl transition-all shadow-sm">
                             Tutup
                         </button>
                     </div>

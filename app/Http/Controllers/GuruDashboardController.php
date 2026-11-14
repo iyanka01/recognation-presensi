@@ -25,6 +25,14 @@ class GuruDashboardController extends Controller
             ->orderBy('jam_mulai')
             ->get();
 
+        // Presensi guru hari ini (masuk/pulang)
+        $presensiHariIni = Presensi::where('user_type', 'guru')
+            ->where('user_id', $guru->id)
+            ->whereDate('tanggal', $today)
+            ->first();
+
+        $sudahAbsenMasuk = ($presensiHariIni && !empty($presensiHariIni->jam_masuk));
+
         $now = Carbon::now();
         $tanggalObj = Carbon::today();
         foreach ($jadwalHariIni as $j) {
@@ -34,7 +42,10 @@ class GuruDashboardController extends Controller
             // Cek apakah pas di rentang jam pelajaran hari ini
             $start = $tanggalObj->copy()->setTimeFromTimeString($j->jam_mulai);
             $end   = $tanggalObj->copy()->setTimeFromTimeString($j->jam_selesai);
-            $j->can_absen = $now->between($start, $end);
+            
+            // Guru HANYA bisa absen mapel jika sudah melakukan absen masuk hari ini
+            $j->can_absen = $sudahAbsenMasuk && $now->between($start, $end);
+            $j->belum_absen_masuk = !$sudahAbsenMasuk;
             $j->is_past   = $now->gt($end);
             $j->is_future = $now->lt($start);
         }
@@ -46,12 +57,6 @@ class GuruDashboardController extends Controller
             'kelas_diajar'    => JadwalPelajaran::where('guru_id', $guru->id)->distinct('kelas_id')->count('kelas_id'),
             'sudah_diisi'     => $jadwalHariIni->where('total_terisi', '>', 0)->count(),
         ];
-
-        // Presensi guru hari ini (masuk/pulang)
-        $presensiHariIni = Presensi::where('user_type', 'guru')
-            ->where('user_id', $guru->id)
-            ->whereDate('tanggal', $today)
-            ->first();
 
         // Cek apakah guru terkunci karena tidak absen pulang hari sebelumnya
         $lockedPresensi = Presensi::where('user_type', 'guru')
