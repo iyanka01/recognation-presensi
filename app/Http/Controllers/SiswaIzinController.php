@@ -62,6 +62,12 @@ class SiswaIzinController extends Controller
 
         $keteranganLengkap = $request->keterangan;
 
+        // Upload bukti jika ada
+        $buktiPath = null;
+        if ($request->hasFile('bukti')) {
+            $buktiPath = $request->file('bukti')->store('bukti_izin', 'public');
+        }
+
         $created = 0;
         for ($i = 0; $i <= $diff; $i++) {
             $tgl = $mulai->copy()->addDays($i)->toDateString();
@@ -75,6 +81,10 @@ class SiswaIzinController extends Controller
             if ($existing) {
                 $existing->update([
                     'status' => $request->status,
+                    'keterangan' => $keteranganLengkap,
+                    'bukti' => $buktiPath ?: $existing->bukti,
+                    'status_approval' => 'pending',
+                    'catatan_approval' => null,
                 ]);
             } else {
                 Presensi::create([
@@ -82,6 +92,10 @@ class SiswaIzinController extends Controller
                     'user_id'   => $siswa->id,
                     'tanggal'   => $tgl,
                     'status'    => $request->status,
+                    'keterangan' => $keteranganLengkap,
+                    'bukti' => $buktiPath,
+                    'status_approval' => 'pending',
+                    'catatan_approval' => null,
                 ]);
             }
             $created++;

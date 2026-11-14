@@ -64,7 +64,9 @@ class IzinController extends Controller
                 // Update jika ada (misal menimpa Alpa jadi Sakit, atau Hadir jadi Izin)
                 $existing->update([
                     'status' => $request->status,
-                    'keterangan' => $request->keterangan
+                    'keterangan' => $request->keterangan,
+                    'status_approval' => 'approved',
+                    'catatan_approval' => 'Dicatat langsung oleh Admin'
                 ]);
             } else {
                 // Create baru
@@ -73,12 +75,48 @@ class IzinController extends Controller
                     'user_id' => $userId,
                     'tanggal' => $tgl,
                     'status' => $request->status,
-                    'keterangan' => $request->keterangan
+                    'keterangan' => $request->keterangan,
+                    'status_approval' => 'approved',
+                    'catatan_approval' => 'Dicatat langsung oleh Admin'
                 ]);
             }
             $berhasil++;
         }
 
         return redirect()->route('izin.index')->with('success', "Berhasil mencatat $berhasil hari perizinan/ketidakhadiran.");
+    }
+
+    public function approve($id)
+    {
+        $izin = Presensi::findOrFail($id);
+        $izin->status_approval = 'approved';
+        $izin->catatan_approval = 'Disetujui oleh Admin pada ' . now()->format('d/m/Y H:i');
+        $izin->save();
+
+        return redirect()->route('izin.index')->with('success', "Pengajuan izin berhasil DISETUJUI.");
+    }
+
+    public function reject(Request $request, $id)
+    {
+        $izin = Presensi::findOrFail($id);
+        $izin->status_approval = 'rejected';
+        $alasan = $request->input('catatan_approval', 'Ditolak oleh Admin');
+        $izin->catatan_approval = $alasan ?: 'Ditolak oleh Admin pada ' . now()->format('d/m/Y H:i');
+        $izin->save();
+
+        return redirect()->route('izin.index')->with('success', "Pengajuan izin berhasil DITOLAK.");
+    }
+
+    public function destroy($id)
+    {
+        $izin = Presensi::findOrFail($id);
+        
+        if ($izin->bukti && \Illuminate\Support\Facades\Storage::disk('public')->exists($izin->bukti)) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($izin->bukti);
+        }
+
+        $izin->delete();
+
+        return redirect()->route('izin.index')->with('success', "Data perizinan berhasil dihapus.");
     }
 }

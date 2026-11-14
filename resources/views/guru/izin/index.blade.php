@@ -92,6 +92,25 @@
                         <span class="px-2.5 py-0.5 rounded-lg text-[10px] sm:text-xs font-black border {{ $badgeTheme }}">
                             {{ $r->status }}
                         </span>
+                        @php
+                            $appr = $r->status_approval ?? 'approved';
+                        @endphp
+                        @if($appr === 'pending')
+                            <span class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 flex items-center gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                Menunggu Persetujuan
+                            </span>
+                        @elseif($appr === 'rejected')
+                            <span class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                                Ditolak
+                            </span>
+                        @else
+                            <span class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                Disetujui
+                            </span>
+                        @endif
                         <span class="text-xs font-bold text-slate-700">
                             {{ \Carbon\Carbon::parse($r->tanggal)->translatedFormat('l, d F Y') }}
                         </span>
@@ -99,6 +118,11 @@
                     <p class="text-xs text-slate-600 mt-1.5 font-medium leading-relaxed">
                         {{ $r->keterangan ?: 'Tidak ada keterangan tambahan.' }}
                     </p>
+                    @if($r->catatan_approval)
+                    <p class="text-[11px] text-slate-400 mt-1 italic">
+                        Info: {{ $r->catatan_approval }}
+                    </p>
+                    @endif
                 </div>
 
                 @if($r->bukti)

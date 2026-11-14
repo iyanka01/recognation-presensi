@@ -101,13 +101,39 @@
                             {{ Carbon\Carbon::parse($r->tanggal)->locale('id')->isoFormat('dddd, D MMMM Y') }}
                         </h5>
                         <p class="text-[11px] text-slate-500 mt-0.5">
-                            Status: <span class="font-semibold">{{ $r->status }}</span>
+                            Kategori: <span class="font-semibold">{{ $r->status }}</span>
+                            @if($r->keterangan)
+                            <span class="text-slate-400">· {{ Str::limit($r->keterangan, 35) }}</span>
+                            @endif
                         </p>
+                        @if($r->catatan_approval)
+                        <p class="text-[10px] text-slate-400 italic mt-0.5">
+                            Info: {{ $r->catatan_approval }}
+                        </p>
+                        @endif
                     </div>
                 </div>
-                <span class="px-2.5 py-1 text-[11px] font-bold rounded-xl {{ $r->status == 'Sakit' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-teal-50 text-teal-700 border border-teal-200' }}">
-                    {{ $r->status }}
-                </span>
+                <div class="text-right shrink-0">
+                    @php
+                        $appr = $r->status_approval ?? 'approved';
+                    @endphp
+                    @if($appr === 'pending')
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold rounded-xl bg-amber-50 text-amber-700 border border-amber-200">
+                            <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                            Menunggu
+                        </span>
+                    @elseif($appr === 'rejected')
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold rounded-xl bg-rose-50 text-rose-700 border border-rose-200">
+                            <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                            Ditolak
+                        </span>
+                    @else
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                            Disetujui
+                        </span>
+                    @endif
+                </div>
             </div>
             @empty
             <div class="text-center py-8">

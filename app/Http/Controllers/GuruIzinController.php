@@ -91,6 +91,8 @@ class GuruIzinController extends Controller
                     'status' => $request->status,
                     'keterangan' => $request->keterangan,
                     'bukti' => $buktiPath ?: $existing->bukti,
+                    'status_approval' => 'pending',
+                    'catatan_approval' => null,
                 ]);
             } else {
                 Presensi::create([
@@ -100,6 +102,8 @@ class GuruIzinController extends Controller
                     'status' => $request->status,
                     'keterangan' => $request->keterangan,
                     'bukti' => $buktiPath,
+                    'status_approval' => 'pending',
+                    'catatan_approval' => null,
                 ]);
             }
             $berhasil++;

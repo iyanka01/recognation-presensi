@@ -65,9 +65,12 @@ Route::middleware('auth:web')->group(function () {
     Route::get('pengaturan-akun', [AkunController::class, 'index'])->name('pengaturan-akun.index');
     Route::post('pengaturan-akun', [AkunController::class, 'update'])->name('pengaturan-akun.update');
     
-    // Perizinan Siswa / Guru (Admin Input & Monitoring)
+    // Perizinan Siswa / Guru (Admin Input, Approval & Monitoring)
     Route::get('izin', [IzinController::class, 'index'])->name('izin.index');
     Route::post('izin', [IzinController::class, 'store'])->name('izin.store');
+    Route::post('izin/{id}/approve', [IzinController::class, 'approve'])->name('izin.approve');
+    Route::post('izin/{id}/reject', [IzinController::class, 'reject'])->name('izin.reject');
+    Route::delete('izin/{id}', [IzinController::class, 'destroy'])->name('izin.destroy');
     
     // Laporan & Rekapitulasi Presensi
     Route::get('laporan', [LaporanController::class, 'index'])->name('laporan.index');

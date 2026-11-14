@@ -46,6 +46,8 @@
                         <th class="p-4 font-semibold text-center">Status</th>
                         <th class="p-4 font-semibold">Keterangan</th>
                         <th class="p-4 font-semibold text-center">Bukti</th>
+                        <th class="p-4 font-semibold text-center">Persetujuan</th>
+                        <th class="p-4 font-semibold text-center w-36">Aksi</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-sky-50 text-sm">
@@ -64,8 +66,20 @@
                             'Dispensasi' => 'bg-teal-100 text-teal-700',
                             default => 'bg-slate-100 text-slate-700'
                         };
+
+                        $approval = $izin->status_approval ?? 'approved';
+                        $approvalBadge = match($approval) {
+                            'pending' => 'bg-amber-50 text-amber-700 border-amber-200',
+                            'rejected' => 'bg-rose-50 text-rose-700 border-rose-200',
+                            default => 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        };
+                        $approvalText = match($approval) {
+                            'pending' => 'Menunggu',
+                            'rejected' => 'Ditolak',
+                            default => 'Disetujui'
+                        };
                     @endphp
-                    <tr class="hover:bg-sky-50/30 transition-colors {{ !$isToday ? 'opacity-80' : '' }}">
+                    <tr class="hover:bg-sky-50/30 transition-colors {{ !$isToday ? 'opacity-90' : '' }}">
                         <td class="p-4 text-center text-slate-400 font-medium">{{ $idx + 1 }}</td>
                         <td class="p-4">
                             <div class="flex items-center gap-3">
@@ -98,6 +112,11 @@
                             <div class="text-slate-600 truncate max-w-xs" title="{{ $izin->keterangan ?? '-' }}">
                                 {{ $izin->keterangan ?? '-' }}
                             </div>
+                            @if($izin->catatan_approval)
+                            <div class="text-[11px] text-slate-400 mt-0.5 italic truncate max-w-xs" title="{{ $izin->catatan_approval }}">
+                                Catatan: {{ $izin->catatan_approval }}
+                            </div>
+                            @endif
                         </td>
                         <td class="p-4 text-center">
                             @if($izin->bukti)
@@ -109,10 +128,54 @@
                             <span class="text-xs text-slate-300 italic">-</span>
                             @endif
                         </td>
+                        <td class="p-4 text-center">
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold border {{ $approvalBadge }}">
+                                @if($approval === 'pending')
+                                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                @elseif($approval === 'rejected')
+                                    <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                                @else
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                @endif
+                                {{ $approvalText }}
+                            </span>
+                        </td>
+                        <td class="p-4 text-center">
+                            <div class="flex items-center justify-center gap-1.5">
+                                {{-- Tombol Setujui (Approve) --}}
+                                @if($approval !== 'approved')
+                                <form action="{{ route('izin.approve', $izin->id) }}" method="POST" onsubmit="return confirm('Setujui pengajuan izin ini?');" class="inline">
+                                    @csrf
+                                    <button type="submit" class="p-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-lg transition-colors border border-emerald-200" title="Setujui (Approve)">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                    </button>
+                                </form>
+                                @endif
+
+                                {{-- Tombol Tolak (Reject) --}}
+                                @if($approval !== 'rejected')
+                                <form action="{{ route('izin.reject', $izin->id) }}" method="POST" onsubmit="return confirm('Tolak permohonan izin ini? Status akan ditandai Ditolak.');" class="inline">
+                                    @csrf
+                                    <button type="submit" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition-colors border border-rose-200" title="Tolak">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                                    </button>
+                                </form>
+                                @endif
+
+                                {{-- Tombol Hapus --}}
+                                <form action="{{ route('izin.destroy', $izin->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus data perizinan ini secara permanen?');" class="inline">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors" title="Hapus Permanen">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="6" class="p-12 text-center bg-white">
+                        <td colspan="8" class="p-12 text-center bg-white">
                             <div class="flex flex-col items-center justify-center">
                                 <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 ring-8 ring-slate-50/50">
                                     <svg class="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
