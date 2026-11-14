@@ -352,10 +352,40 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
                     </svg>
-                    Capture & Simpan
-                </button>
+    </div>
+</div>
+
+{{-- Audio Suara Terimakasih --}}
+<audio id="audio-terimakasih" preload="auto">
+    <source src="{{ asset('assets/audio/terimakasih.mp3') }}" type="audio/mpeg">
+    <source src="{{ asset('terimakasih.mp3') }}" type="audio/mpeg">
+</audio>
+
+{{-- ======== MODAL POPUP PEMBERITAHUAN SUKSES ABSENSI ======== --}}
+<div id="modal-success-popup" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-fade-in">
+    <div class="bg-white rounded-3xl max-w-xs sm:max-w-sm w-full p-6 text-center shadow-2xl border border-emerald-100 transform transition-all scale-100 animate-scale-up">
+        <div class="w-20 h-20 mx-auto mb-4 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-500 shadow-lg shadow-emerald-200/50">
+            <svg class="w-10 h-10 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+            </svg>
+        </div>
+
+        <h3 id="popup-success-title" class="text-lg sm:text-xl font-extrabold text-slate-800">Absensi Berhasil!</h3>
+        <p id="popup-success-desc" class="text-xs sm:text-sm text-slate-500 mt-1.5 leading-relaxed font-medium">Terima kasih, data kehadiran Anda telah berhasil disimpan ke sistem.</p>
+
+        <div class="mt-4 p-3 rounded-2xl bg-emerald-50/80 border border-emerald-100 flex items-center justify-around">
+            <div>
+                <p class="text-[10px] text-slate-400 font-bold uppercase">Waktu</p>
+                <p id="popup-success-time" class="text-sm font-black text-emerald-700 mt-0.5">--:--</p>
+            </div>
+            <div class="h-6 w-px bg-emerald-200/60"></div>
+            <div>
+                <p class="text-[10px] text-slate-400 font-bold uppercase">Status</p>
+                <p id="popup-success-status" class="text-sm font-black text-emerald-700 mt-0.5">Tercatat</p>
             </div>
         </div>
+
+        <p class="text-[11px] text-slate-400 mt-4 italic font-medium">Memindahkan ke halaman utama...</p>
     </div>
 </div>
 @endsection
@@ -663,6 +693,40 @@ async function processAbsensi(guruId) {
     setTimeout(() => { isProcessing = false; }, 4500);
 }
 
+function playAudioTerimakasih() {
+    try {
+        const audio = document.getElementById('audio-terimakasih');
+        if (audio) {
+            audio.currentTime = 0;
+            const playPromise = audio.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(err => {
+                    console.warn('Autoplay audio blocked or error:', err);
+                });
+            }
+        }
+    } catch(err) {
+        console.warn('Error playing audio:', err);
+    }
+}
+
+function showSuccessPopup(data) {
+    const popup = document.getElementById('modal-success-popup');
+    const title = document.getElementById('popup-success-title');
+    const desc  = document.getElementById('popup-success-desc');
+    const time  = document.getElementById('popup-success-time');
+    const status= document.getElementById('popup-success-status');
+
+    if (!popup) return;
+
+    if (title) title.textContent = data.type === 'masuk' ? 'Absensi Masuk Berhasil!' : 'Absensi Pulang Berhasil!';
+    if (desc)  desc.textContent  = data.message || 'Terima kasih, data kehadiran Anda telah berhasil disimpan.';
+    if (time)  time.textContent  = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
+    if (status)status.textContent= data.status || 'Hadir';
+
+    popup.classList.remove('hidden');
+}
+
 function showResult(data) {
     const box  = document.getElementById('result-box');
     const icon = document.getElementById('result-icon');
@@ -670,28 +734,34 @@ function showResult(data) {
     const msg  = document.getElementById('result-message');
     const time = document.getElementById('result-time');
 
-    box.className = 'rounded-2xl p-4 text-center border transition-all';
-
     if (data.success) {
-        box.classList.add('bg-emerald-50', 'border-emerald-200');
-        icon.className = 'w-12 h-12 mx-auto mb-2 rounded-full bg-emerald-100 flex items-center justify-center';
-        icon.innerHTML = `<svg class="w-6 h-6 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>`;
-        name.textContent  = data.user_name;
-        name.className    = 'font-bold text-emerald-700 text-sm';
-        msg.textContent   = data.type === 'masuk' ? '✅ Absensi Masuk Berhasil!' : '🚪 Absensi Pulang Berhasil!';
-        msg.className     = 'text-xs text-emerald-600 mt-1';
-        time.textContent  = new Date().toLocaleTimeString('id-ID');
-        time.className    = 'text-xs font-bold text-emerald-500 mt-1';
-    } else {
-        box.classList.add('bg-rose-50', 'border-rose-200');
-        icon.className = 'w-12 h-12 mx-auto mb-2 rounded-full bg-rose-100 flex items-center justify-center';
-        icon.innerHTML = `<svg class="w-6 h-6 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`;
-        name.textContent = 'Tidak Berhasil';
-        name.className   = 'font-bold text-rose-700 text-sm';
-        msg.textContent  = data.message;
-        msg.className    = 'text-xs text-rose-500 mt-1';
-        time.textContent = '';
+        // Putar suara terima kasih
+        playAudioTerimakasih();
+
+        // Tampilkan modal popup notifikasi berhasil
+        showSuccessPopup(data);
+
+        // Hentikan camera loop
+        if (mainVideo && mainVideo.srcObject) {
+            mainVideo.srcObject.getTracks().forEach(t => t.stop());
+        }
+
+        // Redirect langsung ke halaman dashboard setelah jeda 2.2 detik
+        setTimeout(() => {
+            window.location.href = "{{ route('dashboard') }}";
+        }, 2200);
+        return;
     }
+
+    box.className = 'rounded-2xl p-4 text-center border transition-all';
+    box.classList.add('bg-rose-50', 'border-rose-200');
+    icon.className = 'w-12 h-12 mx-auto mb-2 rounded-full bg-rose-100 flex items-center justify-center';
+    icon.innerHTML = `<svg class="w-6 h-6 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`;
+    name.textContent = 'Tidak Berhasil';
+    name.className   = 'font-bold text-rose-700 text-sm';
+    msg.textContent  = data.message;
+    msg.className    = 'text-xs text-rose-500 mt-1';
+    time.textContent = '';
 
     box.classList.remove('hidden');
     setTimeout(() => box.classList.add('hidden'), 5000);

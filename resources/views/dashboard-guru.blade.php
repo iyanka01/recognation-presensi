@@ -501,6 +501,42 @@
 {{-- Toast --}}
 <div id="toast-notif" class="hidden fixed bottom-24 left-1/2 -translate-x-1/2 z-[60] px-5 py-3 rounded-2xl shadow-xl text-white text-sm font-semibold"></div>
 
+{{-- Audio Suara Terimakasih --}}
+<audio id="audio-terimakasih" preload="auto">
+    <source src="{{ asset('assets/audio/terimakasih.mp3') }}" type="audio/mpeg">
+    <source src="{{ asset('terimakasih.mp3') }}" type="audio/mpeg">
+</audio>
+
+{{-- ======== MODAL POPUP PEMBERITAHUAN SUKSES ABSENSI ======== --}}
+<div id="modal-success-popup" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-fade-in">
+    <div class="bg-white rounded-3xl max-w-xs sm:max-w-sm w-full p-6 text-center shadow-2xl border border-emerald-100 transform transition-all scale-100 animate-scale-up">
+        {{-- Ikon Centang Hijau Besar Beranimasi --}}
+        <div class="w-20 h-20 mx-auto mb-4 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-500 shadow-lg shadow-emerald-200/50">
+            <svg class="w-10 h-10 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+            </svg>
+        </div>
+
+        <h3 id="popup-success-title" class="text-lg sm:text-xl font-extrabold text-slate-800">Absensi Berhasil!</h3>
+        <p id="popup-success-desc" class="text-xs sm:text-sm text-slate-500 mt-1.5 leading-relaxed font-medium">Terima kasih, data kehadiran Anda telah berhasil disimpan ke sistem.</p>
+
+        {{-- Badge Jam & Status --}}
+        <div class="mt-4 p-3 rounded-2xl bg-emerald-50/80 border border-emerald-100 flex items-center justify-around">
+            <div>
+                <p class="text-[10px] text-slate-400 font-bold uppercase">Waktu</p>
+                <p id="popup-success-time" class="text-sm font-black text-emerald-700 mt-0.5">--:--</p>
+            </div>
+            <div class="h-6 w-px bg-emerald-200/60"></div>
+            <div>
+                <p class="text-[10px] text-slate-400 font-bold uppercase">Status</p>
+                <p id="popup-success-status" class="text-sm font-black text-emerald-700 mt-0.5">Tercatat</p>
+            </div>
+        </div>
+
+        <p class="text-[11px] text-slate-400 mt-4 italic font-medium">Memindahkan ke halaman utama...</p>
+    </div>
+</div>
+
 @endsection
 
 @push('scripts')
@@ -956,14 +992,22 @@ async function doAbsen() {
             data = { success: false, message: 'Server merespons status ' + res.status + ' (' + res.statusText + ')' };
         }
 
-        showFaceResult(data);
-
         if (data.success) {
+            // Putar audio terimakasih
+            playAudioTerimakasih();
+
+            // Tampilkan popup notifikasi sukses besar
+            showSuccessPopup(data);
+
+            // Tutup kamera scan langsung
+            closeCamera();
+
+            // Beri jeda 2.2 detik agar suara selesai & popup terbaca lalu refresh ke halaman awal
             setTimeout(() => {
-                closeCamera();
-                setTimeout(() => location.reload(), 400);
-            }, 2500);
+                location.reload();
+            }, 2200);
         } else {
+            showFaceResult(data);
             setTimeout(() => { isProcessing = false; }, 3500);
         }
     } catch(e) {
@@ -971,6 +1015,42 @@ async function doAbsen() {
         showFaceResult({ success: false, message: e.message || 'Koneksi gagal, silakan coba lagi.' });
         setTimeout(() => { isProcessing = false; }, 3500);
     }
+}
+
+// ===== FUNGSI AUDIO TERIMAKASIH =====
+function playAudioTerimakasih() {
+    try {
+        const audio = document.getElementById('audio-terimakasih');
+        if (audio) {
+            audio.currentTime = 0;
+            const playPromise = audio.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(err => {
+                    console.warn('Autoplay audio blocked or error:', err);
+                });
+            }
+        }
+    } catch(err) {
+        console.warn('Error playing audio:', err);
+    }
+}
+
+// ===== POPUP PEMBERITAHUAN SUKSES & REDIRECT KE AWAL =====
+function showSuccessPopup(data) {
+    const popup = document.getElementById('modal-success-popup');
+    const title = document.getElementById('popup-success-title');
+    const desc  = document.getElementById('popup-success-desc');
+    const time  = document.getElementById('popup-success-time');
+    const status= document.getElementById('popup-success-status');
+
+    if (!popup) return;
+
+    if (title) title.textContent = currentTipe === 'masuk' ? 'Absensi Masuk Berhasil!' : 'Absensi Pulang Berhasil!';
+    if (desc)  desc.textContent  = data.message || 'Terima kasih, data kehadiran Anda telah berhasil disimpan.';
+    if (time)  time.textContent  = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
+    if (status)status.textContent= data.status || 'Hadir';
+
+    popup.classList.remove('hidden');
 }
 
 // ===== TAMPILKAN HASIL =====
