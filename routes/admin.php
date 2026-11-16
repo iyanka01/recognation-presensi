@@ -18,6 +18,7 @@ use App\Http\Controllers\MapelController;
 use App\Http\Controllers\JadwalController;
 use App\Http\Controllers\PengumumanController;
 use App\Http\Controllers\RekapJamGuruController;
+use App\Http\Controllers\WhatsAppBroadcastController;
 
 /*
 |--------------------------------------------------------------------------
@@ -60,6 +61,7 @@ Route::middleware('auth:web')->group(function () {
     // Pengaturan Lembaga
     Route::get('pengaturan-lembaga', [PengaturanLembagaController::class, 'index'])->name('pengaturan-lembaga.index');
     Route::post('pengaturan-lembaga', [PengaturanLembagaController::class, 'store'])->name('pengaturan-lembaga.store');
+    Route::post('pengaturan-lembaga/test-wa', [PengaturanLembagaController::class, 'testWhatsApp'])->name('pengaturan-lembaga.test-wa');
 
     // Pengaturan Akun
     Route::get('pengaturan-akun', [AkunController::class, 'index'])->name('pengaturan-akun.index');
@@ -93,6 +95,11 @@ Route::middleware('auth:web')->group(function () {
     // Notifikasi Telegram
     Route::get('telegram/get-updates', [TelegramController::class, 'fetchUpdates'])->name('telegram.getUpdates');
     Route::post('telegram/sync-bulk', [TelegramController::class, 'syncBulk'])->name('telegram.syncBulk');
+    
+    // Broadcast & Laporan WhatsApp (Wanesia Gateway)
+    Route::get('whatsapp-broadcast', [WhatsAppBroadcastController::class, 'index'])->name('whatsapp-broadcast.index');
+    Route::post('whatsapp-broadcast/send', [WhatsAppBroadcastController::class, 'send'])->name('whatsapp-broadcast.send');
+    Route::get('whatsapp-broadcast/preview', [WhatsAppBroadcastController::class, 'previewMessage'])->name('whatsapp-broadcast.preview');
     
     // Cetak Kartu ID
     Route::get('cetak-kartu', [CetakKartuController::class, 'index'])->name('cetak-kartu.index');

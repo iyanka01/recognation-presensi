@@ -23,10 +23,18 @@ class PengaturanLembaga extends Model
         'nama_kepala',
         'nip',
         'no_telp',
+        'kepala_sekolah_id',
+        'wanesia_token',
+        'wanesia_active',
         'alamat',
         'tempat',
         'latitude',
         'longitude',
         'radius_meter',
     ];
+
+    public function kepalaSekolah()
+    {
+        return $this->belongsTo(Guru::class, 'kepala_sekolah_id');
+    }
 }

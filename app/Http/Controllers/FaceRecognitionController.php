@@ -171,6 +171,7 @@ class FaceRecognitionController extends Controller
 
             // Kirim notifikasi Telegram ke Guru
             $telegramSent = $this->sendTelegramNotification($guru, 'pulang', $jam_sekarang, $presensi->status, 'Face Recognition (Wajah)');
+            $this->sendWhatsAppNotification($guru, 'pulang', $jam_sekarang, $presensi->status, 'Face Recognition (Wajah)');
 
             return response()->json([
                 'success'         => true,
@@ -228,6 +229,7 @@ class FaceRecognitionController extends Controller
 
         // Kirim notifikasi Telegram ke Guru
         $telegramSent = $this->sendTelegramNotification($guru, 'masuk', $jam_sekarang, $status, 'Face Recognition (Wajah)');
+        $this->sendWhatsAppNotification($guru, 'masuk', $jam_sekarang, $status, 'Face Recognition (Wajah)');
 
         return response()->json([
             'success'         => true,
@@ -456,6 +458,7 @@ class FaceRecognitionController extends Controller
 
                 // Kirim notifikasi Telegram ke Guru
                 $telegramSent = $this->sendTelegramNotification($guru, 'masuk', $jam, $status, 'Verifikasi Wajah (Dashboard)');
+                $this->sendWhatsAppNotification($guru, 'masuk', $jam, $status, 'Verifikasi Wajah (Dashboard)');
 
                 return response()->json([
                     'success'       => true,
@@ -498,6 +501,7 @@ class FaceRecognitionController extends Controller
 
             // Kirim notifikasi Telegram ke Guru
             $telegramSent = $this->sendTelegramNotification($guru, 'pulang', $jam, $presensi->status, 'Verifikasi Wajah (Dashboard)');
+            $this->sendWhatsAppNotification($guru, 'pulang', $jam, $presensi->status, 'Verifikasi Wajah (Dashboard)');
 
             return response()->json([
                 'success'       => true,
@@ -633,6 +637,61 @@ class FaceRecognitionController extends Controller
             return (bool) $telegram->sendMessage($guru->telegram_chat_id, $msg);
         } catch (\Throwable $e) {
             Log::error('Telegram notification error for guru ' . $guru->id . ': ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Kirim notifikasi WhatsApp ke nomor HP Guru
+     */
+    protected function sendWhatsAppNotification(Guru $guru, string $tipe, string $jam, string $status, string $metode = 'Face Recognition'): bool
+    {
+        if (empty($guru->no_hp)) {
+            return false;
+        }
+
+        try {
+            $wa = new \App\Services\WhatsAppService();
+            $lembaga = PengaturanLembaga::first();
+            $namaSekolah = $lembaga && !empty($lembaga->nama_lembaga) ? $lembaga->nama_lembaga : 'Sistem Presensi Sekolah';
+            $jamFmt = substr($jam, 0, 5) . ' WIB';
+
+            if ($tipe === 'pulang') {
+                $msg = "*📢 Laporan Presensi Pulang Guru*\n";
+                $msg .= "*{$namaSekolah}*\n\n";
+                $msg .= "Nama: *{$guru->nama_lengkap}*\n";
+                if (!empty($guru->nip)) {
+                    $msg .= "NIP: {$guru->nip}\n";
+                }
+                $msg .= "Waktu Pulang: {$jamFmt}\n";
+                $msg .= "Status: {$status}\n";
+                $msg .= "Metode: {$metode}\n\n";
+                $msg .= "_Terima kasih atas dedikasi dan pengabdiannya hari ini. Selamat beristirahat dan hati-hati di perjalanan pulang! 🚗💨_";
+            } else {
+                if ($status === 'Terlambat') {
+                    $msg = "⚠️ *Laporan Presensi Guru (Terlambat)*\n";
+                } else {
+                    $msg = "*📢 Laporan Presensi Masuk Guru*\n";
+                }
+                $msg .= "*{$namaSekolah}*\n\n";
+                $msg .= "Nama: *{$guru->nama_lengkap}*\n";
+                if (!empty($guru->nip)) {
+                    $msg .= "NIP: {$guru->nip}\n";
+                }
+                $msg .= "Waktu Masuk: {$jamFmt}\n";
+                $msg .= "Status: {$status}\n";
+                $msg .= "Metode: {$metode}\n\n";
+                if ($status === 'Terlambat') {
+                    $msg .= "_Presensi kehadiran berhasil tercatat (terlambat). Tetap semangat menjalankan tugas mengajar hari ini! 💪_";
+                } else {
+                    $msg .= "_Presensi kehadiran berhasil tercatat tepat waktu. Selamat bertugas dan sukses selalu! ✨_";
+                }
+            }
+
+            $res = $wa->sendMessage($guru->no_hp, $msg);
+            return $res['success'] ?? false;
+        } catch (\Throwable $e) {
+            Log::error('WhatsApp notification error for guru ' . $guru->id . ': ' . $e->getMessage());
             return false;
         }
     }

@@ -70,7 +70,26 @@
                     @error('website') <p class="text-xs text-rose-500 mt-1">{{ $message }}</p> @enderror
                 </div>
 
-                <!-- Nama Kepala -->
+                <!-- Kepala Sekolah (Dropdown dari Data Guru) -->
+                <div class="space-y-2">
+                    <label for="kepala_sekolah_id" class="block text-sm font-medium text-slate-700">Kepala Sekolah / Lembaga <span class="text-rose-500">*</span></label>
+                    <select name="kepala_sekolah_id" id="kepala_sekolah_id" class="w-full px-4 py-2.5 bg-white border border-sky-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all">
+                        <option value="">-- Pilih dari Data Guru --</option>
+                        @foreach($gurus as $g)
+                            <option value="{{ $g->id }}" 
+                                data-nama="{{ $g->nama_lengkap }}"
+                                data-nip="{{ $g->nip ?? '' }}"
+                                data-nohp="{{ $g->no_hp ?? '' }}"
+                                {{ old('kepala_sekolah_id', $lembaga->kepala_sekolah_id ?? '') == $g->id ? 'selected' : '' }}>
+                                {{ $g->nama_lengkap }} {{ $g->nip ? '('.$g->nip.')' : '' }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <p class="text-[11px] text-slate-400">Pilih dari daftar guru agar otomatis terhubung ke sistem &amp; laporan.</p>
+                    @error('kepala_sekolah_id') <p class="text-xs text-rose-500 mt-1">{{ $message }}</p> @enderror
+                </div>
+
+                <!-- Nama Kepala (Teks Bebas / Otomatis) -->
                 <div class="space-y-2">
                     <label for="nama_kepala" class="block text-sm font-medium text-slate-700">Nama Kepala Lembaga <span class="text-rose-500">*</span></label>
                     <input type="text" name="nama_kepala" id="nama_kepala" value="{{ old('nama_kepala', $lembaga->nama_kepala ?? '') }}" required class="w-full px-4 py-2.5 bg-white border border-sky-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" placeholder="Nama Kepala Sekolah beserta gelar">
@@ -86,8 +105,9 @@
 
                 <!-- No Telp -->
                 <div class="space-y-2">
-                    <label for="no_telp" class="block text-sm font-medium text-slate-700">No. Telepon / WhatsApp</label>
+                    <label for="no_telp" class="block text-sm font-medium text-slate-700">No. WhatsApp / Telepon Kepala Sekolah</label>
                     <input type="text" name="no_telp" id="no_telp" value="{{ old('no_telp', $lembaga->no_telp ?? '') }}" class="w-full px-4 py-2.5 bg-white border border-sky-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" placeholder="Misal: 081234567890">
+                    <p class="text-[11px] text-slate-400">Nomor ini akan menerima rekap dan laporan presensi via WhatsApp.</p>
                     @error('no_telp') <p class="text-xs text-rose-500 mt-1">{{ $message }}</p> @enderror
                 </div>
             </div>
@@ -108,14 +128,63 @@
             </div>
 
 
+            <!-- Telegram Bot Token (Tetap dipertahankan!) -->
             <div class="mt-6 pt-6 border-t border-slate-100">
-                <h4 class="text-sm font-semibold text-slate-800 mb-4">Integrasi Bot Telegram</h4>
-                <p class="text-xs text-slate-500 mb-6">Token bot telegram digunakan untuk mengirim notifikasi absensi secara otomatis. Dapatkan dari BotFather.</p>
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="inline-block w-2.5 h-2.5 rounded-full bg-sky-500"></span>
+                    <h4 class="text-sm font-semibold text-slate-800">Integrasi Bot Telegram</h4>
+                </div>
+                <p class="text-xs text-slate-500 mb-4">Token bot telegram digunakan untuk mengirim notifikasi absensi secara otomatis ke akun Telegram. Dapatkan dari @BotFather.</p>
                 
                 <div class="space-y-2">
                     <label for="telegram_bot_token" class="block text-sm font-medium text-slate-700">Telegram Bot Token (Opsional)</label>
-                    <input type="text" name="telegram_bot_token" id="telegram_bot_token" value="{{ old('telegram_bot_token', $lembaga->telegram_bot_token ?? '') }}" class="w-full px-4 py-2.5 bg-white border border-sky-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" placeholder="Misal: 123456789:ABCdefGHIjklMNOpqrSTUvwxYZ">
+                    <input type="text" name="telegram_bot_token" id="telegram_bot_token" value="{{ old('telegram_bot_token', $lembaga->telegram_bot_token ?? '') }}" class="w-full px-4 py-2.5 bg-white border border-sky-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-mono" placeholder="Misal: 123456789:ABCdefGHIjklMNOpqrSTUvwxYZ">
                     @error('telegram_bot_token') <p class="text-xs text-rose-500 mt-1">{{ $message }}</p> @enderror
+                </div>
+            </div>
+
+            <!-- Integrasi WhatsApp Gateway (Wanesia) -->
+            <div class="mt-6 pt-6 border-t border-slate-100 bg-emerald-50/50 -mx-6 px-6 py-6 border-y border-emerald-100">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-lg bg-emerald-500 text-white flex items-center justify-center font-bold">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-semibold text-slate-800">Integrasi WhatsApp Gateway (Wanesia)</h4>
+                            <p class="text-xs text-slate-500">Kirim notifikasi presensi langsung ke WhatsApp orang tua/guru dan broadcast laporan.</p>
+                        </div>
+                    </div>
+
+                    <label class="inline-flex items-center gap-2 cursor-pointer self-start sm:self-auto bg-white px-3 py-1.5 rounded-xl border border-emerald-200 shadow-sm">
+                        <input type="checkbox" name="wanesia_active" value="1" {{ old('wanesia_active', $lembaga->wanesia_active ?? true) ? 'checked' : '' }} class="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4">
+                        <span class="text-xs font-semibold text-slate-700">Aktifkan WhatsApp</span>
+                    </label>
+                </div>
+
+                <div class="space-y-4 mt-3">
+                    <div class="space-y-1.5">
+                        <label for="wanesia_token" class="block text-xs font-semibold text-slate-700">Wanesia Instance API Token <span class="text-emerald-600">*</span></label>
+                        <input type="text" name="wanesia_token" id="wanesia_token" value="{{ old('wanesia_token', $lembaga->wanesia_token ?? '') }}" class="w-full px-4 py-2.5 bg-white border border-emerald-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 font-mono transition-all" placeholder="Tempel API Token dari panel Wanesia Anda di sini">
+                        <p class="text-[11px] text-slate-500">Dapatkan token dari akun Wanesia Anda. Cukup tempel token di atas dan simpan, pengiriman pesan WhatsApp akan langsung berjalan.</p>
+                        @error('wanesia_token') <p class="text-xs text-rose-500 mt-1">{{ $message }}</p> @enderror
+                    </div>
+
+                    <!-- Uji Coba Kirim Pesan WhatsApp -->
+                    <div class="p-4 bg-white rounded-xl border border-emerald-200">
+                        <h5 class="text-xs font-semibold text-slate-800 mb-1 flex items-center gap-1.5">
+                            <span>🧪</span> Tes Pengiriman Pesan WhatsApp (Uji Coba Langsung)
+                        </h5>
+                        <p class="text-[11px] text-slate-500 mb-3">Kirimkan pesan tes langsung ke nomor HP Anda untuk memastikan token berfungsi aktif.</p>
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            <input type="text" id="test_wa_number" placeholder="Nomor WhatsApp (Contoh: 081234567890)" class="flex-1 px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/30">
+                            <button type="button" id="btn-test-wa" class="px-4 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg flex items-center justify-center gap-1.5 transition-all shadow-sm">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+                                <span>Kirim Pesan Tes</span>
+                            </button>
+                        </div>
+                        <div id="test-wa-result" class="mt-2 text-xs hidden"></div>
+                    </div>
                 </div>
             </div>
 
@@ -315,6 +384,78 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     setTimeout(() => { map.invalidateSize(); }, 300);
+
+    // Auto-fill Data Kepala Sekolah saat Guru dipilih
+    const kepalaSekolahSelect = document.getElementById('kepala_sekolah_id');
+    if (kepalaSekolahSelect) {
+        kepalaSekolahSelect.addEventListener('change', function () {
+            const selectedOpt = this.options[this.selectedIndex];
+            if (selectedOpt && selectedOpt.value) {
+                const nama = selectedOpt.getAttribute('data-nama');
+                const nip = selectedOpt.getAttribute('data-nip');
+                const nohp = selectedOpt.getAttribute('data-nohp');
+
+                if (nama) document.getElementById('nama_kepala').value = nama;
+                if (nip) document.getElementById('nip').value = nip;
+                if (nohp) document.getElementById('no_telp').value = nohp;
+            }
+        });
+    }
+
+    // Uji Coba Kirim Pesan WhatsApp via AJAX
+    const btnTestWa = document.getElementById('btn-test-wa');
+    if (btnTestWa) {
+        btnTestWa.addEventListener('click', function () {
+            const numInput = document.getElementById('test_wa_number');
+            const tokenInput = document.getElementById('wanesia_token');
+            const resultBox = document.getElementById('test-wa-result');
+            const number = numInput.value.trim();
+            const token = tokenInput.value.trim();
+
+            if (!number) {
+                alert('Silakan masukkan nomor WhatsApp untuk uji coba.');
+                numInput.focus();
+                return;
+            }
+
+            btnTestWa.disabled = true;
+            btnTestWa.innerHTML = '<span class="inline-block animate-spin mr-1">⏳</span> Mengirim...';
+            resultBox.classList.add('hidden');
+
+            fetch('{{ route("pengaturan-lembaga.test-wa") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    test_number: number,
+                    test_token: token
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                btnTestWa.disabled = false;
+                btnTestWa.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg> Kirim Pesan Tes';
+                resultBox.classList.remove('hidden');
+
+                if (data.success) {
+                    resultBox.className = 'mt-2 text-xs p-3 rounded-lg bg-emerald-100 text-emerald-800 border border-emerald-300';
+                    resultBox.innerHTML = '<strong>✅ Berhasil:</strong> ' + data.message + ' Silakan cek WhatsApp Anda!';
+                } else {
+                    resultBox.className = 'mt-2 text-xs p-3 rounded-lg bg-rose-100 text-rose-800 border border-rose-300';
+                    resultBox.innerHTML = '<strong>❌ Gagal:</strong> ' + data.message;
+                }
+            })
+            .catch(err => {
+                btnTestWa.disabled = false;
+                btnTestWa.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg> Kirim Pesan Tes';
+                resultBox.classList.remove('hidden');
+                resultBox.className = 'mt-2 text-xs p-3 rounded-lg bg-rose-100 text-rose-800 border border-rose-300';
+                resultBox.innerHTML = '<strong>❌ Terjadi kesalahan:</strong> ' + err.message;
+            });
+        });
+    }
 });
 </script>
 @endpush

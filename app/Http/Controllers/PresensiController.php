@@ -163,6 +163,31 @@ class PresensiController extends Controller
                 $telegram->sendMessage($user->telegram_chat_id, $msg);
             }
 
+            // Kirim notifikasi WhatsApp Gateway (Wanesia)
+            $waNumber = $userType === 'siswa' ? ($user->no_hp_wali ?? null) : ($user->no_hp ?? null);
+            if (!empty($waNumber)) {
+                try {
+                    $waService = new \App\Services\WhatsAppService();
+                    $lembaga = \App\Models\PengaturanLembaga::first();
+                    $namaSekolah = $lembaga->nama_lembaga ?? 'Sekolah';
+                    $jamFmt = substr($jam_sekarang, 0, 5) . ' WIB';
+
+                    $waMsg = "*📢 Laporan Presensi Pulang*\n";
+                    $waMsg .= "*{$namaSekolah}*\n\n";
+                    $waMsg .= "Nama: *{$user->nama_lengkap}*\n";
+                    if ($userType === 'siswa' && $user->kelas) {
+                        $waMsg .= "Kelas: {$user->kelas->tingkat} {$user->kelas->nama_rombel}\n";
+                    }
+                    $waMsg .= "Waktu Pulang: {$jamFmt}\n";
+                    $waMsg .= "Status: {$presensi->status}\n\n";
+                    $waMsg .= "_Telah melakukan presensi kepulangan. Terima kasih dan hati-hati di perjalanan._";
+
+                    $waService->sendMessage($waNumber, $waMsg);
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::error('WA Pulang Notification Error: ' . $e->getMessage());
+                }
+            }
+
             return response()->json([
                 'success' => true,
                 'type' => 'pulang',
@@ -223,6 +248,39 @@ class PresensiController extends Controller
                 $msg .= "<i>Semoga harinya menyenangkan!</i>";
             }
             $telegram->sendMessage($user->telegram_chat_id, $msg);
+        }
+
+        // Kirim notifikasi WhatsApp Gateway (Wanesia)
+        $waNumber = $userType === 'siswa' ? ($user->no_hp_wali ?? null) : ($user->no_hp ?? null);
+        if (!empty($waNumber)) {
+            try {
+                $waService = new \App\Services\WhatsAppService();
+                $lembaga = \App\Models\PengaturanLembaga::first();
+                $namaSekolah = $lembaga->nama_lembaga ?? 'Sekolah';
+                $jamFmt = substr($jam_sekarang, 0, 5) . ' WIB';
+
+                if ($status === 'Terlambat') {
+                    $waMsg = "⚠️ *Laporan Presensi Masuk (Terlambat)*\n";
+                } else {
+                    $waMsg = "*📢 Laporan Presensi Masuk*\n";
+                }
+                $waMsg .= "*{$namaSekolah}*\n\n";
+                $waMsg .= "Nama: *{$user->nama_lengkap}*\n";
+                if ($userType === 'siswa' && $user->kelas) {
+                    $waMsg .= "Kelas: {$user->kelas->tingkat} {$user->kelas->nama_rombel}\n";
+                }
+                $waMsg .= "Waktu Masuk: {$jamFmt}\n";
+                $waMsg .= "Status: *{$status}*\n\n";
+                if ($status === 'Terlambat') {
+                    $waMsg .= "_Telah melakukan presensi masuk (Terlambat). Mohon datang lebih tepat waktu besok._";
+                } else {
+                    $waMsg .= "_Telah hadir dan melakukan presensi masuk tepat waktu._";
+                }
+
+                $waService->sendMessage($waNumber, $waMsg);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::error('WA Masuk Notification Error: ' . $e->getMessage());
+            }
         }
 
         return response()->json([
