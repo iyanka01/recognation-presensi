@@ -107,6 +107,8 @@ Route::middleware('auth:web,guru')->group(function () {
     // Rekap Absensi Mata Pelajaran (Admin & Guru)
     Route::get('rekap-mapel', [RekapMapelController::class, 'index'])->name('rekap-mapel.index');
     Route::get('rekap-mapel/print', [RekapMapelController::class, 'print'])->name('rekap-mapel.print');
+    Route::get('rekap-mapel/preview-wa', [RekapMapelController::class, 'previewWhatsApp'])->name('rekap-mapel.preview-wa');
+    Route::post('rekap-mapel/send-wa', [RekapMapelController::class, 'sendWhatsApp'])->name('rekap-mapel.send-wa');
 });
 
 // Fallback aman untuk melayani file upload storage jika symlink OS tidak tersedia
