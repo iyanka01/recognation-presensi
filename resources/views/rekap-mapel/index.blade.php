@@ -142,11 +142,11 @@
                         <div class="space-y-2">
                             <!-- Wali Kelas -->
                             @if(isset($selectedKelas) && $selectedKelas->waliKelas)
-                                @php($wk = $selectedKelas->waliKelas)
+                                @php $wk = $selectedKelas->waliKelas; @endphp
                                 <label class="flex items-center justify-between p-3 rounded-xl border border-emerald-200 bg-emerald-50/70 hover:bg-emerald-50 cursor-pointer transition-all">
                                     <div class="flex items-center gap-3">
                                         <input type="checkbox" name="recipients[]" value="{{ $wk->no_hp }}"
-                                               @checked(!empty($wk->no_hp))
+                                               {{ !empty($wk->no_hp) ? 'checked' : '' }}
                                                {{ empty($wk->no_hp) ? 'disabled' : '' }}
                                                class="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4">
                                         <div>
@@ -163,7 +163,7 @@
                                 <label class="flex items-center justify-between p-3 rounded-xl border border-sky-200 bg-sky-50/70 hover:bg-sky-50 cursor-pointer transition-all">
                                     <div class="flex items-center gap-3">
                                         <input type="checkbox" name="recipients[]" value="{{ $targetGuruMapel->no_hp }}"
-                                               @checked(!empty($targetGuruMapel->no_hp))
+                                               {{ !empty($targetGuruMapel->no_hp) ? 'checked' : '' }}
                                                {{ empty($targetGuruMapel->no_hp) ? 'disabled' : '' }}
                                                class="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4">
                                         <div>
