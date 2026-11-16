@@ -1,6 +1,7 @@
-{{-- Menu Bagian Utama Admin --}}
+{{-- Navigasi Modul: Utama Admin --}}
 <div class="pb-1.5 pt-2 px-2 nav-section-label" x-show="sidebarOpen">Utama</div>
 
+{{-- Dashboard --}}
 <a href="{{ route('dashboard') }}"
    class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 {{ request()->routeIs('dashboard') ? 'nav-active text-white' : 'text-sky-100/80 hover:text-white' }}">
     <svg class="w-[18px] h-[18px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -9,6 +10,7 @@
     <span x-show="sidebarOpen" class="text-sm font-semibold">Dashboard</span>
 </a>
 
+{{-- Scan QR Presensi --}}
 <a href="{{ route('presensi.scan') }}" target="_blank"
    class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 {{ request()->routeIs('presensi.scan') ? 'nav-active text-white' : 'text-sky-100/80 hover:text-white' }}">
     <svg class="w-[18px] h-[18px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -18,6 +20,7 @@
     <span x-show="sidebarOpen" class="ml-auto text-[9px] font-bold bg-white/20 text-white px-1.5 py-0.5 rounded-md tracking-wide">LIVE</span>
 </a>
 
+{{-- Log Presensi --}}
 <a href="{{ route('presensi.index') }}"
    class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 {{ request()->routeIs('presensi.index') ? 'nav-active text-white' : 'text-sky-100/80 hover:text-white' }}">
     <svg class="w-[18px] h-[18px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -26,6 +29,7 @@
     <span x-show="sidebarOpen" class="text-sm font-semibold">Log Presensi</span>
 </a>
 
+{{-- Jam Absensi --}}
 <a href="{{ route('jam-absensi.index') }}"
    class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 {{ request()->routeIs('jam-absensi.*') ? 'nav-active text-white' : 'text-sky-100/80 hover:text-white' }}">
     <svg class="w-[18px] h-[18px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -1,6 +1,7 @@
-{{-- Menu Bagian Data Master Admin --}}
+{{-- Navigasi Modul: Data Master Admin --}}
 <div class="pb-1.5 pt-4 px-2 nav-section-label" x-show="sidebarOpen">Data Master</div>
 
+{{-- Data Siswa --}}
 <a href="{{ route('siswa.index') }}"
    class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 {{ request()->routeIs('siswa.*') ? 'nav-active text-white' : 'text-sky-100/80 hover:text-white' }}">
     <svg class="w-[18px] h-[18px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -9,6 +10,7 @@
     <span x-show="sidebarOpen" class="text-sm font-semibold">Data Siswa</span>
 </a>
 
+{{-- Data Kelas --}}
 <a href="{{ route('kelas.index') }}"
    class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 {{ request()->routeIs('kelas.*') ? 'nav-active text-white' : 'text-sky-100/80 hover:text-white' }}">
     <svg class="w-[18px] h-[18px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -17,6 +19,7 @@
     <span x-show="sidebarOpen" class="text-sm font-semibold">Data Kelas</span>
 </a>
 
+{{-- Data Guru --}}
 <a href="{{ route('guru.index') }}"
    class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 {{ request()->routeIs('guru.*') ? 'nav-active text-white' : 'text-sky-100/80 hover:text-white' }}">
     <svg class="w-[18px] h-[18px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -25,6 +28,7 @@
     <span x-show="sidebarOpen" class="text-sm font-semibold">Data Guru</span>
 </a>
 
+{{-- Mata Pelajaran --}}
 <a href="{{ route('mapel.index') }}"
    class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 {{ request()->routeIs('mapel.*') ? 'nav-active text-white' : 'text-sky-100/80 hover:text-white' }}">
     <svg class="w-[18px] h-[18px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -33,6 +37,7 @@
     <span x-show="sidebarOpen" class="text-sm font-semibold">Mata Pelajaran</span>
 </a>
 
+{{-- Jadwal Pelajaran --}}
 <a href="{{ route('jadwal.index') }}"
    class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 {{ request()->routeIs('jadwal.*') ? 'nav-active text-white' : 'text-sky-100/80 hover:text-white' }}">
     <svg class="w-[18px] h-[18px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -41,6 +46,7 @@
     <span x-show="sidebarOpen" class="text-sm font-semibold">Jadwal Pelajaran</span>
 </a>
 
+{{-- Cetak Kartu ID --}}
 <a href="{{ route('cetak-kartu.index') }}"
    class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 {{ request()->routeIs('cetak-kartu.*') ? 'nav-active text-white' : 'text-sky-100/80 hover:text-white' }}">
     <svg class="w-[18px] h-[18px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -49,6 +55,7 @@
     <span x-show="sidebarOpen" class="text-sm font-semibold">Cetak Kartu ID</span>
 </a>
 
+{{-- Hari Libur --}}
 <a href="{{ route('hari-libur.index') }}"
    class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 {{ request()->routeIs('hari-libur.*') ? 'nav-active text-white' : 'text-sky-100/80 hover:text-white' }}">
     <svg class="w-[18px] h-[18px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -57,14 +64,7 @@
     <span x-show="sidebarOpen" class="text-sm font-semibold">Hari Libur</span>
 </a>
 
-<a href="{{ route('izin.index') }}"
-   class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 {{ request()->routeIs('izin.*') ? 'nav-active text-white' : 'text-sky-100/80 hover:text-white' }}">
-    <svg class="w-[18px] h-[18px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
-    </svg>
-    <span x-show="sidebarOpen" class="text-sm font-semibold">Input Perizinan</span>
-</a>
-
+{{-- Pengumuman --}}
 <a href="{{ route('pengumuman.index') }}"
    class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 {{ request()->routeIs('pengumuman.*') ? 'nav-active text-white' : 'text-sky-100/80 hover:text-white' }}">
     <svg class="w-[18px] h-[18px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

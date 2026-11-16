@@ -1,6 +1,7 @@
-{{-- Menu Bagian Laporan & Monitoring Admin --}}
+{{-- Navigasi Modul: Laporan & Monitoring Admin --}}
 <div class="pb-1.5 pt-4 px-2 nav-section-label" x-show="sidebarOpen">Laporan &amp; Monitoring</div>
 
+{{-- Monitoring KBM Live --}}
 <a href="{{ route('monitoring-kbm.index') }}"
    class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 {{ request()->routeIs('monitoring-kbm.*') ? 'nav-active text-white' : 'text-sky-100/80 hover:text-white' }}">
     <svg class="w-[18px] h-[18px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -9,6 +10,7 @@
     <span x-show="sidebarOpen" class="text-sm font-semibold">Monitoring KBM Live</span>
 </a>
 
+{{-- Laporan Presensi --}}
 <a href="{{ route('laporan.index') }}"
    class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 {{ request()->routeIs('laporan.*') ? 'nav-active text-white' : 'text-sky-100/80 hover:text-white' }}">
     <svg class="w-[18px] h-[18px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -17,6 +19,7 @@
     <span x-show="sidebarOpen" class="text-sm font-semibold">Laporan Presensi</span>
 </a>
 
+{{-- Rekap Absen Mapel --}}
 <a href="{{ route('rekap-mapel.index') }}"
    class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 {{ request()->routeIs('rekap-mapel.*') ? 'nav-active text-white' : 'text-sky-100/80 hover:text-white' }}">
     <svg class="w-[18px] h-[18px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -26,6 +29,7 @@
     <span x-show="sidebarOpen" class="text-sm font-semibold">Rekap Absen Mapel</span>
 </a>
 
+{{-- Rekap Jam Mengajar Guru --}}
 <a href="{{ route('rekap-jam-guru.index') }}"
    class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 {{ request()->routeIs('rekap-jam-guru.*') ? 'nav-active text-white' : 'text-sky-100/80 hover:text-white' }}">
     <svg class="w-[18px] h-[18px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

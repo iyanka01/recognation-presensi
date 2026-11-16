@@ -1,6 +1,7 @@
-{{-- Menu Bagian Pengaturan Admin --}}
+{{-- Navigasi Modul: Pengaturan Admin --}}
 <div class="pb-1.5 pt-4 px-2 nav-section-label" x-show="sidebarOpen">Pengaturan</div>
 
+{{-- Pengaturan Lembaga & Akun --}}
 <a href="{{ route('pengaturan-lembaga.index') }}"
    class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 {{ request()->routeIs('pengaturan-lembaga.*') || request()->routeIs('pengaturan-akun.*') ? 'nav-active text-white' : 'text-sky-100/80 hover:text-white' }}">
     <svg class="w-[18px] h-[18px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -10,6 +11,7 @@
     <span x-show="sidebarOpen" class="text-sm font-semibold">Pengaturan</span>
 </a>
 
+{{-- Backup & Restore --}}
 <a href="{{ route('backup.index') }}"
    class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 {{ request()->routeIs('backup.*') ? 'nav-active text-white' : 'text-sky-100/80 hover:text-white' }}">
     <svg class="w-[18px] h-[18px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

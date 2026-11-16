@@ -130,13 +130,14 @@
 
             @if($isGuru)
                 {{-- Menu Khusus Guru --}}
-                @include('layouts.partials.sidebar.menu-guru')
+                @include('layouts.partials.sidebar.guru.sidebar-guru')
             @else
-                {{-- Menu Admin Modular per Kategori --}}
-                @include('layouts.partials.sidebar.menu-utama')
-                @include('layouts.partials.sidebar.menu-master')
-                @include('layouts.partials.sidebar.menu-laporan')
-                @include('layouts.partials.sidebar.menu-pengaturan')
+                {{-- Menu Admin Modular per Kategori Bersih --}}
+                @include('layouts.partials.sidebar.admin.utama')
+                @include('layouts.partials.sidebar.admin.master')
+                @include('layouts.partials.sidebar.admin.perizinan')
+                @include('layouts.partials.sidebar.admin.laporan')
+                @include('layouts.partials.sidebar.admin.pengaturan')
             @endif
 
             </nav>

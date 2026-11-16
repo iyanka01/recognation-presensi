@@ -1,4 +1,4 @@
-{{-- Menu Khusus Guru di Web/Desktop --}}
+{{-- Navigasi Modul: Guru Web/Desktop --}}
 <div class="pb-1.5 pt-2 px-2 nav-section-label" x-show="sidebarOpen">Menu Guru</div>
 
 <a href="{{ route('dashboard') }}"
