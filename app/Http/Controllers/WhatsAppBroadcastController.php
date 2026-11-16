@@ -62,21 +62,32 @@ class WhatsAppBroadcastController extends Controller
      */
     public function send(Request $request, WhatsAppService $wa)
     {
+        $rawRecipients = $request->input('recipients', []);
+        $cleanedRecipients = [];
+        foreach ($rawRecipients as $item) {
+            $val = trim($item ?? '');
+            if (!empty($val)) {
+                $cleanedRecipients[] = $val;
+            }
+        }
+        $cleanedRecipients = array_values(array_unique($cleanedRecipients));
+
+        if (empty($cleanedRecipients)) {
+            return redirect()->back()->with('error', 'Pilih minimal satu penerima pesan (pastikan nomor HP guru / kepala sekolah sudah terisi atau ketik nomor manual).');
+        }
+
         $request->validate([
-            'message'       => 'required|string',
-            'recipients'    => 'required|array|min:1',
-            'recipients.*'  => 'required|string',
+            'message' => 'required|string',
         ], [
-            'recipients.required' => 'Pilih minimal satu penerima pesan (Kepala Sekolah, Wali Kelas, atau Guru).',
-            'message.required'    => 'Isi pesan WhatsApp tidak boleh kosong.',
+            'message.required' => 'Isi pesan WhatsApp tidak boleh kosong.',
         ]);
 
         $lembaga = PengaturanLembaga::first();
         if (!$lembaga || empty($lembaga->wanesia_token)) {
-            return redirect()->back()->with('error', 'Token API Wanesia belum diatur di Pengaturan Lembaga.');
+            return redirect()->back()->with('error', 'Token API Wanesia belum disimpan di database. Silakan klik "Simpan Profil Lembaga" di Pengaturan Lembaga terlebih dahulu.');
         }
 
-        $recipients = array_unique($request->input('recipients', []));
+        $recipients = $cleanedRecipients;
         $message = $request->input('message');
 
         $successCount = 0;
