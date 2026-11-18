@@ -1,74 +1,95 @@
-{{-- Navigasi Modul: Data Master Admin --}}
-<div class="pb-1.5 pt-4 px-2 nav-section-label" x-show="sidebarOpen">Data Master</div>
+{{-- Navigasi Modul: Data Master Admin (Dropdown Accordion) --}}
+@php
+    $isMasterActive = request()->routeIs([
+        'siswa.*', 
+        'kelas.*', 
+        'guru.*', 
+        'mapel.*', 
+        'jadwal.*', 
+        'cetak-kartu.*', 
+        'hari-libur.*', 
+        'pengumuman.*'
+    ]);
+@endphp
 
-{{-- Data Siswa --}}
-<a href="{{ route('siswa.index') }}"
-   class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 {{ request()->routeIs('siswa.*') ? 'nav-active text-white' : 'text-sky-100/80 hover:text-white' }}">
-    <svg class="w-[18px] h-[18px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
-    </svg>
-    <span x-show="sidebarOpen" class="text-sm font-semibold">Data Siswa</span>
-</a>
+<div x-data="{ open: {{ $isMasterActive ? 'true' : 'false' }} }" class="space-y-0.5">
+    <!-- Trigger Button -->
+    <button type="button" 
+            @click="if(!sidebarOpen) { sidebarOpen = true; open = true; } else { open = !open; }"
+            class="nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-[7px] transition-all duration-200 {{ $isMasterActive ? 'font-bold text-blue-600 dark:text-blue-400 bg-blue-50/60 dark:bg-blue-950/30' : '' }} cursor-pointer">
+        <div class="flex items-center gap-3 min-w-0">
+            <i class="ti ti-database text-lg shrink-0 {{ $isMasterActive ? 'text-blue-600 dark:text-blue-400' : '' }}"></i>
+            <span x-show="sidebarOpen" class="text-sm font-semibold truncate">Data Master</span>
+        </div>
+        <i x-show="sidebarOpen" 
+           :class="open ? 'rotate-180' : ''" 
+           class="ti ti-chevron-down text-xs transition-transform duration-200 text-slate-400"></i>
+    </button>
 
-{{-- Data Kelas --}}
-<a href="{{ route('kelas.index') }}"
-   class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 {{ request()->routeIs('kelas.*') ? 'nav-active text-white' : 'text-sky-100/80 hover:text-white' }}">
-    <svg class="w-[18px] h-[18px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
-    </svg>
-    <span x-show="sidebarOpen" class="text-sm font-semibold">Data Kelas</span>
-</a>
+    <!-- Submenu Accordion -->
+    <div x-show="open && sidebarOpen" 
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0 -translate-y-1"
+         x-transition:enter-end="opacity-100 translate-y-0"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100 translate-y-0"
+         x-transition:leave-end="opacity-0 -translate-y-1"
+         class="pl-3.5 ml-4 space-y-0.5 border-l-2 border-slate-200 dark:border-slate-800">
 
-{{-- Data Guru --}}
-<a href="{{ route('guru.index') }}"
-   class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 {{ request()->routeIs('guru.*') ? 'nav-active text-white' : 'text-sky-100/80 hover:text-white' }}">
-    <svg class="w-[18px] h-[18px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-    </svg>
-    <span x-show="sidebarOpen" class="text-sm font-semibold">Data Guru</span>
-</a>
+        {{-- Data Siswa --}}
+        <a href="{{ route('siswa.index') }}"
+           class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-[7px] text-xs {{ request()->routeIs('siswa.*') ? 'nav-active' : '' }}">
+            <i class="ti ti-users text-base shrink-0"></i>
+            <span class="font-medium">Data Siswa</span>
+        </a>
 
-{{-- Mata Pelajaran --}}
-<a href="{{ route('mapel.index') }}"
-   class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 {{ request()->routeIs('mapel.*') ? 'nav-active text-white' : 'text-sky-100/80 hover:text-white' }}">
-    <svg class="w-[18px] h-[18px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
-    </svg>
-    <span x-show="sidebarOpen" class="text-sm font-semibold">Mata Pelajaran</span>
-</a>
+        {{-- Data Kelas --}}
+        <a href="{{ route('kelas.index') }}"
+           class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-[7px] text-xs {{ request()->routeIs('kelas.*') ? 'nav-active' : '' }}">
+            <i class="ti ti-school text-base shrink-0"></i>
+            <span class="font-medium">Data Kelas</span>
+        </a>
 
-{{-- Jadwal Pelajaran --}}
-<a href="{{ route('jadwal.index') }}"
-   class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 {{ request()->routeIs('jadwal.*') ? 'nav-active text-white' : 'text-sky-100/80 hover:text-white' }}">
-    <svg class="w-[18px] h-[18px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2zm5-5h4"/>
-    </svg>
-    <span x-show="sidebarOpen" class="text-sm font-semibold">Jadwal Pelajaran</span>
-</a>
+        {{-- Data Guru --}}
+        <a href="{{ route('guru.index') }}"
+           class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-[7px] text-xs {{ request()->routeIs('guru.*') ? 'nav-active' : '' }}">
+            <i class="ti ti-user-check text-base shrink-0"></i>
+            <span class="font-medium">Data Guru</span>
+        </a>
 
-{{-- Cetak Kartu ID --}}
-<a href="{{ route('cetak-kartu.index') }}"
-   class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 {{ request()->routeIs('cetak-kartu.*') ? 'nav-active text-white' : 'text-sky-100/80 hover:text-white' }}">
-    <svg class="w-[18px] h-[18px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"/>
-    </svg>
-    <span x-show="sidebarOpen" class="text-sm font-semibold">Cetak Kartu ID</span>
-</a>
+        {{-- Mata Pelajaran --}}
+        <a href="{{ route('mapel.index') }}"
+           class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-[7px] text-xs {{ request()->routeIs('mapel.*') ? 'nav-active' : '' }}">
+            <i class="ti ti-book-2 text-base shrink-0"></i>
+            <span class="font-medium">Mata Pelajaran</span>
+        </a>
 
-{{-- Hari Libur --}}
-<a href="{{ route('hari-libur.index') }}"
-   class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 {{ request()->routeIs('hari-libur.*') ? 'nav-active text-white' : 'text-sky-100/80 hover:text-white' }}">
-    <svg class="w-[18px] h-[18px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-    </svg>
-    <span x-show="sidebarOpen" class="text-sm font-semibold">Hari Libur</span>
-</a>
+        {{-- Jadwal Pelajaran --}}
+        <a href="{{ route('jadwal.index') }}"
+           class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-[7px] text-xs {{ request()->routeIs('jadwal.*') ? 'nav-active' : '' }}">
+            <i class="ti ti-calendar-event text-base shrink-0"></i>
+            <span class="font-medium">Jadwal Pelajaran</span>
+        </a>
 
-{{-- Pengumuman --}}
-<a href="{{ route('pengumuman.index') }}"
-   class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 {{ request()->routeIs('pengumuman.*') ? 'nav-active text-white' : 'text-sky-100/80 hover:text-white' }}">
-    <svg class="w-[18px] h-[18px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/>
-    </svg>
-    <span x-show="sidebarOpen" class="text-sm font-semibold">Pengumuman</span>
-</a>
+        {{-- Cetak Kartu ID --}}
+        <a href="{{ route('cetak-kartu.index') }}"
+           class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-[7px] text-xs {{ request()->routeIs('cetak-kartu.*') ? 'nav-active' : '' }}">
+            <i class="ti ti-id-badge-2 text-base shrink-0"></i>
+            <span class="font-medium">Cetak Kartu ID</span>
+        </a>
+
+        {{-- Hari Libur --}}
+        <a href="{{ route('hari-libur.index') }}"
+           class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-[7px] text-xs {{ request()->routeIs('hari-libur.*') ? 'nav-active' : '' }}">
+            <i class="ti ti-calendar-off text-base shrink-0"></i>
+            <span class="font-medium">Hari Libur</span>
+        </a>
+
+        {{-- Pengumuman --}}
+        <a href="{{ route('pengumuman.index') }}"
+           class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-[7px] text-xs {{ request()->routeIs('pengumuman.*') ? 'nav-active' : '' }}">
+            <i class="ti ti-speakerphone text-base shrink-0"></i>
+            <span class="font-medium">Pengumuman</span>
+        </a>
+    </div>
+</div>

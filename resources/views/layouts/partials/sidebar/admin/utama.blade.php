@@ -1,39 +1,68 @@
 {{-- Navigasi Modul: Utama Admin --}}
-<div class="pb-1.5 pt-2 px-2 nav-section-label" x-show="sidebarOpen">Utama</div>
+<div class="pb-1 pt-3 px-3 nav-section-label" x-show="sidebarOpen">Utama</div>
 
 {{-- Dashboard --}}
 <a href="{{ route('dashboard') }}"
-   class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 {{ request()->routeIs('dashboard') ? 'nav-active text-white' : 'text-sky-100/80 hover:text-white' }}">
-    <svg class="w-[18px] h-[18px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-    </svg>
+   class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-[7px] {{ request()->routeIs('dashboard') ? 'nav-active' : '' }}">
+    <i class="ti ti-layout-dashboard text-lg shrink-0"></i>
     <span x-show="sidebarOpen" class="text-sm font-semibold">Dashboard</span>
 </a>
 
-{{-- Scan QR Presensi --}}
-<a href="{{ route('presensi.scan') }}" target="_blank"
-   class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 {{ request()->routeIs('presensi.scan') ? 'nav-active text-white' : 'text-sky-100/80 hover:text-white' }}">
-    <svg class="w-[18px] h-[18px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
-    </svg>
-    <span x-show="sidebarOpen" class="text-sm font-semibold">Scan QR Presensi</span>
-    <span x-show="sidebarOpen" class="ml-auto text-[9px] font-bold bg-white/20 text-white px-1.5 py-0.5 rounded-md tracking-wide">LIVE</span>
-</a>
+{{-- Dropdown Presensi (Absen Umum & Absen Kegiatan) --}}
+@php
+    $isPresensiActive = request()->routeIs(['presensi.*', 'jam-absensi.*', 'kegiatan-khusus.*']);
+@endphp
+<div x-data="{ open: {{ $isPresensiActive ? 'true' : 'false' }} }" class="space-y-0.5">
+    <button type="button" 
+            @click="if(!sidebarOpen) { sidebarOpen = true; open = true; } else { open = !open; }"
+            class="nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-[7px] transition-all duration-200 {{ $isPresensiActive ? 'font-bold text-blue-600 dark:text-blue-400 bg-blue-50/60 dark:bg-blue-950/30' : '' }} cursor-pointer">
+        <div class="flex items-center gap-3 min-w-0">
+            <i class="ti ti-calendar-user text-lg shrink-0 {{ $isPresensiActive ? 'text-blue-600 dark:text-blue-400' : '' }}"></i>
+            <span x-show="sidebarOpen" class="text-sm font-semibold truncate">Presensi</span>
+        </div>
+        <i x-show="sidebarOpen" 
+           :class="open ? 'rotate-180' : ''" 
+           class="ti ti-chevron-down text-xs transition-transform duration-200 text-slate-400"></i>
+    </button>
 
-{{-- Log Presensi --}}
-<a href="{{ route('presensi.index') }}"
-   class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 {{ request()->routeIs('presensi.index') ? 'nav-active text-white' : 'text-sky-100/80 hover:text-white' }}">
-    <svg class="w-[18px] h-[18px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
-    </svg>
-    <span x-show="sidebarOpen" class="text-sm font-semibold">Log Presensi</span>
-</a>
+    <div x-show="open && sidebarOpen" 
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0 -translate-y-1"
+         x-transition:enter-end="opacity-100 translate-y-0"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100 translate-y-0"
+         x-transition:leave-end="opacity-0 -translate-y-1"
+         class="pl-3.5 ml-4 space-y-0.5 border-l-2 border-slate-200 dark:border-slate-800">
 
-{{-- Jam Absensi --}}
-<a href="{{ route('jam-absensi.index') }}"
-   class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 {{ request()->routeIs('jam-absensi.*') ? 'nav-active text-white' : 'text-sky-100/80 hover:text-white' }}">
-    <svg class="w-[18px] h-[18px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-    </svg>
-    <span x-show="sidebarOpen" class="text-sm font-semibold">Jam Absensi</span>
-</a>
+        {{-- Absen Umum --}}
+        <a href="{{ route('presensi.index') }}"
+           class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-[7px] text-xs {{ request()->routeIs('presensi.index') ? 'nav-active' : '' }}">
+            <i class="ti ti-clipboard-list text-base shrink-0"></i>
+            <span class="font-medium">Absen Umum</span>
+        </a>
+
+        {{-- Scan QR Masuk / Pulang --}}
+        <a href="{{ route('presensi.scan') }}" target="_blank"
+           class="nav-item flex items-center justify-between px-3 py-2 rounded-[7px] text-xs {{ request()->routeIs('presensi.scan') ? 'nav-active' : '' }}">
+            <div class="flex items-center gap-2.5">
+                <i class="ti ti-qrcode text-base shrink-0"></i>
+                <span class="font-medium">Scan QR Umum</span>
+            </div>
+            <span class="text-[9px] font-bold bg-blue-100 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded">LIVE</span>
+        </a>
+
+        {{-- Absen Kegiatan Khusus --}}
+        <a href="{{ route('kegiatan-khusus.index') }}"
+           class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-[7px] text-xs {{ request()->routeIs('kegiatan-khusus.*') ? 'nav-active' : '' }}">
+            <i class="ti ti-calendar-star text-base shrink-0"></i>
+            <span class="font-medium">Absen Kegiatan</span>
+        </a>
+
+        {{-- Jam Absensi --}}
+        <a href="{{ route('jam-absensi.index') }}"
+           class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-[7px] text-xs {{ request()->routeIs('jam-absensi.*') ? 'nav-active' : '' }}">
+            <i class="ti ti-clock text-base shrink-0"></i>
+            <span class="font-medium">Jam Absensi</span>
+        </a>
+    </div>
+</div>

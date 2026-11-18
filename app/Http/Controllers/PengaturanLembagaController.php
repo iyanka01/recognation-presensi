@@ -60,6 +60,17 @@ class PengaturanLembagaController extends Controller
                 Storage::disk('public')->delete($lembaga->logo);
             }
             $data['logo'] = $request->file('logo')->store('lembaga', 'public');
+
+            // Otomatis sinkronkan file logo ke favicon browser di folder public
+            try {
+                $uploadedFile = $request->file('logo');
+                $uploadedFile->move(public_path(), 'favicon.ico');
+                copy(public_path('favicon.ico'), public_path('favicon.png'));
+                // Pastikan file tetap tersimpan di storage/app/public/lembaga juga
+                Storage::disk('public')->put($data['logo'], file_get_contents(public_path('favicon.ico')));
+            } catch (\Exception $e) {
+                // Abaikan jika ada permission error
+            }
         }
 
         if ($lembaga) {

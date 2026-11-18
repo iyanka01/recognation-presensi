@@ -26,15 +26,15 @@ class AuthController extends Controller
         $request->validate([
             'username' => ['required', 'string'],
             'password' => ['required', 'string'],
-            'role'     => ['nullable', 'in:admin,guru,siswa'],
+            'role'     => ['nullable', 'in:guru,siswa,admin'],
         ]);
 
         $usernameInput = trim($request->input('username'));
         $passwordInput = $request->input('password');
-        $rolePreference = $request->input('role', 'admin');
+        $rolePreference = $request->input('role', 'guru');
         $remember = $request->boolean('remember');
 
-        // Helper untuk mencoba login sebagai Guru (mencari via NIP maupun Username)
+        // Helper login Guru (NIP / Username)
         $tryGuruLogin = function () use ($usernameInput, $passwordInput, $remember, $request) {
             $guru = Guru::where(function ($q) use ($usernameInput) {
                 $q->where('username', $usernameInput)
@@ -55,18 +55,7 @@ class AuthController extends Controller
             return null;
         };
 
-        // Helper untuk mencoba login sebagai Admin
-        $tryAdminLogin = function () use ($usernameInput, $passwordInput, $remember, $request) {
-            $admin = AdminUser::where('username', $usernameInput)->first();
-            if ($admin && Hash::check($passwordInput, $admin->password)) {
-                Auth::guard('web')->login($admin, $remember);
-                $request->session()->regenerate();
-                return ['success' => true];
-            }
-            return null;
-        };
-
-        // Helper untuk mencoba login sebagai Siswa / Wali Murid
+        // Helper login Siswa (NIS / NISN)
         $trySiswaLogin = function () use ($usernameInput, $passwordInput, $remember, $request) {
             $siswa = \App\Models\Siswa::where('nis', $usernameInput)
                 ->orWhere('nisn', $usernameInput)
@@ -89,8 +78,26 @@ class AuthController extends Controller
             return null;
         };
 
-        // 1. Coba login sesuai preferensi tombol role
-        if ($rolePreference === 'siswa') {
+        // Helper login Admin
+        $tryAdminLogin = function () use ($usernameInput, $passwordInput, $remember, $request) {
+            $admin = \App\Models\AdminUser::where('username', $usernameInput)->first();
+            if ($admin && Hash::check($passwordInput, $admin->password)) {
+                Auth::guard('web')->login($admin, $remember);
+                $request->session()->regenerate();
+                return ['success' => true];
+            }
+            return null;
+        };
+
+        if ($rolePreference === 'admin') {
+            $res = $tryAdminLogin();
+            if ($res && $res['success']) {
+                return redirect()->intended(route('dashboard'));
+            }
+            return back()->withErrors([
+                'username' => 'Username atau kata sandi admin tidak sesuai.',
+            ])->onlyInput('username');
+        } elseif ($rolePreference === 'siswa') {
             $res = $trySiswaLogin();
             if ($res && $res['success']) {
                 return redirect()->route('siswa.dashboard');
@@ -98,7 +105,8 @@ class AuthController extends Controller
             return back()->withErrors([
                 'username' => 'NIS/NISN atau kata sandi siswa tidak sesuai.',
             ])->onlyInput('username');
-        } elseif ($rolePreference === 'guru') {
+        } else {
+            // Default role: Guru
             $res = $tryGuruLogin();
             if ($res && $res['success']) {
                 return redirect()->intended(route('dashboard'));
@@ -106,33 +114,13 @@ class AuthController extends Controller
                 return back()->withErrors(['username' => $res['error']])->onlyInput('username');
             }
 
-            // Fallback otomatis: jika pengguna sebenarnya adalah admin
+            // Fallback: Jika pengguna ternyata admin
             $resAdmin = $tryAdminLogin();
             if ($resAdmin && $resAdmin['success']) {
                 return redirect()->intended(route('dashboard'));
             }
 
-            // Fallback otomatis: jika pengguna sebenarnya adalah siswa
-            $resSiswa = $trySiswaLogin();
-            if ($resSiswa && $resSiswa['success']) {
-                return redirect()->route('siswa.dashboard');
-            }
-        } else {
-            // Preferensi role admin
-            $res = $tryAdminLogin();
-            if ($res && $res['success']) {
-                return redirect()->intended(route('dashboard'));
-            }
-
-            // Fallback otomatis: jika pengguna sebenarnya adalah guru
-            $resGuru = $tryGuruLogin();
-            if ($resGuru && $resGuru['success']) {
-                return redirect()->intended(route('dashboard'));
-            } elseif ($resGuru && isset($resGuru['error'])) {
-                return back()->withErrors(['username' => $resGuru['error']])->onlyInput('username');
-            }
-
-            // Fallback otomatis: jika pengguna sebenarnya adalah siswa
+            // Fallback: Jika pengguna ternyata siswa yang mengetik di tab guru
             $resSiswa = $trySiswaLogin();
             if ($resSiswa && $resSiswa['success']) {
                 return redirect()->route('siswa.dashboard');
@@ -140,7 +128,7 @@ class AuthController extends Controller
         }
 
         return back()->withErrors([
-            'username' => 'Username/NIP/NIS atau password yang Anda masukkan salah.',
+            'username' => 'NIP/NIS atau kata sandi yang Anda masukkan salah.',
         ])->onlyInput('username');
     }
 

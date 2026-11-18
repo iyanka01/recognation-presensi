@@ -25,6 +25,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->validateCsrfTokens(except: [
             'login',
             'logout',
+            'admin/login',
+            'admin/logout',
             'siswa/login',
             'siswa/logout',
         ]);

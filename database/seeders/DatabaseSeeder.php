@@ -14,14 +14,14 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Pastikan akun default Admin selalu ada di database
+        // Pastikan akun default Admin selalu ada di database tanpa me-reset password yang sudah diubah
         $admin = AdminUser::firstOrNew(['username' => 'admin']);
         if (!$admin->exists) {
             $admin->id = (string) Str::uuid();
             $admin->nama_lengkap = 'Administrator';
             $admin->role = 'admin';
+            $admin->password = Hash::make('admin123');
+            $admin->save();
         }
-        $admin->password = Hash::make('admin123');
-        $admin->save();
     }
 }

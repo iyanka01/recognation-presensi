@@ -73,15 +73,31 @@ class GuruDashboardController extends Controller
             ->where('hari', $hariIni)
             ->first() ?: PengaturanJam::where('tipe', 'guru')->first();
 
+        // Pengumuman aktif terbaru untuk guru
+        $pengumumanTerbaru = \App\Models\Pengumuman::where('is_aktif', true)
+            ->whereIn('target', ['semua', 'guru'])
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        // Kegiatan Khusus Siswa (Guru bertindak menyeken siswa)
+        // Sasaran: Siswa / Rombel (bukan 'Khusus Guru'), status aktif / hari ini
+        $kegiatanSiswaHariIni = \App\Models\KegiatanKhusus::where('status', '!=', 'Selesai')
+            ->where('sasaran_peserta', '!=', 'Khusus Guru')
+            ->orderBy('tanggal', 'desc')
+            ->orderBy('jam_mulai', 'asc')
+            ->get();
+
         return view('dashboard-guru', [
-            'guru'             => $guru,
-            'jadwalHariIni'    => $jadwalHariIni,
-            'hariIni'          => $hariIni,
-            'stat'             => $stat,
-            'pengaturan'       => PengaturanLembaga::first(),
-            'presensiHariIni'  => $presensiHariIni,
-            'lockedPresensi'   => $lockedPresensi,
-            'pengaturanJam'    => $pengaturanJam,
+            'guru'                  => $guru,
+            'jadwalHariIni'         => $jadwalHariIni,
+            'hariIni'               => $hariIni,
+            'stat'                  => $stat,
+            'pengaturan'            => PengaturanLembaga::first(),
+            'presensiHariIni'       => $presensiHariIni,
+            'lockedPresensi'        => $lockedPresensi,
+            'pengaturanJam'         => $pengaturanJam,
+            'pengumumanTerbaru'     => $pengumumanTerbaru,
+            'kegiatanSiswaHariIni'  => $kegiatanSiswaHariIni,
         ]);
     }
 }

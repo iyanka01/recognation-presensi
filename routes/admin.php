@@ -16,9 +16,10 @@ use App\Http\Controllers\BackupController;
 use App\Http\Controllers\TelegramController;
 use App\Http\Controllers\MapelController;
 use App\Http\Controllers\JadwalController;
-use App\Http\Controllers\PengumumanController;
 use App\Http\Controllers\RekapJamGuruController;
 use App\Http\Controllers\WhatsAppBroadcastController;
+use App\Http\Controllers\PengumumanController;
+use App\Http\Controllers\AdminAuthController;
 
 /*
 |--------------------------------------------------------------------------
@@ -30,7 +31,18 @@ use App\Http\Controllers\WhatsAppBroadcastController;
 |
 */
 
+// Halaman Khusus Login Admin (Akses via /admin atau /admin/login)
+Route::get('admin/login', [AdminAuthController::class, 'showLoginForm'])->name('admin.login');
+Route::post('admin/login', [AdminAuthController::class, 'login'])->name('admin.login.post');
+Route::get('admin', function () {
+    if (auth()->guard('web')->check()) {
+        return redirect()->route('dashboard');
+    }
+    return redirect()->route('admin.login');
+})->name('admin.index');
+
 Route::middleware('auth:web')->group(function () {
+    Route::match(['get', 'post'], 'admin/logout', [AdminAuthController::class, 'logout'])->name('admin.logout');
     // Master Kelas
     Route::resource('kelas', KelasController::class)->parameters(['kelas' => 'kelas'])->except(['create', 'show']);
     
@@ -126,4 +138,22 @@ Route::middleware('auth:web')->group(function () {
 
     // Pengumuman Sekolah
     Route::resource('pengumuman', PengumumanController::class);
+
+    // Kegiatan Khusus (CRUD Admin)
+    Route::get('kegiatan-khusus', [\App\Http\Controllers\KegiatanKhususController::class, 'index'])->name('kegiatan-khusus.index');
+    Route::post('kegiatan-khusus', [\App\Http\Controllers\KegiatanKhususController::class, 'store'])->name('kegiatan-khusus.store');
+    Route::put('kegiatan-khusus/{id}', [\App\Http\Controllers\KegiatanKhususController::class, 'update'])->name('kegiatan-khusus.update');
+    Route::delete('kegiatan-khusus/{id}', [\App\Http\Controllers\KegiatanKhususController::class, 'destroy'])->name('kegiatan-khusus.destroy');
+    Route::get('kegiatan-khusus/{id}/peserta', [\App\Http\Controllers\KegiatanKhususController::class, 'peserta'])->name('kegiatan-khusus.peserta');
+
+    // Laporan Kegiatan Khusus
+    Route::get('laporan-kegiatan', [\App\Http\Controllers\LaporanKegiatanController::class, 'index'])->name('laporan-kegiatan.index');
+    Route::get('laporan-kegiatan/print', [\App\Http\Controllers\LaporanKegiatanController::class, 'print'])->name('laporan-kegiatan.print');
+    Route::get('laporan-kegiatan/export-excel', [\App\Http\Controllers\LaporanKegiatanController::class, 'exportExcel'])->name('laporan-kegiatan.export-excel');
+});
+
+// Terminal Scanner Kegiatan Khusus (Bisa diakses Admin & Guru)
+Route::middleware('auth:web,guru')->group(function () {
+    Route::get('kegiatan-khusus/{id}/scan', [\App\Http\Controllers\KegiatanKhususController::class, 'scan'])->name('kegiatan-khusus.scan');
+    Route::post('kegiatan-khusus/{id}/scan/process', [\App\Http\Controllers\KegiatanKhususController::class, 'processScan'])->name('kegiatan-khusus.scan.process');
 });

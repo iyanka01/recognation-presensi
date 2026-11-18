@@ -34,350 +34,287 @@
 
     {{-- ======== BANNER WAKTU DIGITAL REAL-TIME ======== --}}
     <div class="text-center pt-1 pb-1">
-        <div id="live-clock-guru" class="text-3xl sm:text-4xl font-black text-white tracking-wider drop-shadow-md">
+        <div id="live-clock-guru" class="text-2xl sm:text-3xl font-black text-white tracking-wider drop-shadow-md">
             {{ \Carbon\Carbon::now()->format('g:i:s A') }}
         </div>
     </div>
 
-    {{-- ======== KARTU BIRU PROFIL GURU (SEPERTI PORTAL SISWA) ======== --}}
-    <div class="bg-gradient-to-r from-sky-500 to-blue-600 text-white rounded-2xl p-4 shadow-lg shadow-sky-200/50 flex items-center justify-between gap-3">
-        <div class="flex items-center gap-3.5 min-w-0">
-            {{-- Avatar Bulat --}}
-            <div class="relative shrink-0">
-                @if($guru->foto_guru)
-                    <img src="{{ Storage::url($guru->foto_guru) }}" alt="{{ $guru->nama_lengkap }}" class="w-12 h-12 rounded-full object-cover border-2 border-white/80 shadow-sm bg-white">
-                @else
-                    <div class="w-12 h-12 rounded-full bg-gradient-to-tr from-amber-500 to-orange-500 border-2 border-white/80 shadow-sm flex items-center justify-center text-white">
-                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                        </svg>
+    {{-- ======== KARTU PROFIL GURU & ABSENSI (GAYA EDLINKS DENGAN WARNA HIJAU EMERALD) ======== --}}
+    @php
+        $jamSekarang = (int) date('H');
+        if ($jamSekarang < 11) {
+            $sapaan = 'Selamat Pagi,';
+        } elseif ($jamSekarang < 15) {
+            $sapaan = 'Selamat Siang,';
+        } elseif ($jamSekarang < 18) {
+            $sapaan = 'Selamat Sore,';
+        } else {
+            $sapaan = 'Selamat Malam,';
+        }
+    @endphp
+
+    <div class="bg-white rounded-[28px] sm:rounded-3xl p-5 shadow-xl shadow-emerald-950/10 border border-emerald-50">
+        
+        {{-- Baris Profil: Avatar, Sapaan, Nama, Badge & Lonceng Notifikasi --}}
+        <div class="flex items-start justify-between gap-3 mb-4">
+            <div class="flex items-center gap-3.5 min-w-0">
+                {{-- Avatar Bulat dengan Cincin Hijau --}}
+                <div class="relative shrink-0">
+                    @if($guru->foto_guru)
+                        <img src="{{ Storage::url($guru->foto_guru) }}" alt="{{ $guru->nama_lengkap }}" class="w-14 h-14 rounded-full object-cover border-2 border-emerald-500 shadow-md bg-white">
+                    @else
+                        <div class="w-14 h-14 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-600 border-2 border-emerald-500 shadow-md flex items-center justify-center text-white font-extrabold text-xl">
+                            {{ strtoupper(substr($guru->nama_lengkap, 0, 1)) }}
+                        </div>
+                    @endif
+                    <span class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full"></span>
+                </div>
+
+                {{-- Sapaan & Nama Guru --}}
+                <div class="min-w-0">
+                    <p class="text-xs text-slate-400 font-semibold leading-tight">{{ $sapaan }}</p>
+                    <h3 class="text-lg sm:text-xl font-black text-slate-900 truncate leading-tight mt-0.5">{{ $guru->nama_lengkap }}</h3>
+                    
+                    {{-- Badges / Status Chips ala Edukasi --}}
+                    <div class="flex items-center gap-2 mt-1.5 flex-wrap">
+                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/80 text-[11px] font-bold">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                            NIP: {{ $guru->nip ?? '-' }}
+                        </span>
+                        <span class="inline-flex items-center gap-1 text-[11px] font-bold text-amber-600">
+                            ⭐ {{ $stat['kelas_diajar'] ?? 0 }} Kelas
+                        </span>
                     </div>
-                @endif
+                </div>
             </div>
 
-            {{-- Info Nama & NIP --}}
-            <div class="min-w-0 flex-1">
-                <h3 class="text-base sm:text-lg font-black truncate leading-tight">{{ $guru->nama_lengkap }}</h3>
-                <p class="text-xs text-sky-100 font-medium truncate mt-0.5">Guru Pengajar • NIP: {{ $guru->nip ?? '-' }}</p>
+            {{-- Lonceng Informasi --}}
+            <a href="{{ route('guru.informasi.index') }}" class="w-10 h-10 rounded-2xl bg-emerald-50 hover:bg-emerald-100/80 text-emerald-700 flex items-center justify-center transition-all shrink-0 relative shadow-sm border border-emerald-100">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                </svg>
+            </a>
+        </div>
+
+        {{-- Progress / Info Jam Sekolah (Tepat di bawah profil seperti di gambar) --}}
+        <div class="mb-4">
+            <div class="flex items-center justify-between text-[11px] font-bold text-slate-500 mb-1.5">
+                <span>Jam Kerja Sekolah</span>
+                <span class="text-emerald-700">{{ $pengaturanJam ? substr($pengaturanJam->jam_mulai,0,5) . ' - ' . substr($pengaturanJam->jam_pulang,0,5) . ' WIB' : 'Reguler' }}</span>
+            </div>
+            <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                <div class="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full" style="width: {{ $presensiHariIni && $presensiHariIni->jam_pulang ? '100%' : ($presensiHariIni && $presensiHariIni->jam_masuk ? '60%' : '15%') }}"></div>
             </div>
         </div>
 
-        {{-- Badge Status Jam Sekolah --}}
-        <div class="shrink-0 text-right hidden sm:block">
-            <span class="inline-block px-2.5 py-1 bg-white/20 backdrop-blur rounded-xl text-[10px] font-bold text-white">
-                {{ $pengaturanJam ? substr($pengaturanJam->jam_mulai,0,5) . ' - ' . substr($pengaturanJam->jam_pulang,0,5) : 'PKBM' }}
-            </span>
+        {{-- ======== PENGGANTI SEARCH BAR: CONTAINER ABSEN MASUK & ABSEN PULANG ======== --}}
+        <div class="bg-slate-50/90 border border-slate-200/90 rounded-2xl p-1.5 flex items-center gap-1.5 shadow-inner">
+            
+            {{-- Tombol / Status Absen Masuk --}}
+            @if($presensiHariIni && $presensiHariIni->jam_masuk)
+                <div class="flex-1 py-2.5 px-3 rounded-xl bg-white border border-emerald-300 shadow-sm flex items-center justify-center gap-2">
+                    <div class="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                    </div>
+                    <div class="text-left leading-tight truncate">
+                        <p class="text-[9px] text-slate-400 uppercase font-black">Masuk</p>
+                        <p class="text-xs font-black text-emerald-700">{{ substr($presensiHariIni->jam_masuk,0,5) }} <span class="text-[10px] font-semibold text-emerald-600">({{ $presensiHariIni->status }})</span></p>
+                    </div>
+                </div>
+            @elseif(isset($lockedPresensi) && $lockedPresensi)
+                <button type="button" onclick="openModal('masuk')" class="flex-1 py-2.5 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 shadow-sm flex items-center justify-center gap-2 transition-all active:scale-95 text-left">
+                    <svg class="w-4 h-4 text-rose-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                    <span class="text-xs font-extrabold truncate">Terkunci 🔒</span>
+                </button>
+            @else
+                <button type="button" onclick="openModal('masuk')" class="flex-1 py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/30 flex items-center justify-center gap-2 transition-all active:scale-95">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
+                    <span class="text-xs font-black tracking-wide">Absen Masuk</span>
+                </button>
+            @endif
+
+            {{-- Tombol / Status Absen Pulang --}}
+            @if($presensiHariIni && $presensiHariIni->jam_pulang)
+                <div class="flex-1 py-2.5 px-3 rounded-xl bg-white border border-teal-300 shadow-sm flex items-center justify-center gap-2">
+                    <div class="w-6 h-6 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center shrink-0">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                    </div>
+                    <div class="text-left leading-tight truncate">
+                        <p class="text-[9px] text-slate-400 uppercase font-black">Pulang</p>
+                        <p class="text-xs font-black text-teal-700">{{ substr($presensiHariIni->jam_pulang,0,5) }} <span class="text-[10px] font-semibold text-teal-600">Selesai</span></p>
+                    </div>
+                </div>
+            @else
+                <button type="button" onclick="openModal('pulang')" class="flex-1 py-2.5 px-3 rounded-xl bg-white hover:bg-teal-50 text-slate-700 hover:text-teal-700 border border-slate-200 shadow-sm flex items-center justify-center gap-2 transition-all active:scale-95">
+                    <svg class="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                    <span class="text-xs font-black tracking-wide">Absen Pulang</span>
+                </button>
+            @endif
+
+        </div>
+
+    </div>
+
+    {{-- ======== GRID 8 MENU BULAT MODERN (PERSIS SEPERTI GAMBAR DENGAN TEMA HIJAU EMERALD) ======== --}}
+    <div class="bg-white rounded-3xl p-5 border border-slate-100 shadow-xl shadow-slate-200/50">
+        <div class="grid grid-cols-4 gap-y-5 gap-x-2 text-center">
+
+            {{-- 1. Absen Mapel --}}
+            <a href="{{ route('absensi-mapel.index') }}" class="flex flex-col items-center justify-start group">
+                <div class="w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-emerald-50 group-hover:bg-emerald-100 border border-emerald-100 flex items-center justify-center transition-all duration-200 group-hover:scale-105 shadow-sm p-3">
+                    <img src="https://cdn-icons-png.flaticon.com/512/3209/3209265.png" alt="Absen Mapel" class="w-7 h-7 sm:w-8 sm:h-8 object-contain">
+                </div>
+                <span class="text-[11px] font-bold text-slate-800 mt-2 leading-tight">Absen Mapel</span>
+            </a>
+
+            {{-- 2. Jadwal Mengajar --}}
+            <a href="{{ route('guru.jadwal.index') }}" class="flex flex-col items-center justify-start group">
+                <div class="w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-teal-50 group-hover:bg-teal-100 border border-teal-100 flex items-center justify-center transition-all duration-200 group-hover:scale-105 shadow-sm p-3">
+                    <img src="https://cdn-icons-png.flaticon.com/512/3652/3652191.png" alt="Jadwal" class="w-7 h-7 sm:w-8 sm:h-8 object-contain">
+                </div>
+                <span class="text-[11px] font-bold text-slate-800 mt-2 leading-tight">Jadwal</span>
+            </a>
+
+            {{-- 3. Scan Wajah --}}
+            <a href="{{ route('guru.face-scan') }}" class="flex flex-col items-center justify-start group">
+                <div class="w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-cyan-50 group-hover:bg-cyan-100 border border-cyan-100 flex items-center justify-center transition-all duration-200 group-hover:scale-105 shadow-sm p-3">
+                    <img src="https://cdn-icons-png.flaticon.com/512/11502/11502540.png" alt="Scan Wajah" class="w-7 h-7 sm:w-8 sm:h-8 object-contain">
+                </div>
+                <span class="text-[11px] font-bold text-slate-800 mt-2 leading-tight">Face Scan</span>
+            </a>
+
+            {{-- 4. Rekap Absen --}}
+            <a href="{{ route('rekap-mapel.index') }}" class="flex flex-col items-center justify-start group">
+                <div class="w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-blue-50 group-hover:bg-blue-100 border border-blue-100 flex items-center justify-center transition-all duration-200 group-hover:scale-105 shadow-sm p-3">
+                    <img src="https://cdn-icons-png.flaticon.com/512/942/942751.png" alt="Rekap Absen" class="w-7 h-7 sm:w-8 sm:h-8 object-contain">
+                </div>
+                <span class="text-[11px] font-bold text-slate-800 mt-2 leading-tight">Rekap</span>
+            </a>
+
+            {{-- 5. Izin & Cuti --}}
+            <a href="{{ route('guru.izin.index', ['open' => 1]) }}" class="flex flex-col items-center justify-start group">
+                <div class="w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-amber-50 group-hover:bg-amber-100 border border-amber-100 flex items-center justify-center transition-all duration-200 group-hover:scale-105 shadow-sm p-3">
+                    <img src="https://cdn-icons-png.flaticon.com/512/2921/2921222.png" alt="Izin & Cuti" class="w-7 h-7 sm:w-8 sm:h-8 object-contain">
+                </div>
+                <span class="text-[11px] font-bold text-slate-800 mt-2 leading-tight">Izin / Cuti</span>
+            </a>
+
+            {{-- 6. Informasi & SP --}}
+            <a href="{{ route('guru.informasi.index') }}" class="flex flex-col items-center justify-start group">
+                <div class="w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-rose-50 group-hover:bg-rose-100 border border-rose-100 flex items-center justify-center transition-all duration-200 group-hover:scale-105 shadow-sm p-3">
+                    <img src="https://cdn-icons-png.flaticon.com/512/2645/2645897.png" alt="Informasi" class="w-7 h-7 sm:w-8 sm:h-8 object-contain">
+                </div>
+                <span class="text-[11px] font-bold text-slate-800 mt-2 leading-tight">Informasi</span>
+            </a>
+
+            {{-- 7. Profil & Sandi --}}
+            <button type="button" onclick="openAccountModal()" class="flex flex-col items-center justify-start group">
+                <div class="w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-slate-50 group-hover:bg-slate-100 border border-slate-200 flex items-center justify-center transition-all duration-200 group-hover:scale-105 shadow-sm p-3">
+                    <img src="https://cdn-icons-png.flaticon.com/512/1077/1077063.png" alt="Akun Guru" class="w-7 h-7 sm:w-8 sm:h-8 object-contain">
+                </div>
+                <span class="text-[11px] font-bold text-slate-800 mt-2 leading-tight">Profil</span>
+            </button>
+
+            {{-- 8. Absen Kegiatan Khusus (Siswa) --}}
+            <a href="{{ route('guru.kegiatan.index') }}" class="flex flex-col items-center justify-start group">
+                <div class="w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-violet-50 group-hover:bg-violet-100 border border-violet-100 flex items-center justify-center transition-all duration-200 group-hover:scale-105 shadow-sm p-3 relative">
+                    <img src="https://cdn-icons-png.flaticon.com/512/3222/3222800.png" alt="Absen Kegiatan" class="w-7 h-7 sm:w-8 sm:h-8 object-contain">
+                    @if(isset($kegiatanSiswaHariIni) && $kegiatanSiswaHariIni->isNotEmpty())
+                        <span class="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full animate-ping"></span>
+                        <span class="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full"></span>
+                    @endif
+                </div>
+                <span class="text-[11px] font-bold text-slate-800 mt-2 leading-tight">Kegiatan</span>
+            </a>
+
         </div>
     </div>
 
-    {{-- Alert Terkunci karena tidak absen pulang --}}
-    @if(isset($lockedPresensi) && $lockedPresensi)
-    @php
-        $tglLockedStr = \Carbon\Carbon::parse($lockedPresensi->tanggal)->locale('id')->isoFormat('dddd, D MMMM Y');
-    @endphp
-    <div class="bg-gradient-to-r from-rose-50 to-red-50 border border-rose-200 rounded-2xl p-4 flex items-start gap-3 shadow-sm">
-        <div class="w-9 h-9 rounded-xl bg-rose-500/15 border border-rose-300/40 flex items-center justify-center shrink-0 text-rose-600 mt-0.5">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-            </svg>
-        </div>
-        <div class="flex-1 min-w-0">
-            <h4 class="font-bold text-rose-900 text-sm">Presensi Anda Terkunci</h4>
-            <p class="text-xs text-rose-800/90 mt-0.5 leading-relaxed">
-                Anda tidak melakukan absen pulang pada hari <strong>{{ $tglLockedStr }}</strong>. Sistem mengunci absen masuk Anda hari ini sampai diizinkan oleh admin.
-            </p>
-            <div class="mt-2 text-xs font-semibold text-rose-700 bg-white/70 border border-rose-200/60 rounded-xl px-3 py-1.5 inline-flex items-center gap-1.5">
-                <span>💬 Silakan hubungi <strong>Administrator Sekolah</strong> untuk membuka kunci kehadiran Anda.</span>
+
+    {{-- ======== AGENDA KEGIATAN KHUSUS SISWA (SCAN ABSEN OLEH GURU) ======== --}}
+    @if(isset($kegiatanSiswaHariIni) && $kegiatanSiswaHariIni->isNotEmpty())
+    <div class="bg-gradient-to-br from-emerald-700 via-teal-800 to-emerald-950 rounded-[28px] p-5 border border-emerald-500/40 shadow-xl shadow-emerald-950/20 text-white relative overflow-hidden">
+        {{-- Background glow accents --}}
+        <div class="absolute -top-10 -right-10 w-36 h-36 bg-emerald-400/20 rounded-full blur-2xl pointer-events-none"></div>
+
+        <div class="flex items-center justify-between mb-3.5 relative z-10">
+            <div class="flex items-center gap-2.5">
+                <span class="w-8 h-8 rounded-xl bg-white/20 border border-white/30 flex items-center justify-center text-white">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+                </span>
+                <div>
+                    <h3 class="text-xs sm:text-sm font-black tracking-wide text-white">Kegiatan Khusus Siswa</h3>
+                    <p class="text-[10px] text-emerald-100/90">Scan presensi kartu peserta kegiatan</p>
+                </div>
             </div>
+            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-white/20 text-white border border-white/30">
+                {{ $kegiatanSiswaHariIni->count() }} Kegiatan
+            </span>
+        </div>
+
+        <div class="space-y-2.5 relative z-10">
+            @foreach($kegiatanSiswaHariIni as $kg)
+            <div class="bg-white/10 hover:bg-white/15 backdrop-blur-md rounded-2xl p-3.5 border border-white/15 transition-all flex items-center justify-between gap-3">
+                <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                        <span class="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                            #{{ $kg->kode_kegiatan }}
+                        </span>
+                        <h4 class="text-xs font-bold text-white truncate">{{ $kg->nama_kegiatan }}</h4>
+                    </div>
+                    <div class="flex items-center gap-2 mt-1 text-[11px] text-emerald-100">
+                        <span class="font-semibold">
+                            {{ substr($kg->jam_mulai,0,5) }} - {{ substr($kg->jam_selesai,0,5) }} WIB
+                        </span>
+                        <span>&bull;</span>
+                        <span class="truncate text-[10px] text-emerald-200 font-medium">{{ $kg->sasaran_label }}</span>
+                    </div>
+                </div>
+
+                {{-- Tombol Scan Kegiatan --}}
+                <a href="{{ route('kegiatan-khusus.scan', $kg->id) }}"
+                   class="shrink-0 px-3.5 py-2 rounded-xl bg-white hover:bg-emerald-50 text-emerald-800 font-extrabold text-xs shadow-md shadow-emerald-950/20 flex items-center gap-1.5 active:scale-95 transition-all">
+                    <svg class="w-4 h-4 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+                    <span>Absen</span>
+                </a>
+            </div>
+            @endforeach
         </div>
     </div>
     @endif
 
-    {{-- ======== 2 KARTU ABSENSI MANDIRI (MASUK & PULANG) ======== --}}
-    <div class="grid grid-cols-2 gap-2.5">
-        {{-- Jam Masuk --}}
-        @if($presensiHariIni && $presensiHariIni->jam_masuk)
-        <div class="bg-white rounded-2xl p-3 border border-emerald-200 shadow-sm flex flex-col justify-between">
-            <div class="flex items-center gap-2.5">
-                <div class="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                </div>
-                <div class="min-w-0 flex-1">
-                    <p class="text-[10px] text-slate-400 font-bold uppercase leading-none">Masuk</p>
-                    <p class="text-sm font-black text-emerald-700 mt-0.5">{{ substr($presensiHariIni->jam_masuk,0,5) }}</p>
-                    <p class="text-[9px] text-emerald-600 font-medium truncate">{{ $presensiHariIni->status }}</p>
-                </div>
+    {{-- ======== KARTU PENGUMUMAN / INFORMASI SEKOLAH ======== --}}
+    <div class="bg-white rounded-3xl p-4 sm:p-5 border border-slate-100 shadow-xl shadow-slate-200/50 flex items-center justify-between gap-3">
+        <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-1.5 text-xs font-black text-slate-800 mb-1">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>Pengumuman &amp; Informasi</span>
+                <span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded-full">Terbaru</span>
             </div>
-            @if($presensiHariIni->latitude && $presensiHariIni->longitude)
-            <div class="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[10px]">
-                <span class="text-slate-500 font-medium truncate">📍 {{ number_format($presensiHariIni->latitude, 4) }}, {{ number_format($presensiHariIni->longitude, 4) }}</span>
-                <a href="https://www.google.com/maps?q={{ $presensiHariIni->latitude }},{{ $presensiHariIni->longitude }}" target="_blank" class="text-sky-600 hover:text-sky-700 font-bold shrink-0 ml-1">
-                    Maps ↗
+            @if(isset($pengumumanTerbaru) && $pengumumanTerbaru)
+                <a href="{{ route('guru.informasi.show', $pengumumanTerbaru->id) }}" class="group block">
+                    <h4 class="text-xs sm:text-sm font-extrabold text-slate-900 group-hover:text-emerald-700 transition-colors line-clamp-1">
+                        {{ $pengumumanTerbaru->judul }}
+                    </h4>
+                    <p class="text-[11px] text-slate-500 line-clamp-2 mt-0.5 leading-snug">
+                        {{ Str::limit(strip_tags($pengumumanTerbaru->isi), 90) }}
+                    </p>
+                    <span class="inline-flex items-center gap-1 text-[10px] text-emerald-700 font-bold mt-1 group-hover:underline">
+                        <span>Lihat detail info</span>
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    </span>
                 </a>
-            </div>
+            @else
+                <p class="text-xs font-bold text-slate-700 mt-0.5">Belum ada pengumuman baru</p>
+                <p class="text-[11px] text-slate-400 mt-0.5">Seluruh pengumuman atau surat edaran sekolah akan ditampilkan di sini.</p>
+                <a href="{{ route('guru.informasi.index') }}" class="inline-flex items-center gap-1 text-[10px] text-emerald-700 font-bold mt-1 hover:underline">
+                    <span>Buka papan informasi</span>
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </a>
             @endif
         </div>
-        @elseif(isset($lockedPresensi) && $lockedPresensi)
-        <button type="button" onclick="openModal('masuk')" class="bg-rose-50/80 hover:bg-rose-100/70 rounded-2xl p-3 border border-rose-200 shadow-sm flex items-center gap-2.5 transition-all active:scale-95 text-left">
-            <div class="w-9 h-9 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-            </div>
-            <div class="min-w-0">
-                <p class="text-[10px] text-rose-500 font-bold uppercase leading-none">Jam Masuk</p>
-                <p class="text-xs font-bold text-rose-700 mt-0.5">Terkunci (Hubungi Admin) 🔒</p>
-            </div>
-        </button>
-        @else
-        <button type="button" onclick="openModal('masuk')" class="bg-white hover:bg-emerald-50/50 rounded-2xl p-3 border border-slate-200 shadow-sm flex items-center gap-2.5 transition-all active:scale-95 text-left">
-            <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
-            </div>
-            <div class="min-w-0">
-                <p class="text-[10px] text-slate-400 font-bold uppercase leading-none">Jam Masuk</p>
-                <p class="text-xs font-bold text-emerald-600 mt-0.5">Absen Sekarang →</p>
-            </div>
-        </button>
-        @endif
-
-        {{-- Jam Pulang --}}
-        @if($presensiHariIni && $presensiHariIni->jam_pulang)
-        <div class="bg-white rounded-2xl p-3 border border-amber-200 shadow-sm flex flex-col justify-between">
-            <div class="flex items-center gap-2.5">
-                <div class="w-9 h-9 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                </div>
-                <div class="min-w-0 flex-1">
-                    <p class="text-[10px] text-slate-400 font-bold uppercase leading-none">Pulang</p>
-                    <p class="text-sm font-black text-amber-700 mt-0.5">{{ substr($presensiHariIni->jam_pulang,0,5) }}</p>
-                    <p class="text-[9px] text-slate-400 font-medium truncate">Sudah Absen</p>
-                </div>
-            </div>
-            @if($presensiHariIni->latitude && $presensiHariIni->longitude)
-            <div class="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[10px]">
-                <span class="text-slate-500 font-medium truncate">📍 {{ number_format($presensiHariIni->latitude, 4) }}, {{ number_format($presensiHariIni->longitude, 4) }}</span>
-                <a href="https://www.google.com/maps?q={{ $presensiHariIni->latitude }},{{ $presensiHariIni->longitude }}" target="_blank" class="text-sky-600 hover:text-sky-700 font-bold shrink-0 ml-1">
-                    Maps ↗
-                </a>
-            </div>
-            @endif
-        </div>
-        @else
-        <button type="button" onclick="openModal('pulang')" class="bg-white hover:bg-amber-50/50 rounded-2xl p-3 border border-slate-200 shadow-sm flex items-center gap-2.5 transition-all active:scale-95 text-left">
-            <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
-            </div>
-            <div class="min-w-0">
-                <p class="text-[10px] text-slate-400 font-bold uppercase leading-none">Jam Pulang</p>
-                <p class="text-xs font-bold text-amber-600 mt-0.5">Absen Pulang →</p>
-            </div>
-        </button>
-        @endif
     </div>
 
-    {{-- ======== GRID 8 MENU IKON UTAMA GURU (IDENTIK 100% PERSIS SEPERTI SISWA) ======== --}}
-    <div class="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xl shadow-slate-300/30">
-        <div class="grid grid-cols-3 gap-y-6 gap-x-2 text-center">
-
-            {{-- 1. Absen Mapel --}}
-            <a href="{{ route('absensi-mapel.index') }}" class="flex flex-col items-center justify-start group">
-                <div class="w-14 h-14 rounded-2xl bg-sky-50 group-hover:bg-sky-100 border border-sky-100/90 flex items-center justify-center transition-all duration-200 group-hover:scale-105 shadow-sm p-3">
-                    <img src="https://cdn-icons-png.flaticon.com/512/3209/3209265.png" alt="Absen Mapel" class="w-8 h-8 object-contain">
-                </div>
-                <span class="text-xs font-bold text-slate-800 mt-2 leading-tight">Absen Mapel</span>
-            </a>
-
-            {{-- 2. Jadwal --}}
-            <a href="{{ route('guru.jadwal.index') }}" class="flex flex-col items-center justify-start group">
-                <div class="w-14 h-14 rounded-2xl bg-amber-50 group-hover:bg-amber-100 border border-amber-100/90 flex items-center justify-center transition-all duration-200 group-hover:scale-105 shadow-sm p-3">
-                    <img src="https://cdn-icons-png.flaticon.com/512/3652/3652191.png" alt="Jadwal" class="w-8 h-8 object-contain">
-                </div>
-                <span class="text-xs font-bold text-slate-800 mt-2 leading-tight">Jadwal</span>
-            </a>
-
-
-            {{-- 4. Scan Wajah --}}
-            <a href="{{ route('guru.face-scan') }}" class="flex flex-col items-center justify-start group">
-                <div class="w-14 h-14 rounded-2xl bg-indigo-50 group-hover:bg-indigo-100 border border-indigo-100/90 flex items-center justify-center transition-all duration-200 group-hover:scale-105 shadow-sm p-3">
-                    <img src="https://cdn-icons-png.flaticon.com/512/11502/11502540.png" alt="Scan Wajah" class="w-8 h-8 object-contain">
-                </div>
-                <span class="text-xs font-bold text-slate-800 mt-2 leading-tight">Scan Wajah</span>
-            </a>
-
-            {{-- 5. Rekap Absen --}}
-            <a href="{{ route('rekap-mapel.index') }}" class="flex flex-col items-center justify-start group">
-                <div class="w-14 h-14 rounded-2xl bg-purple-50 group-hover:bg-purple-100 border border-purple-100/90 flex items-center justify-center transition-all duration-200 group-hover:scale-105 shadow-sm p-3">
-                    <img src="https://cdn-icons-png.flaticon.com/512/942/942751.png" alt="Rekap Absen" class="w-8 h-8 object-contain">
-                </div>
-                <span class="text-xs font-bold text-slate-800 mt-2 leading-tight">Rekap</span>
-            </a>
-
-            {{-- 6. Izin & Cuti --}}
-            <a href="{{ route('guru.izin.index', ['open' => 1]) }}" class="flex flex-col items-center justify-start group">
-                <div class="w-14 h-14 rounded-2xl bg-teal-50 group-hover:bg-teal-100 border border-teal-100/90 flex items-center justify-center transition-all duration-200 group-hover:scale-105 shadow-sm p-3">
-                    <img src="https://cdn-icons-png.flaticon.com/512/2921/2921222.png" alt="Izin & Cuti" class="w-8 h-8 object-contain">
-                </div>
-                <span class="text-xs font-bold text-slate-800 mt-2 leading-tight">Izin / Cuti</span>
-            </a>
-
-            {{-- 7. Informasi --}}
-            <a href="{{ route('guru.informasi.index') }}" class="flex flex-col items-center justify-start group">
-                <div class="w-14 h-14 rounded-2xl bg-rose-50 group-hover:bg-rose-100 border border-rose-100/90 flex items-center justify-center transition-all duration-200 group-hover:scale-105 shadow-sm p-3">
-                    <img src="https://cdn-icons-png.flaticon.com/512/2645/2645897.png" alt="Informasi" class="w-8 h-8 object-contain">
-                </div>
-                <span class="text-xs font-bold text-slate-800 mt-2 leading-tight">Informasi</span>
-            </a>
-
-            {{-- 8. Akun Guru --}}
-            <button type="button" onclick="openAccountModal()" class="flex flex-col items-center justify-start group">
-                <div class="w-14 h-14 rounded-2xl bg-slate-50 group-hover:bg-slate-100 border border-slate-200 flex items-center justify-center transition-all duration-200 group-hover:scale-105 shadow-sm p-3">
-                    <img src="https://cdn-icons-png.flaticon.com/512/1077/1077063.png" alt="Akun Guru" class="w-8 h-8 object-contain">
-                </div>
-                <span class="text-xs font-bold text-slate-800 mt-2 leading-tight">Profil</span>
-            </button>
-
-        </div>
-    </div>
-
-
-    {{-- ======================== JADWAL HARI INI ======================== --}}
-    <div>
-        <div class="flex items-center justify-between mb-2.5 px-1">
-            <h2 class="text-xs sm:text-sm font-extrabold text-slate-800 uppercase tracking-wider">Jadwal Mengajar Hari Ini</h2>
-            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-indigo-50 text-indigo-800 border border-indigo-200 shadow-sm">
-                <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                Hari {{ $hariIni }}
-            </span>
-        </div>
-
-        @forelse($jadwalHariIni as $j)
-        <div class="bg-white border {{ $j->can_absen ? 'border-emerald-400 ring-2 ring-emerald-400/20 shadow-emerald-100' : 'border-slate-200/90' }} rounded-2xl shadow-sm p-3.5 sm:p-4 mb-3 flex items-center gap-3 sm:gap-4 transition-all">
-
-
-            {{-- Jam & Hari Badge --}}
-            <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl text-white flex flex-col items-center justify-center shrink-0 shadow-md {{ $j->can_absen ? 'bg-gradient-to-br from-emerald-500 to-green-600 shadow-emerald-200 ring-2 ring-emerald-300' : 'bg-gradient-to-br from-violet-500 to-purple-700 shadow-violet-200' }}">
-                <span class="text-[8px] sm:text-[9px] font-extrabold uppercase tracking-wider opacity-90 leading-none mb-0.5">{{ $j->hari }}</span>
-                <span class="text-[11px] sm:text-xs font-black leading-tight">{{ substr($j->jam_mulai,0,5) }}</span>
-                <span class="text-[8px] sm:text-[9px] font-medium opacity-80 leading-none mt-0.5">– {{ substr($j->jam_selesai,0,5) }}</span>
-            </div>
-
-            {{-- Info Mapel, Kelas, Keterangan Hari & Status --}}
-            <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                    <h3 class="font-extrabold text-slate-800 truncate text-xs sm:text-sm">{{ $j->mataPelajaran?->nama_mapel ?? '-' }}</h3>
-                    <span class="px-1.5 sm:px-2 py-0.5 rounded-md text-[9px] sm:text-[10px] font-bold bg-sky-50 text-sky-700 border border-sky-100">
-                        {{ $j->hari }}
-                    </span>
-                    @if($j->can_absen)
-                    <span class="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold bg-emerald-100 text-emerald-800 animate-pulse">
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                        Aktif
-                    </span>
-                    @endif
-                </div>
-
-                <p class="text-[11px] sm:text-xs text-slate-500 mt-0.5 truncate font-medium">
-                    Kelas {{ $j->kelas?->tingkat }} {{ $j->kelas?->nama_rombel }} &middot; Jam {{ substr($j->jam_mulai,0,5) }} - {{ substr($j->jam_selesai,0,5) }}
-                </p>
-
-                @if($j->total_terisi > 0)
-                <span class="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-md text-[9px] sm:text-[10px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-100">
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                    Terisi {{ $j->total_terisi }}/{{ $j->total_siswa }}
-                </span>
-                @else
-                <span class="inline-flex mt-1 px-2 py-0.5 rounded-md text-[9px] sm:text-[10px] font-bold bg-amber-50 text-amber-600 border border-amber-100">
-                    Belum diisi ({{ $j->total_siswa }} siswa)
-                </span>
-                @endif
-            </div>
-
-            {{-- Tombol Absensi: Berubah hijau jika can_absen --}}
-            <div class="shrink-0">
-                @if($j->can_absen)
-                <a href="{{ route('absensi-mapel.show', ['id' => $j->id]) }}"
-                   class="inline-flex items-center gap-1 px-3 sm:px-4 py-2 sm:py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-[11px] sm:text-xs font-bold rounded-xl transition-all shadow-md shadow-emerald-300/50 hover:-translate-y-0.5 whitespace-nowrap">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                    <span>{{ $j->total_terisi > 0 ? 'Edit' : 'Absen' }}</span>
-                </a>
-                @else
-                <button type="button"
-                        onclick="document.getElementById('popup-dash-{{ $j->id }}').classList.remove('hidden')"
-                        class="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1.5 sm:py-2 bg-slate-200 hover:bg-slate-300 text-slate-500 text-[11px] sm:text-xs font-bold rounded-xl cursor-not-allowed transition-all whitespace-nowrap">
-                    <span>{{ $j->is_future ? 'Belum Mulai' : ($j->is_past ? 'Selesai' : ($j->total_terisi > 0 ? 'Edit' : 'Absen')) }}</span>
-                </button>
-
-                {{-- Popup (Sangat responsif di HP, tidak terpotong navbar) --}}
-                <div id="popup-dash-{{ $j->id }}" class="hidden fixed inset-0 z-[60] flex items-center justify-center p-4">
-                    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="this.parentElement.classList.add('hidden')"></div>
-                    <div class="relative bg-white rounded-3xl shadow-2xl max-w-[320px] w-full p-5 text-center z-10 mx-auto animate-fade-in">
-                        
-                        {{-- Tombol X Close di Pojok Kanan Atas --}}
-                        <button type="button" onclick="this.closest('[id^=popup-dash]').classList.add('hidden')"
-                                class="absolute top-3.5 right-3.5 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-colors">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
-                            </svg>
-                        </button>
-
-                        <div class="w-12 h-12 mx-auto mt-1 mb-2.5 rounded-full {{ $j->belum_absen_masuk ? 'bg-rose-100 text-rose-600' : ($j->is_future ? 'bg-sky-100 text-sky-600' : 'bg-amber-100 text-amber-600') }} flex items-center justify-center">
-                            @if($j->belum_absen_masuk)
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-                            </svg>
-                            @elseif($j->is_future)
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                            @else
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                            @endif
-                        </div>
-                        <h3 class="text-sm sm:text-base font-extrabold text-slate-800 mb-1">
-                            {{ $j->belum_absen_masuk ? 'Wajib Absen Masuk Terlebih Dahulu' : ($j->is_future ? 'Belum Waktunya Absensi' : 'Tidak Dapat Mengakses Absensi') }}
-                        </h3>
-                        <p class="text-[11px] sm:text-xs text-slate-500 mb-2 leading-snug">
-                            Jam pelajaran <strong>{{ $j->mataPelajaran?->nama_mapel }}</strong> adalah
-                            <strong class="text-slate-700">{{ substr($j->jam_mulai,0,5) }} – {{ substr($j->jam_selesai,0,5) }}</strong>.
-                        </p>
-                        <div class="text-[11px] sm:text-xs {{ $j->belum_absen_masuk ? 'text-rose-700 bg-rose-50 border-rose-100' : 'text-slate-600 bg-slate-50 border-slate-100' }} border rounded-xl p-2.5 mb-3 leading-relaxed">
-                            @if($j->belum_absen_masuk)
-                                <span>Anda <strong>belum melakukan Absensi Masuk hari ini</strong>. Sistem mewajibkan guru absen masuk terlebih dahulu sebelum dapat mengisi absensi mapel.</span>
-                            @elseif($j->is_future)
-                                <span>Belum waktunya jam pelajaran. Absensi hanya dapat dilakukan saat jam pelajaran berlangsung.</span>
-                            @else
-                                <span>Anda sudah melewati batas waktu absensi. Absensi hanya dapat dilakukan saat jam pelajaran berlangsung.</span>
-                            @endif
-                        </div>
-                        @if($j->belum_absen_masuk)
-                        <button type="button"
-                                onclick="this.closest('[id^=popup-dash]').classList.add('hidden'); openModal('masuk');"
-                                class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs sm:text-sm font-bold rounded-xl transition-all shadow-md mb-2 flex items-center justify-center gap-1.5">
-                            <span>Absen Masuk Sekarang →</span>
-                        </button>
-                        @endif
-                        <button type="button"
-                                onclick="this.closest('[id^=popup-dash]').classList.add('hidden')"
-                                class="w-full py-2.5 {{ $j->belum_absen_masuk ? 'bg-slate-100 hover:bg-slate-200 text-slate-700' : 'bg-slate-800 hover:bg-slate-900 text-white' }} active:scale-95 text-xs sm:text-sm font-bold rounded-xl transition-all shadow-sm">
-                            Tutup
-                        </button>
-                    </div>
-                </div>
-                @endif
-
-            </div>
-        </div>
-        @empty
-        <div class="bg-white/80 border border-dashed border-sky-200 rounded-2xl p-10 text-center">
-            <svg class="w-14 h-14 mx-auto text-sky-200 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-            </svg>
-            <h3 class="font-bold text-slate-600">Tidak ada jadwal mengajar pada Hari {{ $hariIni }}</h3>
-            <p class="text-sm text-slate-400 mt-1">Anda tidak memiliki jadwal mengajar di hari {{ $hariIni }}.</p>
-        </div>
-        @endforelse
-    </div>
 
 </div>
 
@@ -550,6 +487,52 @@
     </div>
 </div>
 
+{{-- ======== MODAL POPUP KHUSUS PRESENSI TERKUNCI ======== --}}
+@if(isset($lockedPresensi) && $lockedPresensi)
+@php
+    $tglLockedStr = \Carbon\Carbon::parse($lockedPresensi->tanggal)->locale('id')->isoFormat('dddd, D MMMM Y');
+@endphp
+<div id="modal-locked-popup" class="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm animate-fade-in">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-6 text-center shadow-2xl border border-rose-200 transform transition-all animate-scale-up relative">
+        
+        {{-- Tombol X Tutup --}}
+        <button type="button" onclick="closeLockedPopup()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
+
+        {{-- Ikon Gembok Merah --}}
+        <div class="w-16 h-16 mx-auto mb-3.5 rounded-full bg-rose-100 flex items-center justify-center text-rose-600 shadow-md shadow-rose-200">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+            </svg>
+        </div>
+
+        <h3 class="text-lg font-black text-slate-900 leading-tight">Presensi Anda Terkunci</h3>
+        
+        <p class="text-xs text-slate-600 mt-2 leading-relaxed">
+            Anda tidak melakukan <strong>absen pulang</strong> pada hari <br><span class="font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-100 inline-block mt-1">{{ $tglLockedStr }}</span>.
+        </p>
+
+        <p class="text-[11px] text-slate-500 mt-2 leading-relaxed">
+            Sistem mengunci absen masuk Anda hari ini sampai diizinkan / dibuka oleh admin.
+        </p>
+
+        {{-- Kotak Hubungi Admin --}}
+        <div class="mt-4 p-3 bg-rose-50/80 border border-rose-200/80 rounded-2xl text-[11px] font-semibold text-rose-800 flex items-start gap-2 text-left">
+            <span class="text-base shrink-0">💬</span>
+            <span class="leading-snug">Silakan hubungi <strong>Administrator Sekolah</strong> untuk membuka kunci kehadiran Anda.</span>
+        </div>
+
+        {{-- Tombol Tutup --}}
+        <button type="button" onclick="closeLockedPopup()" class="w-full mt-4 py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-md transition-all active:scale-95">
+            Mengerti & Tutup
+        </button>
+    </div>
+</div>
+@endif
+
 @endsection
 
 @push('scripts')
@@ -596,44 +579,32 @@ let rejectCooldown  = 0;
 
 console.log('[Dashboard] Script dimuat. HAS_FACE:', HAS_FACE, 'GURU:', CURRENT_GURU);
 
+function showLockedPopup() {
+    const p = document.getElementById('modal-locked-popup');
+    if (p) p.classList.remove('hidden');
+}
+
+function closeLockedPopup() {
+    const p = document.getElementById('modal-locked-popup');
+    if (p) p.classList.add('hidden');
+}
+
 // ===== BUKA MODAL KAMERA =====
 async function openModal(tipe) {
     console.log('[openModal] Dipanggil dengan tipe:', tipe, '| HAS_FACE:', HAS_FACE, '| myDescriptor:', !!myDescriptor);
+    
+    // Cek apakah guru terkunci karena tidak absen pulang di hari sebelumnya
+    if (tipe === 'masuk' && IS_LOCKED) {
+        showLockedPopup();
+        return;
+    }
+
     currentTipe = tipe;
 
     const modal = document.getElementById('modal-face');
     const icon  = document.getElementById('face-modal-icon');
     const title = document.getElementById('face-modal-title');
     const sub   = document.getElementById('face-modal-subtitle');
-
-    // Cek apakah guru terkunci karena tidak absen pulang di hari sebelumnya
-    if (tipe === 'masuk' && IS_LOCKED) {
-        modal.classList.remove('hidden');
-        document.getElementById('face-loading').classList.add('hidden');
-        document.getElementById('face-camera-section').classList.add('hidden');
-        icon.className = 'w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center text-rose-600';
-        title.textContent = 'Presensi Terkunci';
-        sub.textContent = 'Tidak absen pulang di hari sebelumnya';
-
-        const box = document.getElementById('face-result');
-        box.className = 'mt-3 rounded-2xl p-5 text-center border bg-rose-50 border-rose-200';
-        box.innerHTML = `
-            <div class="w-14 h-14 mx-auto mb-3 rounded-full bg-rose-100 flex items-center justify-center">
-                <svg class="w-7 h-7 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-                </svg>
-            </div>
-            <p class="font-bold text-rose-800 text-sm mb-1">Presensi Anda Terkunci</p>
-            <p class="text-xs text-rose-600 mb-3 leading-relaxed">
-                Anda tidak melakukan <strong>absen pulang</strong> pada hari <strong>${LOCKED_DATE}</strong>.<br>
-                Sistem mengunci absensi masuk Anda hari ini.
-            </p>
-            <div class="p-3 bg-white/80 rounded-xl border border-rose-200/70 text-xs font-semibold text-rose-700">
-                💬 Silakan hubungi <strong>Administrator Sekolah</strong> untuk membuka kunci presensi Anda.
-            </div>`;
-        box.classList.remove('hidden');
-        return;
-    }
 
     // Jika wajah belum terdaftar — tampilkan panel daftar wajah di dalam modal
     if (!HAS_FACE || !myDescriptor) {

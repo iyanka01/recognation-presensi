@@ -12,44 +12,59 @@
             transform: scaleX(-1) !important;
         }
         
+        #reader {
+            width: 100% !important;
+            height: 100% !important;
+            border: none !important;
+        }
         #reader video {
             object-fit: cover !important;
             width: 100% !important;
             height: 100% !important;
-            border-radius: 1.5rem !important;
+            border-radius: 14px !important;
+        }
+        #reader__scan_region {
+            width: 100% !important;
+            min-height: 100% !important;
+        }
+        #reader__dashboard {
+            display: none !important;
         }
 
-        /* Laser scanning line keyframes */
-        @keyframes laser {
-            0% { top: 20%; opacity: 0.3; }
-            50% { top: 80%; opacity: 1; }
-            100% { top: 20%; opacity: 0.3; }
+        /* Full sweep scanning line keyframes */
+        @keyframes scanSweep {
+            0% { transform: translateY(-100%); opacity: 0; }
+            30% { opacity: 0.8; }
+            70% { opacity: 0.8; }
+            100% { transform: translateY(100%); opacity: 0; }
         }
         
-        .animate-laser {
-            animation: laser 3.5s ease-in-out infinite;
+        .animate-scan-sweep {
+            animation: scanSweep 2.5s ease-in-out infinite;
         }
+
+        body { font-family: 'Inter', sans-serif; }
     </style>
 </head>
-<body class="bg-sky-50 text-slate-800 antialiased font-sans h-screen flex flex-col overflow-hidden" x-data="qrScanner()">
+<body class="bg-slate-100 text-slate-800 antialiased font-sans h-screen flex flex-col overflow-hidden" x-data="qrScanner()">
 
     <!-- Header -->
-    <header class="bg-white/80 backdrop-blur-md border-b border-sky-100 px-6 py-4 flex items-center justify-between shrink-0 z-20 relative shadow-sm">
+    <header class="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between shrink-0 z-20 relative shadow-sm">
         <div class="flex items-center gap-4">
             @if(isset($pengaturan) && $pengaturan->logo)
-                <img src="{{ Storage::url($pengaturan->logo) }}" alt="Logo" class="w-12 h-12 object-contain bg-white rounded-lg p-1 shadow-sm border border-sky-100">
+                <img src="{{ Storage::url($pengaturan->logo) }}" alt="Logo" class="w-12 h-12 object-contain bg-white rounded-[7px] p-1 shadow-sm border border-gray-200">
             @else
-                <div class="w-12 h-12 rounded-2xl bg-sky-500 flex items-center justify-center text-white shadow-lg shadow-sky-500/30">
+                <div class="w-12 h-12 rounded-[7px] bg-blue-600 flex items-center justify-center text-white shadow-sm">
                     <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
                 </div>
             @endif
             <div>
-                <h1 class="text-2xl font-black text-sky-950 tracking-wide">{{ isset($pengaturan) && $pengaturan->nama_lembaga ? $pengaturan->nama_lembaga : 'Mayantara Terminal' }}</h1>
-                <p class="text-xs text-sky-600 font-bold tracking-widest uppercase mt-0.5">Terminal Kehadiran Otomatis</p>
+                <h1 class="text-xl font-bold text-slate-800 tracking-tight">{{ isset($pengaturan) && $pengaturan->nama_lembaga ? $pengaturan->nama_lembaga : 'Mayantara Terminal' }}</h1>
+                <p class="text-xs text-slate-500 font-semibold tracking-wide uppercase mt-0.5">Terminal Kehadiran Otomatis</p>
             </div>
         </div>
-        <button onclick="window.close()" class="px-5 py-2.5 bg-sky-50 hover:bg-rose-50 text-sky-700 hover:text-rose-600 border border-sky-200 hover:border-rose-200 rounded-xl transition-all font-bold flex items-center gap-2 shadow-sm">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+        <button onclick="window.close()" class="px-5 py-2.5 bg-white hover:bg-rose-50 text-slate-600 hover:text-rose-600 border border-gray-200 hover:border-rose-200 rounded-[7px] transition-all font-semibold flex items-center gap-2 text-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
             Tutup Scanner
         </button>
     </header>
@@ -58,87 +73,107 @@
     <main class="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
         
         <!-- Video Section (Left/Top) -->
-        <div class="flex-1 lg:flex-[3] relative bg-sky-100/30 flex flex-col justify-center items-center overflow-hidden border-b lg:border-b-0 lg:border-r border-sky-200 p-4 lg:p-8">
-            <!-- decorative background glows -->
-            <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-sky-300/30 rounded-full blur-[100px] pointer-events-none"></div>
-            <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-300/30 rounded-full blur-[100px] pointer-events-none"></div>
+        <div class="flex-1 lg:flex-[3] relative bg-slate-200/50 flex flex-col justify-center items-center overflow-hidden border-b lg:border-b-0 lg:border-r border-gray-200 p-4 lg:p-8">
             
-            <!-- Target Box Wrapper (Styling) -->
-            <div class="relative w-full max-w-2xl aspect-[4/3] rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(14,165,233,0.15)] ring-4 ring-white z-10 flex flex-col bg-slate-900">
-                <div id="reader" class="w-full h-full flex-1 relative bg-slate-950"></div>
+            <!-- Target Box Wrapper (Full Area Camera) -->
+            <div class="relative w-full max-w-2xl aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl ring-2 ring-slate-800 bg-slate-900 flex flex-col">
+                <div id="reader" class="w-full h-full flex-1 relative bg-black flex items-center justify-center"></div>
                 
-                <!-- Laser Line and Target Corners (Only show when camera is active and scanStatus is null) -->
-                <div x-show="isCameraActive && !scanStatus" class="absolute inset-0 z-20 pointer-events-none flex items-center justify-center">
-                    <!-- Scanner Laser Line -->
-                    <div class="absolute w-[60%] h-0.5 bg-gradient-to-r from-transparent via-sky-400 to-transparent animate-laser shadow-[0_0_10px_rgba(56,189,248,0.8)]"></div>
-                    
-                    <!-- Brackets -->
-                    <div class="w-[60%] aspect-square max-w-[280px] relative border-2 border-transparent">
-                        <!-- Top Left Corner -->
-                        <div class="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-sky-400 rounded-tl-xl"></div>
-                        <!-- Top Right Corner -->
-                        <div class="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-sky-400 rounded-tr-xl"></div>
-                        <!-- Bottom Left Corner -->
-                        <div class="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-sky-400 rounded-bl-xl"></div>
-                        <!-- Bottom Right Corner -->
-                        <div class="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-sky-400 rounded-br-xl"></div>
-                    </div>
+                <!-- Full Sweep Laser (No Framing Box) -->
+                <div x-show="isCameraActive" class="absolute inset-0 pointer-events-none overflow-hidden z-10">
+                    <div class="w-full h-1 bg-gradient-to-r from-transparent via-blue-400 to-transparent animate-scan-sweep shadow-[0_0_15px_rgba(59,130,246,0.9)]"></div>
                 </div>
 
                 <!-- Camera Loading / Error State -->
                 <div x-show="!isCameraActive" class="absolute inset-0 bg-slate-900 flex flex-col items-center justify-center p-6 text-center z-20">
                     <template x-if="isLoadingCameras">
                         <div class="flex flex-col items-center gap-3">
-                            <div class="w-12 h-12 border-4 border-sky-400 border-t-transparent rounded-full animate-spin"></div>
-                            <p class="text-sm font-semibold text-sky-200">Mengakses perangkat kamera...</p>
+                            <div class="w-12 h-12 border-4 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+                            <p class="text-sm font-semibold text-blue-200">Mengakses perangkat kamera...</p>
                         </div>
                     </template>
                     <template x-if="!isLoadingCameras && errorMessage">
                         <div class="flex flex-col items-center max-w-md p-4">
-                            <div class="w-16 h-16 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-2xl flex items-center justify-center mb-4">
+                            <div class="w-16 h-16 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-[7px] flex items-center justify-center mb-4">
                                 <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
                             </div>
                             <h4 class="text-lg font-bold text-white mb-2">Akses Kamera Gagal</h4>
                             <p class="text-xs text-slate-400 mb-6 leading-relaxed" x-text="errorMessage"></p>
-                            <button @click="startScanner()" class="px-5 py-2.5 bg-sky-500 hover:bg-sky-600 text-white font-bold text-xs rounded-xl shadow-lg shadow-sky-500/20 transition-all">
+                            <button @click="startScanner()" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-[7px] shadow-sm transition-all">
                                 Coba Hubungkan Kembali
                             </button>
                         </div>
                     </template>
                 </div>
-                
-                <!-- Status Overlay (Success/Error) -->
-                <div x-show="scanStatus" 
-                     x-transition.opacity.duration.300ms
-                     class="absolute inset-0 flex items-center justify-center bg-white/95 backdrop-blur-md z-30"
-                     style="display: none;">
-                    <div class="text-center p-8 transform transition-all w-full max-w-md" :class="scanStatus ? 'scale-100' : 'scale-90'">
-                        <template x-if="scanStatus === 'success'">
-                            <div class="flex flex-col items-center">
-                                <div class="w-24 h-24 bg-emerald-100 border border-emerald-200 rounded-full flex items-center justify-center mb-6 shadow-xl shadow-emerald-500/20">
-                                    <svg class="w-12 h-12 text-emerald-500 drop-shadow-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
-                                </div>
-                                <h3 class="text-2xl font-black text-slate-800 mb-2 leading-tight" x-text="scanMessage"></h3>
-                                <p class="text-emerald-600 font-bold tracking-wide uppercase text-sm">Berhasil Dicatat</p>
+            </div>
+
+            <!-- Hint below camera -->
+            <p class="text-xs text-slate-500 font-medium mt-3 flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                Arahkan QR Code Kartu ke seluruh area kamera &bull; Presensi cepat tanpa antre
+            </p>
+
+            <!-- ============================================================== -->
+            <!-- POPUP TOAST TERIMA KASIH (MUNCUL DI BAWAH KAMERA, NON-BLOCKING) -->
+            <!-- ============================================================== -->
+            <div class="w-full max-w-2xl mt-2.5 min-h-[88px]">
+                <template x-if="scanToast.show">
+                    <div x-transition:enter="transition ease-out duration-200"
+                         x-transition:enter-start="opacity-0 translate-y-3 scale-95"
+                         x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                         x-transition:leave="transition ease-in duration-150"
+                         x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+                         x-transition:leave-end="opacity-0 -translate-y-2 scale-95"
+                         class="w-full p-4 rounded-2xl shadow-xl border flex items-center gap-3.5 backdrop-blur-md"
+                         :class="scanToast.status === 'success' 
+                            ? 'bg-emerald-950/90 border-emerald-500/50 shadow-emerald-950/30' 
+                            : 'bg-rose-950/90 border-rose-500/50 shadow-rose-950/30'">
+
+                        <div class="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 text-white shadow-md text-xl"
+                             :class="scanToast.status === 'success' ? 'bg-emerald-500 shadow-emerald-500/30' : 'bg-rose-500 shadow-rose-500/30'">
+                            <template x-if="scanToast.status === 'success'">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                            </template>
+                            <template x-if="scanToast.status !== 'success'">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </template>
+                        </div>
+
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2">
+                                <span class="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full"
+                                      :class="scanToast.status === 'success' ? 'bg-emerald-500/30 text-emerald-300' : 'bg-rose-500/30 text-rose-300'"
+                                      x-text="scanToast.status === 'success' ? 'Terima Kasih!' : 'Perhatian!'"></span>
+                                <span class="text-[10px] text-slate-400 font-mono" x-text="scanToast.waktu"></span>
                             </div>
-                        </template>
-                        <template x-if="scanStatus === 'error'">
-                            <div class="flex flex-col items-center">
-                                <div class="w-24 h-24 bg-rose-100 border border-rose-200 rounded-full flex items-center justify-center mb-6 shadow-xl shadow-rose-500/20">
-                                    <svg class="w-12 h-12 text-rose-500 drop-shadow-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg>
-                                </div>
-                                <h3 class="text-xl font-bold text-slate-800 mb-2 leading-tight" x-text="scanMessage"></h3>
-                                <p class="text-rose-600 font-bold tracking-wide uppercase text-sm">Gagal / Ditolak</p>
-                            </div>
-                        </template>
+                            <h3 class="text-sm sm:text-base font-black text-white truncate mt-0.5" x-text="scanToast.name || 'Siswa / Guru'"></h3>
+                            <p class="text-xs font-semibold"
+                               :class="scanToast.status === 'success' ? 'text-emerald-300' : 'text-rose-300'"
+                               x-text="scanToast.message"></p>
+                        </div>
+
+                        <div class="text-right shrink-0">
+                            <span class="inline-block px-2.5 py-1 rounded-lg text-xs font-black shadow-sm"
+                                  :class="scanToast.type === 'Terlambat' 
+                                    ? 'bg-amber-500 text-slate-950' 
+                                    : (scanToast.status === 'success' ? 'bg-emerald-400 text-slate-950' : 'bg-rose-400 text-white')"
+                                  x-text="scanToast.badge || (scanToast.status === 'success' ? 'Berhasil' : 'Ditolak')"></span>
+                        </div>
                     </div>
-                </div>
+                </template>
+
+                <template x-if="!scanToast.show">
+                    <div class="w-full p-4 rounded-2xl bg-white/70 border border-slate-200/80 flex items-center justify-center gap-2.5 text-slate-600 text-xs shadow-sm">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+                        <span class="font-medium">Scanner siap. Hadapkan QR Code ke kamera untuk mencatat presensi...</span>
+                    </div>
+                </template>
             </div>
             
             <!-- Camera Selector & Controls -->
-            <div x-show="cameras.length > 0" class="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 max-w-sm w-[90%] px-4">
-                <div class="bg-white/90 backdrop-blur-md rounded-2xl border border-sky-100 p-2 shadow-xl flex items-center gap-2 w-full">
-                    <div class="w-8 h-8 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center shrink-0">
+            <div x-show="cameras.length > 0" class="mt-3 flex items-center gap-2 max-w-sm w-full px-2">
+                <div class="bg-white rounded-[7px] border border-gray-200 p-2 shadow-sm flex items-center gap-2 w-full">
+                    <div class="w-8 h-8 rounded-[7px] bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 00-2 2z"></path></svg>
                     </div>
                     <select x-model="selectedCameraId" @change="switchCamera(selectedCameraId)" 
@@ -152,52 +187,52 @@
         </div>
 
         <!-- Logs Section (Right/Bottom) -->
-        <div class="flex-1 lg:flex-[2] bg-white flex flex-col relative z-10 max-h-[40vh] lg:max-h-none shadow-[-10px_0_30px_rgba(0,0,0,0.02)]">
-            <div class="p-6 border-b border-sky-100 bg-white/95 backdrop-blur-md shrink-0 flex items-center justify-between sticky top-0 z-20">
-                <h3 class="text-lg font-black text-slate-800 flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-lg bg-sky-100 flex items-center justify-center text-sky-600 border border-sky-200">
+        <div class="flex-1 lg:flex-[2] bg-white flex flex-col relative z-10 max-h-[40vh] lg:max-h-none border-l border-gray-100">
+            <div class="p-5 border-b border-gray-200 bg-white shrink-0 flex items-center justify-between sticky top-0 z-20">
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-[7px] bg-blue-50 flex items-center justify-center text-blue-600">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                     </div>
                     Aktivitas Terkini
                 </h3>
-                <span class="px-3 py-1 rounded-full bg-sky-50 border border-sky-200 text-xs font-bold text-sky-700 tracking-wider uppercase" x-text="totalEntries + ' Entri Hari Ini'"></span>
+                <span class="px-3 py-1 rounded-full bg-blue-50 text-xs font-semibold text-blue-600" x-text="totalEntries + ' Entri Hari Ini'"></span>
             </div>
             
-            <div class="flex-1 overflow-y-auto p-4 lg:p-6 space-y-4 custom-scrollbar scroll-smooth bg-slate-50/50">
+            <div class="flex-1 overflow-y-auto p-4 lg:p-5 space-y-3 scroll-smooth bg-gray-50/50">
                 <template x-for="(log, index) in recentLogs" :key="index">
-                    <div class="flex items-center gap-4 p-4 rounded-2xl border bg-white transition-all hover:shadow-md"
+                    <div class="flex items-center gap-4 p-4 rounded-[7px] bg-white border transition-all hover:shadow-sm"
                          :class="{
-                            'border-emerald-200 shadow-sm shadow-emerald-100': log.success && log.type === 'masuk' && log.status !== 'Terlambat',
-                            'border-amber-200 shadow-sm shadow-amber-100': log.success && log.type === 'masuk' && log.status === 'Terlambat',
-                            'border-rose-200 shadow-sm shadow-rose-100': log.success && log.type === 'pulang',
-                            'border-slate-200 shadow-sm': !log.success
+                            'border-l-4 border-l-emerald-500 border-t-gray-100 border-r-gray-100 border-b-gray-100': log.success && log.type === 'masuk' && log.status !== 'Terlambat',
+                            'border-l-4 border-l-amber-500 border-t-gray-100 border-r-gray-100 border-b-gray-100': log.success && log.type === 'masuk' && log.status === 'Terlambat',
+                            'border-l-4 border-l-rose-500 border-t-gray-100 border-r-gray-100 border-b-gray-100': log.success && log.type === 'pulang',
+                            'border-l-4 border-l-gray-400 border-t-gray-100 border-r-gray-100 border-b-gray-100': !log.success
                          }">
                         
-                        <div class="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 border"
+                        <div class="w-12 h-12 rounded-[7px] flex items-center justify-center shrink-0"
                              :class="{
-                                'bg-emerald-50 text-emerald-600 border-emerald-100': log.success && log.type === 'masuk' && log.status !== 'Terlambat',
-                                'bg-amber-50 text-amber-600 border-amber-100': log.success && log.type === 'masuk' && log.status === 'Terlambat',
-                                'bg-rose-50 text-rose-600 border-rose-100': log.success && log.type === 'pulang',
-                                'bg-slate-100 text-slate-500 border-slate-200': !log.success
+                                'bg-emerald-50 text-emerald-600': log.success && log.type === 'masuk' && log.status !== 'Terlambat',
+                                'bg-amber-50 text-amber-600': log.success && log.type === 'masuk' && log.status === 'Terlambat',
+                                'bg-rose-50 text-rose-600': log.success && log.type === 'pulang',
+                                'bg-gray-100 text-gray-500': !log.success
                              }">
-                             <svg x-show="log.success && log.type === 'masuk' && log.status !== 'Terlambat'" class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
-                             <svg x-show="log.success && log.type === 'masuk' && log.status === 'Terlambat'" class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                             <svg x-show="log.success && log.type === 'pulang'" class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-                             <svg x-show="!log.success" class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+                             <svg x-show="log.success && log.type === 'masuk' && log.status !== 'Terlambat'" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                             <svg x-show="log.success && log.type === 'masuk' && log.status === 'Terlambat'" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                             <svg x-show="log.success && log.type === 'pulang'" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                             <svg x-show="!log.success" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
                         </div>
                         
                         <div class="flex-1 min-w-0">
-                            <p class="text-lg font-bold text-slate-800 truncate tracking-wide" x-text="log.name"></p>
-                            <p class="text-sm font-semibold mt-0.5 truncate"
+                            <p class="text-base font-semibold text-slate-800 truncate" x-text="log.name"></p>
+                            <p class="text-sm mt-0.5 truncate"
                                :class="{
                                   'text-emerald-600': log.success && log.type === 'masuk' && log.status !== 'Terlambat',
                                   'text-amber-600': log.success && log.type === 'masuk' && log.status === 'Terlambat',
                                   'text-rose-600': log.success && log.type === 'pulang',
-                                  'text-slate-500': !log.success
+                                  'text-gray-500': !log.success
                                 }" x-text="log.message"></p>
                         </div>
                         
-                        <div class="text-xs font-bold text-slate-500 shrink-0 text-right bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100">
+                        <div class="text-xs font-semibold text-slate-500 shrink-0 text-right bg-gray-50 px-3 py-1.5 rounded-[7px]">
                             <span x-text="log.time"></span>
                         </div>
                     </div>
@@ -223,6 +258,40 @@
                 errorMessage: '',
                 recentLogs: [],
                 totalEntries: {{ $totalHariIni ?? 0 }},
+
+                scanToast: {
+                    show: false,
+                    status: 'success',
+                    name: '',
+                    message: '',
+                    badge: '',
+                    type: '',
+                    waktu: '',
+                    timer: null
+                },
+
+                showToast(status, name, message, badge, type) {
+                    if (this.scanToast.timer) {
+                        clearTimeout(this.scanToast.timer);
+                    }
+                    const now = new Date();
+                    const waktuStr = String(now.getHours()).padStart(2, '0') + ':' + 
+                                     String(now.getMinutes()).padStart(2, '0') + ':' + 
+                                     String(now.getSeconds()).padStart(2, '0');
+
+                    this.scanToast = {
+                        show: true,
+                        status: status,
+                        name: name,
+                        message: message,
+                        badge: badge,
+                        type: type,
+                        waktu: waktuStr,
+                        timer: setTimeout(() => {
+                            this.scanToast.show = false;
+                        }, 2200)
+                    };
+                },
 
                 init() {
                     this.startScanner();
@@ -268,7 +337,6 @@
                         this.cameras = devices;
                         this.isLoadingCameras = false;
                         if (devices && devices.length > 0) {
-                            // Prefer front/selfie camera if typical terminal, or fallback to first
                             const frontCamera = devices.find(device => 
                                 device.label.toLowerCase().includes('front') || 
                                 device.label.toLowerCase().includes('facing user') ||
@@ -318,15 +386,13 @@
                         readerElement.classList.remove('mirror-video');
                     }
 
+                    // FULL AREA SCAN TANPA QRBOX AGAR BISA MEMBACA DI SELURUH AREA KAMERA
                     this.html5QrCode.start(
                         cameraId,
                         {
-                            fps: 15,
-                            qrbox: (width, height) => {
-                                const minSize = Math.min(width, height);
-                                const qrboxSize = Math.floor(minSize * 0.65);
-                                return { width: qrboxSize, height: qrboxSize };
-                            }
+                            fps: 20,
+                            aspectRatio: 1.333333,
+                            disableFlip: false
                         },
                         (decodedText, decodedResult) => {
                             if (!this.isScanning) return;
@@ -372,10 +438,10 @@
                     })
                     .then(response => response.json())
                     .then(data => {
-                        this.scanMessage = data.message;
-                        
                         const now = new Date();
-                        const timeString = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0') + ':' + now.getSeconds().toString().padStart(2, '0');
+                        const timeString = String(now.getHours()).padStart(2, '0') + ':' + 
+                                           String(now.getMinutes()).padStart(2, '0') + ':' + 
+                                           String(now.getSeconds()).padStart(2, '0');
                         
                         this.recentLogs.unshift({
                             success: data.success,
@@ -392,24 +458,21 @@
 
                         if (data.success) {
                             this.totalEntries++;
-                            this.scanStatus = 'success';
                             this.playBeep(true);
+                            this.showToast('success', data.user_name || 'Siswa / Guru', data.message, data.status || (data.type === 'pulang' ? 'Pulang' : 'Hadir'), data.status);
                         } else {
-                            this.scanStatus = 'error';
                             this.playBeep(false);
+                            this.showToast('error', data.user_name || 'Peringatan', data.message, 'Ditolak', 'error');
                         }
                         
+                        // Cooldown singkat 0.8 detik agar tidak antre panjang
                         setTimeout(() => {
-                            this.scanStatus = null;
                             this.isScanning = true;
-                        }, 3000);
+                        }, 800);
                     })
                     .catch(error => {
-                        this.scanStatus = 'error';
-                        this.scanMessage = 'Terjadi kesalahan jaringan/server.';
-                        
                         const now = new Date();
-                        const timeString = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+                        const timeString = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
                         
                         this.recentLogs.unshift({
                             success: false,
@@ -425,11 +488,11 @@
                         }
 
                         this.playBeep(false);
+                        this.showToast('error', 'Error Jaringan', 'Terjadi kesalahan jaringan/server.', 'Gagal', 'error');
                         
                         setTimeout(() => {
-                            this.scanStatus = null;
                             this.isScanning = true;
-                        }, 3000);
+                        }, 1000);
                     });
                 }
             }));
@@ -438,4 +501,3 @@
 
 </body>
 </html>
-

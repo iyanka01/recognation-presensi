@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>@yield('title', 'Guru Panel') – Mayantara</title>
+    @php
+        $appFavicon = (isset($globalLembaga) && $globalLembaga->logo) ? Storage::url($globalLembaga->logo) : asset('favicon.ico');
+    @endphp
+    <link rel="icon" type="image/x-icon" href="{{ $appFavicon }}">
+    <link rel="shortcut icon" href="{{ $appFavicon }}">
+    <link rel="apple-touch-icon" href="{{ $appFavicon }}">
     {{-- Menggunakan Google Font Plus Jakarta Sans & Inter untuk tipografi yang tajam, tegas & solid --}}
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,13 +18,13 @@
     <style>
         body {
             font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: #2e1065; /* Deep Royal Indigo Solid */
+            background: #064e3b; /* Deep Emerald Green */
             overscroll-behavior: none;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
         }
         .guru-bg-gradient {
-            background: linear-gradient(180deg, #3730a3 0%, #312e81 35%, #f8fafc 35%, #f1f5f9 100%);
+            background: linear-gradient(180deg, #059669 0%, #047857 32%, #f1f5f9 32%, #f8fafc 100%);
             min-height: 100vh;
         }
         .safe-bottom { padding-bottom: calc(env(safe-area-inset-bottom, 16px) + 85px); }
@@ -30,18 +36,18 @@
     </style>
     @stack('styles')
 </head>
-<body class="text-slate-900 antialiased guru-bg-gradient selection:bg-indigo-600 selection:text-white">
+<body class="text-slate-900 antialiased @yield('body_class', 'guru-bg-gradient') selection:bg-emerald-600 selection:text-white" style="@yield('body_style')">
 
     {{-- ============ MAIN CONTENT ============ --}}
     <main class="max-w-md mx-auto px-4 pt-4 safe-bottom page-content">
         @hasSection('back_url')
-        <div class="flex items-center gap-2 mb-3.5">
-            <a href="@yield('back_url')" class="w-8 h-8 rounded-xl bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition-colors shadow-sm">
+        <div class="flex items-center gap-3 mb-3.5">
+            <a href="@yield('back_url')" class="w-8 h-8 rounded-xl @yield('back_btn_class', 'bg-white/20 hover:bg-white/30 text-white') flex items-center justify-center transition-colors shadow-sm">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/>
                 </svg>
             </a>
-            <span class="text-white font-extrabold text-sm tracking-wide">@yield('title')</span>
+            <span class="@yield('title_class', 'text-white') font-black text-base tracking-wide">@yield('title')</span>
         </div>
         @endif
 
@@ -62,12 +68,12 @@
         @yield('content')
     </main>
 
-    {{-- ============ BOTTOM NAVIGATION BAR GURU (PERSIS SEPERTI SISWA) ============ --}}
+    {{-- ============ BOTTOM NAVIGATION BAR GURU ============ --}}
     <nav class="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 shadow-[0_-4px_25px_rgba(0,0,0,0.08)]">
         <div class="max-w-md mx-auto flex items-center justify-around h-16 px-1 relative">
 
             {{-- 1. Home --}}
-            <a href="{{ route('dashboard') }}" class="flex-1 flex flex-col items-center justify-center gap-1 {{ request()->routeIs('dashboard') ? 'text-indigo-700 font-extrabold' : 'text-slate-400 hover:text-slate-700 font-semibold' }} transition-colors">
+            <a href="{{ route('dashboard') }}" class="flex-1 flex flex-col items-center justify-center gap-1 {{ request()->routeIs('dashboard') ? 'text-emerald-700 font-extrabold' : 'text-slate-400 hover:text-slate-700 font-semibold' }} transition-colors">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
                 </svg>
@@ -75,7 +81,7 @@
             </a>
 
             {{-- 2. Absensi Mapel --}}
-            <a href="{{ route('absensi-mapel.index') }}" class="flex-1 flex flex-col items-center justify-center gap-1 {{ request()->routeIs('absensi-mapel.*') ? 'text-indigo-700 font-extrabold' : 'text-slate-400 hover:text-slate-700 font-semibold' }} transition-colors">
+            <a href="{{ route('absensi-mapel.index') }}" class="flex-1 flex flex-col items-center justify-center gap-1 {{ request()->routeIs('absensi-mapel.*') ? 'text-emerald-700 font-extrabold' : 'text-slate-400 hover:text-slate-700 font-semibold' }} transition-colors">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
                 </svg>
@@ -85,7 +91,7 @@
             {{-- 3. TOMBOL TENGAH: BULATAN SCAN KAMERA SHUTTER MELAYANG --}}
             <div class="relative flex-1 flex justify-center items-center">
                 <a href="{{ route('guru.face-scan') }}" 
-                   style="width: 56px; height: 56px; margin-top: -30px; background: linear-gradient(135deg, #3730a3, #4338ca); box-shadow: 0 10px 22px rgba(55, 48, 163, 0.45); border: 4px solid #ffffff;" 
+                   style="width: 56px; height: 56px; margin-top: -30px; background: linear-gradient(135deg, #059669, #047857); box-shadow: 0 10px 22px rgba(5, 150, 105, 0.45); border: 4px solid #ffffff;" 
                    class="rounded-full text-white flex items-center justify-center transition-transform active:scale-90 z-50 hover:opacity-95" 
                    title="Scan Presensi / Kamera">
                     <svg style="width: 24px; height: 24px; color: #ffffff;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -101,7 +107,7 @@
             </div>
 
             {{-- 4. Rekap Mapel --}}
-            <a href="{{ route('rekap-mapel.index') }}" class="flex-1 flex flex-col items-center justify-center gap-1 {{ request()->routeIs('rekap-mapel.*') ? 'text-indigo-700 font-extrabold' : 'text-slate-400 hover:text-slate-700 font-semibold' }} transition-colors">
+            <a href="{{ route('rekap-mapel.index') }}" class="flex-1 flex flex-col items-center justify-center gap-1 {{ request()->routeIs('rekap-mapel.*') ? 'text-emerald-700 font-extrabold' : 'text-slate-400 hover:text-slate-700 font-semibold' }} transition-colors">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
@@ -109,13 +115,12 @@
             </a>
 
             {{-- 5. Akun --}}
-            <button type="button" onclick="openAccountModal()" class="flex-1 flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-indigo-700 font-semibold transition-colors">
+            <button type="button" onclick="openAccountModal()" class="flex-1 flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-emerald-700 font-semibold transition-colors">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                 </svg>
                 <span class="text-[10px] tracking-tight">Akun</span>
             </button>
-
         </div>
     </nav>
 

@@ -11,30 +11,30 @@
             <p class="text-xs text-slate-500 mt-0.5">Kelola data siswa, rombel, dan cetak ID Card.</p>
         </div>
         <div class="flex items-center gap-2 w-full sm:w-auto flex-wrap sm:flex-nowrap">
-            <button type="button" @click="openSyncModal()" class="px-4 py-2.5 bg-sky-500 hover:bg-sky-600 text-white font-medium text-sm rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm shadow-sky-200 w-full sm:w-auto">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+            <button type="button" @click="openSyncModal()" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-[7px] flex items-center justify-center gap-2 transition-all shadow-sm w-full sm:w-auto">
+                <i class="ti ti-brand-telegram text-base"></i>
                 Sinkronkan Telegram
             </button>
-            <button type="button" @click="$dispatch('open-import-modal')" class="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-medium text-sm rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm shadow-emerald-200 w-full sm:w-auto">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+            <button type="button" @click="$dispatch('open-import-modal')" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-[7px] flex items-center justify-center gap-2 transition-all shadow-sm w-full sm:w-auto">
+                <i class="ti ti-file-spreadsheet text-base"></i>
                 Import Excel
             </button>
-            <a href="{{ route('siswa.create') }}" class="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-medium text-sm rounded-xl flex items-center gap-2 transition-all shadow-sm shadow-amber-300/40 w-full sm:w-auto justify-center">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+            <a href="{{ route('siswa.create') }}" class="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-semibold text-xs rounded-[7px] flex items-center gap-2 transition-all shadow-sm w-full sm:w-auto justify-center">
+                <i class="ti ti-plus text-base"></i>
                 Tambah Siswa
             </a>
         </div>
     </div>
 
     <!-- Filter Bar Model Dropdown Bertingkat -->
-    <div class="bg-white/90 backdrop-blur-sm rounded-2xl p-4 sm:p-5 border border-sky-100 shadow-sm space-y-3">
+    <div class="bg-white rounded-[7px] p-4 sm:p-5 border border-slate-200 shadow-sm space-y-3">
         <div class="flex items-center justify-between">
             <span class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                <svg class="w-4 h-4 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+                <i class="ti ti-filter text-blue-600 text-sm"></i>
                 Filter & Pencarian Siswa
             </span>
-            <button type="button" @click="resetFilter()" x-show="selectedTingkat || selectedKelasId || searchQuery" class="text-xs text-rose-500 hover:text-rose-700 font-semibold flex items-center gap-1 cursor-pointer transition-colors">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            <button type="button" @click="resetFilter()" x-show="selectedTingkat || selectedKelasId || searchQuery" class="text-xs text-rose-600 hover:text-rose-700 font-semibold flex items-center gap-1 cursor-pointer transition-colors">
+                <i class="ti ti-x text-sm"></i>
                 Reset Semua Filter
             </button>
         </div>
@@ -42,13 +42,13 @@
         <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
             <!-- 1. Input Pencarian Teks -->
             <div class="sm:col-span-5 relative">
-                <input type="text" x-model="searchQuery" placeholder="Cari nama, NIS, atau rombel siswa..." class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-sky-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-400/30 focus:border-sky-400 transition-all">
-                <svg class="w-5 h-5 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                <input type="text" x-model="searchQuery" placeholder="Cari nama, NIS, atau rombel siswa..." class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-[7px] text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all">
+                <i class="ti ti-search text-slate-400 absolute left-3 top-3 text-base"></i>
             </div>
 
             <!-- 2. Dropdown 1: Pilih Tingkat / Kelas Utama -->
             <div class="sm:col-span-3.5 sm:col-span-3 relative">
-                <select x-model="selectedTingkat" @change="onTingkatChange()" class="w-full px-3.5 py-2.5 bg-white border border-sky-200 rounded-xl text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-400/30 focus:border-sky-400 transition-all cursor-pointer">
+                <select x-model="selectedTingkat" @change="onTingkatChange()" class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-[7px] text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer">
                     <option value="">-- Semua Kelas --</option>
                     @foreach($tingkatList as $t)
                         @php
@@ -60,9 +60,9 @@
                 </select>
             </div>
 
-            <!-- 3. Dropdown 2: Pilih Sub-Kelas / Rombel (Menyesuaikan dengan Kelas yang dipilih) -->
+            <!-- 3. Dropdown 2: Pilih Sub-Kelas / Rombel -->
             <div class="sm:col-span-3.5 sm:col-span-4 relative">
-                <select x-model="selectedKelasId" :disabled="!selectedTingkat" class="w-full px-3.5 py-2.5 bg-white border border-sky-200 rounded-xl text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-400/30 focus:border-sky-400 transition-all cursor-pointer disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed">
+                <select x-model="selectedKelasId" :disabled="!selectedTingkat" class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-[7px] text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed">
                     <option value="" x-text="selectedTingkat ? '-- Semua Rombel (' + (selectedTingkat.toLowerCase().startsWith('kelas') ? selectedTingkat : 'Kelas ' + selectedTingkat) + ') --' : '-- Pilih Kelas Dulu --'"></option>
                     <template x-for="r in availableRombels" :key="r.id">
                         <option :value="r.id" x-text="r.nama_rombel + ' (' + r.siswa_count + ' siswa)'"></option>
@@ -73,11 +73,11 @@
     </div>
 
     <!-- Data Table Siswa -->
-    <div x-data="{ selected: [], selectAll: false, toggleAll() { this.selectAll = !this.selectAll; if (this.selectAll) { this.selected = Array.from(document.querySelectorAll('.siswa-checkbox:not([style*=\'display: none\'])')).map(cb => cb.value); } else { this.selected = []; } } }" class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-sky-100 overflow-hidden">
+    <div x-data="{ selected: [], selectAll: false, toggleAll() { this.selectAll = !this.selectAll; if (this.selectAll) { this.selected = Array.from(document.querySelectorAll('.siswa-checkbox:not([style*=\'display: none\'])')).map(cb => cb.value); } else { this.selected = []; } } }" class="bg-white rounded-[7px] shadow-[rgba(145,158,171,0.2)_0px_0px_2px_0px,rgba(145,158,171,0.12)_0px_12px_24px_-4px] border border-slate-200 overflow-hidden">
         
         <!-- Bulk Delete Action Bar -->
-        <div x-show="selected.length > 0" x-transition class="bg-rose-50/80 px-6 py-3 border-b border-rose-100 flex items-center justify-between" style="display: none;">
-            <span class="text-sm font-medium text-rose-700">
+        <div x-show="selected.length > 0" x-transition class="bg-rose-50 px-6 py-3 border-b border-rose-100 flex items-center justify-between" style="display: none;">
+            <span class="text-sm font-semibold text-rose-700">
                 <span x-text="selected.length"></span> siswa dipilih
             </span>
             <form action="{{ route('siswa.bulkDestroy') }}" method="POST" @submit.prevent="if(selected.length > 0 && confirm('Apakah Anda yakin ingin menghapus ' + selected.length + ' siswa terpilih?')) $el.submit()">
@@ -85,8 +85,8 @@
                 <template x-for="id in selected">
                     <input type="hidden" name="ids[]" :value="id">
                 </template>
-                <button type="submit" :disabled="selected.length === 0" :class="selected.length === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-rose-700 shadow-rose-200'" class="px-4 py-2 bg-rose-600 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2 shadow-sm">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                <button type="submit" :disabled="selected.length === 0" :class="selected.length === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-rose-700 shadow-rose-200'" class="px-4 py-2 bg-rose-600 text-white text-xs font-semibold rounded-[7px] transition-colors flex items-center gap-2 shadow-sm">
+                    <i class="ti ti-trash text-sm"></i>
                     Hapus Terpilih
                 </button>
             </form>
@@ -95,84 +95,94 @@
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
                 <thead>
-                    <tr class="bg-sky-50/50 border-b border-sky-100 text-slate-500 text-xs uppercase tracking-wider">
-                        <th class="p-4 w-12 text-center">
-                            <input type="checkbox" @click="toggleAll()" :checked="selectAll" class="w-4 h-4 rounded border-sky-200 text-sky-600 focus:ring-sky-500">
+                    <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 text-xs uppercase tracking-wider">
+                        <th class="py-3.5 px-4 w-12 text-center">
+                            <input type="checkbox" @click="toggleAll()" :checked="selectAll" class="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
                         </th>
-                        <th class="p-4 font-semibold w-16 text-center">No</th>
-                        <th class="p-4 font-semibold">Siswa</th>
-                        <th class="p-4 font-semibold">NIS/NISN</th>
-                        <th class="p-4 font-semibold">Kelas & Rombel</th>
-                        <th class="p-4 font-semibold">L/P</th>
-                        <th class="p-4 font-semibold">Status</th>
-                        <th class="p-4 font-semibold text-right">Aksi</th>
+                        <th class="py-3.5 px-4 font-semibold text-slate-600">USER</th>
+                        <th class="py-3.5 px-4 font-semibold text-slate-600">ROLE / KELAS</th>
+                        <th class="py-3.5 px-4 font-semibold text-slate-600">STATUS</th>
+                        <th class="py-3.5 px-4 font-semibold text-slate-600">JOINED</th>
+                        <th class="py-3.5 px-4 font-semibold text-slate-600 text-right">ACTIONS</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-sky-50 text-sm">
+                <tbody class="divide-y divide-slate-100 text-sm">
                     @forelse($siswa as $index => $s)
-                    @php
-                        $tRow = $s->kelas ? $s->kelas->tingkat : '';
-                        $kRow = $s->kelas_id ?? '';
-                        $searchStr = $s->nama_lengkap . ' ' . $s->nis . ' ' . $s->nisn . ' ' . ($s->kelas ? ($s->kelas->tingkat . ' ' . $s->kelas->nama_rombel) : '');
-                    @endphp
-                    <tr x-show="isRowVisible('{{ addslashes($tRow) }}', '{{ addslashes($kRow) }}', '{{ addslashes($searchStr) }}')"
-                        class="hover:bg-sky-50/30 transition-colors" 
+                    <tr x-show="isRowVisible('{{ $s->id }}')"
+                        class="hover:bg-slate-50/70 transition-colors" 
                         :class="{'bg-rose-50/30': selected.includes('{{ $s->id }}')}">
-                        <td class="p-4 text-center">
-                            <input type="checkbox" value="{{ $s->id }}" x-model="selected" class="siswa-checkbox w-4 h-4 rounded border-sky-200 text-sky-600 focus:ring-sky-500">
+                        <td class="py-3.5 px-4 text-center">
+                            <input type="checkbox" value="{{ $s->id }}" x-model="selected" class="siswa-checkbox w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
                         </td>
-                        <td class="p-4 text-center font-medium text-slate-500">{{ $index + 1 }}</td>
-                        <td class="p-4">
+                        <td class="py-3.5 px-4">
                             <div class="flex items-center gap-3">
-                                @if($s->foto_siswa)
-                                    <img src="{{ asset('storage/' . $s->foto_siswa) }}" alt="{{ $s->nama_lengkap }}" class="w-10 h-10 rounded-full object-cover border border-slate-200">
-                                @else
-                                    <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200 text-slate-400">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                                <div class="relative shrink-0">
+                                    @if($s->foto_siswa)
+                                        <img src="{{ asset('storage/' . $s->foto_siswa) }}" alt="{{ $s->nama_lengkap }}" class="w-10 h-10 rounded-full object-cover border border-slate-200">
+                                    @else
+                                        <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-sm border border-blue-100">
+                                            {{ substr($s->nama_lengkap, 0, 1) }}
+                                        </div>
+                                    @endif
+                                    <!-- Indicator dot at bottom right (like the image) -->
+                                    <span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white {{ $s->status == 'Aktif' ? 'bg-emerald-500' : 'bg-slate-400' }}"></span>
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="font-bold text-slate-800 text-sm leading-tight truncate">{{ $s->nama_lengkap }}</div>
+                                    <div class="text-xs text-slate-400 font-mono mt-0.5 truncate">
+                                        NIS: {{ $s->nis ?? '-' }} • NISN: {{ $s->nisn ?? '-' }}
                                     </div>
-                                @endif
-                                <div>
-                                    <div class="font-bold text-slate-800">{{ $s->nama_lengkap }}</div>
                                 </div>
                             </div>
                         </td>
-                        <td class="p-4">
-                            <div class="text-slate-800 font-medium font-mono text-xs">{{ $s->nis ?? '-' }}</div>
-                            <div class="text-[11px] text-slate-500 font-mono">{{ $s->nisn ?? '-' }}</div>
+                        <td class="py-3.5 px-4">
+                            <div class="flex items-center gap-2">
+                                @if($s->kelas)
+                                    <button type="button" @click="selectTingkat('{{ addslashes($s->kelas->tingkat) }}'); selectRombel('{{ $s->kelas_id }}')" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors" title="Filter rombel ini">
+                                        <i class="ti ti-school text-xs"></i>
+                                        <span>{{ $s->kelas->tingkat }} • {{ $s->kelas->nama_rombel }}</span>
+                                    </button>
+                                @else
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-500">
+                                        Tanpa Kelas
+                                    </span>
+                                @endif
+                                <span class="inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold {{ $s->jenis_kelamin == 'L' ? 'bg-indigo-50 text-indigo-600' : 'bg-pink-50 text-pink-600' }}" title="{{ $s->jenis_kelamin == 'L' ? 'Laki-laki' : 'Perempuan' }}">
+                                    {{ $s->jenis_kelamin }}
+                                </span>
+                            </div>
                         </td>
-                        <td class="p-4 font-medium text-slate-800">
-                            @if($s->kelas)
-                                <button type="button" @click="selectTingkat('{{ addslashes($s->kelas->tingkat) }}'); selectRombel('{{ $s->kelas_id }}')" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-sky-50 hover:bg-sky-100 text-sky-700 font-semibold border border-sky-200 transition-colors text-xs" title="Filter rombel ini">
-                                    <span>{{ $s->kelas->tingkat }}</span>
-                                    <span>•</span>
-                                    <span>{{ $s->kelas->nama_rombel }}</span>
-                                </button>
+                        <td class="py-3.5 px-4 whitespace-nowrap">
+                            @if($s->status == 'Aktif')
+                                <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600">
+                                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                    Active
+                                </span>
                             @else
-                                <span class="text-slate-400 text-xs italic">Tanpa Kelas</span>
+                                <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400">
+                                    <span class="w-2 h-2 rounded-full bg-slate-400"></span>
+                                    Inactive
+                                </span>
                             @endif
                         </td>
-                        <td class="p-4">
-                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-md {{ $s->jenis_kelamin == 'L' ? 'bg-blue-100 text-blue-700' : 'bg-pink-100 text-pink-700' }} text-xs font-bold">
-                                {{ $s->jenis_kelamin }}
-                            </span>
+                        <td class="py-3.5 px-4 whitespace-nowrap text-xs text-slate-500 font-medium">
+                            {{ $s->created_at ? $s->created_at->format('M d, Y') : '-' }}
                         </td>
-                        <td class="p-4">
-                            <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-medium {{ $s->status == 'Aktif' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600' }}">
-                                {{ $s->status }}
-                            </span>
-                        </td>
-                        <td class="p-4">
-                            <div class="flex items-center justify-end gap-2">
-                                <button type="button" @click="$dispatch('open-qr', { id: '{{ $s->id }}', name: '{{ addslashes($s->nama_lengkap) }}', code: '{{ $s->nis }}', printUrl: '{{ route('siswa.id-card', $s->id) }}' })" class="p-2 text-sky-500 hover:bg-sky-50 rounded-lg transition-colors" title="Lihat QR Code">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
+                        <td class="py-3.5 px-4 text-right">
+                            <div class="flex items-center justify-end gap-1">
+                                <!-- View / QR Button (Eye Icon like the image) -->
+                                <button type="button" @click="$dispatch('open-qr', { id: '{{ $s->id }}', name: '{{ addslashes($s->nama_lengkap) }}', code: '{{ $s->nis }}', printUrl: '{{ route('siswa.id-card', $s->id) }}' })" class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-[7px] transition-colors" title="Lihat QR Code & ID Card">
+                                    <i class="ti ti-eye text-base"></i>
                                 </button>
-                                <a href="{{ route('siswa.edit', $s->id) }}" class="p-2 text-sky-500 hover:bg-sky-50 rounded-lg transition-colors" title="Edit">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                <!-- Edit Button (Pencil Icon like the image) -->
+                                <a href="{{ route('siswa.edit', $s->id) }}" class="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-[7px] transition-colors" title="Edit">
+                                    <i class="ti ti-pencil text-base"></i>
                                 </a>
-                                <form action="{{ route('siswa.destroy', $s->id) }}" method="POST" onsubmit="return confirm('Hapus siswa ini?');">
+                                <!-- Delete Button (Trash Icon like the image) -->
+                                <form action="{{ route('siswa.destroy', $s->id) }}" method="POST" onsubmit="return confirm('Hapus siswa ini?');" class="inline">
                                     @csrf @method('DELETE')
-                                    <button type="submit" class="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors" title="Hapus">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                    <button type="submit" class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-[7px] transition-colors" title="Hapus">
+                                        <i class="ti ti-trash text-base"></i>
                                     </button>
                                 </form>
                             </div>
@@ -180,13 +190,51 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="8" class="p-8 text-center text-slate-500">
+                        <td colspan="6" class="p-8 text-center text-slate-400">
+                            <i class="ti ti-users-minus text-3xl mb-1 block"></i>
                             Belum ada data siswa.
                         </td>
                     </tr>
                     @endforelse
                 </tbody>
             </table>
+        </div>
+
+        <!-- Table Footer: Pagination matching the user's design -->
+        <div class="px-6 py-4 bg-slate-50/70 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 font-medium">
+            <div>
+                Menampilkan <span class="font-bold text-slate-700" x-text="filteredTotal === 0 ? 0 : ((currentPage - 1) * perPage + 1)"></span> - <span class="font-bold text-slate-700" x-text="Math.min(currentPage * perPage, filteredTotal)"></span> dari <span class="font-bold text-slate-700" x-text="filteredTotal"></span> siswa
+            </div>
+            <!-- Pagination Controls matching image style -->
+            <div class="flex items-center gap-1.5" x-show="totalPages > 1">
+                <!-- Prev -->
+                <button type="button" @click="prevPage()" :disabled="currentPage === 1" 
+                        class="w-8 h-8 rounded-[7px] border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-colors">
+                    <i class="ti ti-chevron-left text-xs"></i>
+                </button>
+
+                <!-- Page numbers -->
+                <template x-for="p in paginationPages" :key="p">
+                    <div>
+                        <template x-if="p === '...'">
+                            <span class="w-8 h-8 flex items-center justify-center text-slate-400 font-semibold">...</span>
+                        </template>
+                        <template x-if="p !== '...'">
+                            <button type="button" @click="goToPage(p)" 
+                                    class="w-8 h-8 rounded-[7px] font-semibold text-xs flex items-center justify-center transition-all"
+                                    :class="currentPage === p ? 'bg-teal-500 text-white shadow-sm' : 'border border-slate-200 bg-white hover:bg-slate-50 text-slate-700'"
+                                    x-text="p">
+                            </button>
+                        </template>
+                    </div>
+                </template>
+
+                <!-- Next -->
+                <button type="button" @click="nextPage()" :disabled="currentPage === totalPages" 
+                        class="w-8 h-8 rounded-[7px] border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-colors">
+                    <i class="ti ti-chevron-right text-xs"></i>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -344,6 +392,19 @@
     </div>
 </div>
 
+@php
+    $siswaJson = $siswa->map(function($s) {
+        $tingkat = $s->kelas ? $s->kelas->tingkat : '';
+        $rombel = $s->kelas ? $s->kelas->nama_rombel : '';
+        return [
+            'id' => (string) $s->id,
+            'tingkat' => (string) $tingkat,
+            'kelas_id' => (string) ($s->kelas_id ?? ''),
+            'search' => strtolower($s->nama_lengkap . ' ' . $s->nis . ' ' . $s->nisn . ' ' . $tingkat . ' ' . $rombel)
+        ];
+    })->values();
+@endphp
+
 <script>
 function siswaPageController() {
     const baseSync = typeof telegramSyncBulk === 'function' ? telegramSyncBulk('siswa') : {};
@@ -353,6 +414,15 @@ function siswaPageController() {
         selectedKelasId: '{{ request('kelas_id', '') }}',
         searchQuery: '{{ request('q', '') }}',
         allClasses: @json($kelasList),
+        allSiswa: @json($siswaJson),
+        currentPage: 1,
+        perPage: 10,
+
+        init() {
+            this.$watch('selectedTingkat', () => { this.currentPage = 1; });
+            this.$watch('selectedKelasId', () => { this.currentPage = 1; });
+            this.$watch('searchQuery', () => { this.currentPage = 1; });
+        },
 
         get availableRombels() {
             if (!this.selectedTingkat) return [];
@@ -374,10 +444,10 @@ function siswaPageController() {
         },
 
         selectRombel(kelasId) {
-            if (this.selectedKelasId === kelasId) {
+            if (this.selectedKelasId === String(kelasId)) {
                 this.selectedKelasId = '';
             } else {
-                this.selectedKelasId = kelasId;
+                this.selectedKelasId = String(kelasId);
             }
         },
 
@@ -385,22 +455,75 @@ function siswaPageController() {
             this.selectedTingkat = '';
             this.selectedKelasId = '';
             this.searchQuery = '';
+            this.currentPage = 1;
         },
 
-        isRowVisible(tingkat, kelasId, searchText) {
-            if (this.selectedTingkat && tingkat !== this.selectedTingkat) {
-                return false;
-            }
-            if (this.selectedKelasId && kelasId !== this.selectedKelasId) {
-                return false;
-            }
-            if (this.searchQuery) {
-                const query = this.searchQuery.toLowerCase();
-                if (!searchText.toLowerCase().includes(query)) {
+        get filteredSiswa() {
+            return this.allSiswa.filter(s => {
+                if (this.selectedTingkat && s.tingkat !== this.selectedTingkat) {
                     return false;
                 }
+                if (this.selectedKelasId && s.kelas_id !== this.selectedKelasId) {
+                    return false;
+                }
+                if (this.searchQuery) {
+                    const query = this.searchQuery.toLowerCase();
+                    if (!s.search.includes(query)) {
+                        return false;
+                    }
+                }
+                return true;
+            });
+        },
+
+        get filteredTotal() {
+            return this.filteredSiswa.length;
+        },
+
+        get totalPages() {
+            return Math.ceil(this.filteredTotal / this.perPage) || 1;
+        },
+
+        get pagedIds() {
+            const start = (this.currentPage - 1) * this.perPage;
+            return this.filteredSiswa.slice(start, start + this.perPage).map(s => s.id);
+        },
+
+        isRowVisible(id) {
+            return this.pagedIds.includes(String(id));
+        },
+
+        get paginationPages() {
+            const total = this.totalPages;
+            const current = this.currentPage;
+            if (total <= 7) {
+                return Array.from({length: total}, (_, i) => i + 1);
             }
-            return true;
+            if (current <= 3) {
+                return [1, 2, 3, 4, '...', total];
+            }
+            if (current >= total - 2) {
+                return [1, '...', total - 3, total - 2, total - 1, total];
+            }
+            return [1, '...', current - 1, current, current + 1, '...', total];
+        },
+
+        goToPage(page) {
+            if (page >= 1 && page <= this.totalPages) {
+                this.currentPage = page;
+            }
+        },
+
+        nextPage() {
+            if (this.currentPage < this.totalPages) {
+                this.currentPage++;
+            }
+        },
+
+        prevPage() {
+            if (this.currentPage > 1) {
+                this.currentPage--;
+            }
         }
     };
 }

@@ -3,34 +3,34 @@
 @section('title', 'Data Guru')
 
 @section('content')
-<div class="space-y-6" x-data="telegramSyncBulk('guru')">
+<div class="space-y-6" x-data="guruPageController()">
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div class="relative w-full sm:w-96">
-            <input type="text" placeholder="Cari guru..." class="w-full pl-10 pr-4 py-2.5 bg-white border border-sky-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-400/30 focus:border-sky-400 transition-all shadow-sm">
-            <svg class="w-5 h-5 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            <input type="text" x-model="searchQuery" placeholder="Cari guru..." class="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-[7px] text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm">
+            <i class="ti ti-search text-slate-400 absolute left-3 top-3 text-base"></i>
         </div>
         <div class="flex items-center gap-2 w-full sm:w-auto flex-wrap sm:flex-nowrap">
-            <button type="button" @click="openSyncModal()" class="px-5 py-2.5 bg-sky-500 hover:bg-sky-600 text-white font-medium rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm shadow-sky-200 w-full sm:w-auto">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+            <button type="button" @click="openSyncModal()" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-[7px] flex items-center justify-center gap-2 transition-all shadow-sm w-full sm:w-auto">
+                <i class="ti ti-brand-telegram text-base"></i>
                 Sinkronkan Telegram
             </button>
-            <button type="button" @click="$dispatch('open-guru-import-modal')" class="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-medium rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm shadow-emerald-200 w-full sm:w-auto">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-                Import
+            <button type="button" @click="$dispatch('open-guru-import-modal')" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-[7px] flex items-center justify-center gap-2 transition-all shadow-sm w-full sm:w-auto">
+                <i class="ti ti-file-spreadsheet text-base"></i>
+                Import Excel
             </button>
-            <a href="{{ route('guru.create') }}" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-medium rounded-xl flex items-center gap-2 transition-all shadow-sm shadow-amber-300/40 w-full sm:w-auto justify-center">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+            <a href="{{ route('guru.create') }}" class="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-semibold text-xs rounded-[7px] flex items-center gap-2 transition-all shadow-sm w-full sm:w-auto justify-center">
+                <i class="ti ti-plus text-base"></i>
                 Tambah Guru
             </a>
         </div>
     </div>
 
     <!-- Data Table -->
-    <div x-data="{ selected: [], selectAll: false, toggleAll() { this.selectAll = !this.selectAll; if (this.selectAll) { this.selected = Array.from(document.querySelectorAll('.guru-checkbox')).map(cb => cb.value); } else { this.selected = []; } } }" class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-sky-100 overflow-hidden">
+    <div x-data="{ selected: [], selectAll: false, toggleAll() { this.selectAll = !this.selectAll; if (this.selectAll) { this.selected = Array.from(document.querySelectorAll('.guru-checkbox:not([style*=\'display: none\'])')).map(cb => cb.value); } else { this.selected = []; } } }" class="bg-white rounded-[7px] shadow-[rgba(145,158,171,0.2)_0px_0px_2px_0px,rgba(145,158,171,0.12)_0px_12px_24px_-4px] border border-slate-200 overflow-hidden">
         
         <!-- Bulk Delete Action Bar -->
-        <div x-show="selected.length > 0" x-transition class="bg-rose-50/80 px-6 py-3 border-b border-rose-100 flex items-center justify-between" style="display: none;">
-            <span class="text-sm font-medium text-rose-700">
+        <div x-show="selected.length > 0" x-transition class="bg-rose-50 px-6 py-3 border-b border-rose-100 flex items-center justify-between" style="display: none;">
+            <span class="text-sm font-semibold text-rose-700">
                 <span x-text="selected.length"></span> guru dipilih
             </span>
             <form action="{{ route('guru.bulkDestroy') }}" method="POST" @submit.prevent="if(selected.length > 0 && confirm('Apakah Anda yakin ingin menghapus ' + selected.length + ' guru terpilih?')) $el.submit()">
@@ -38,8 +38,8 @@
                 <template x-for="id in selected">
                     <input type="hidden" name="ids[]" :value="id">
                 </template>
-                <button type="submit" :disabled="selected.length === 0" :class="selected.length === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-rose-700 shadow-rose-200'" class="px-4 py-2 bg-rose-600 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2 shadow-sm">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                <button type="submit" :disabled="selected.length === 0" :class="selected.length === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-rose-700 shadow-rose-200'" class="px-4 py-2 bg-rose-600 text-white text-xs font-semibold rounded-[7px] transition-colors flex items-center gap-2 shadow-sm">
+                    <i class="ti ti-trash text-sm"></i>
                     Hapus Terpilih
                 </button>
             </form>
@@ -48,29 +48,27 @@
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
                 <thead>
-                    <tr class="bg-sky-50/50 border-b border-sky-100 text-slate-500 text-xs uppercase tracking-wider">
-                        <th class="p-4 w-12 text-center">
-                            <input type="checkbox" @click="toggleAll()" :checked="selectAll" class="w-4 h-4 rounded border-sky-200 text-sky-600 focus:ring-sky-500">
+                    <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 text-xs uppercase tracking-wider">
+                        <th class="py-3.5 px-4 w-12 text-center">
+                            <input type="checkbox" @click="toggleAll()" :checked="selectAll" class="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
                         </th>
-                        <th class="p-4 font-semibold w-16 text-center">No</th>
-                        <th class="p-4 font-semibold">Guru</th>
-                        <th class="p-4 font-semibold">NIP</th>
-                        <th class="p-4 font-semibold">Jabatan</th>
-                        <th class="p-4 font-semibold">L/P</th>
-                        <th class="p-4 font-semibold">Status</th>
-                        <th class="p-4 font-semibold text-right">Aksi</th>
+                        <th class="py-3.5 px-4 font-semibold text-slate-600">USER</th>
+                        <th class="py-3.5 px-4 font-semibold text-slate-600">ROLE / JABATAN</th>
+                        <th class="py-3.5 px-4 font-semibold text-slate-600">STATUS</th>
+                        <th class="py-3.5 px-4 font-semibold text-slate-600">JOINED</th>
+                        <th class="py-3.5 px-4 font-semibold text-slate-600 text-right">ACTIONS</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-sky-50 text-sm">
+                <tbody class="divide-y divide-slate-100 text-sm">
                     @forelse($guru as $index => $g)
-                    <tr class="hover:bg-sky-50/30 transition-colors" :class="{'bg-rose-50/30': selected.includes('{{ $g->id }}')}">
-                        <td class="p-4 text-center">
-                            <input type="checkbox" value="{{ $g->id }}" x-model="selected" class="guru-checkbox w-4 h-4 rounded border-sky-200 text-sky-600 focus:ring-sky-500">
+                    <tr x-show="isRowVisible('{{ $g->id }}')"
+                        class="hover:bg-slate-50/70 transition-colors" :class="{'bg-rose-50/30': selected.includes('{{ $g->id }}')}">
+                        <td class="py-3.5 px-4 text-center">
+                            <input type="checkbox" value="{{ $g->id }}" x-model="selected" class="guru-checkbox w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
                         </td>
-                        <td class="p-4 text-center font-medium text-slate-500">{{ $index + 1 }}</td>
-                        <td class="p-4">
+                        <td class="py-3.5 px-4">
                             <div class="flex items-center gap-3">
-                                <div class="relative group cursor-pointer" 
+                                <div class="relative shrink-0 cursor-pointer" 
                                      @if($g->foto_wajah)
                                      @click="$dispatch('preview-face', { name: '{{ addslashes($g->nama_lengkap) }}', nip: '{{ $g->nip ?? '-' }}', photo: '{{ asset('storage/' . $g->foto_wajah) }}', registeredAt: '{{ $g->updated_at ? $g->updated_at->format('d M Y H:i') : '-' }}' })"
                                      title="Klik untuk melihat foto pendaftaran wajah"
@@ -78,79 +76,86 @@
                                      title="{{ $g->foto_guru ? 'Foto Profil Guru' : 'Belum Ada Foto' }}"
                                      @endif>
                                     @if($g->foto_wajah)
-                                        <img src="{{ asset('storage/' . $g->foto_wajah) }}" alt="{{ $g->nama_lengkap }}" class="w-10 h-10 rounded-full object-cover border-2 border-emerald-400 shadow-sm ring-2 ring-emerald-100 group-hover:scale-105 transition-transform">
-                                        <span class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full flex items-center justify-center text-white" title="Wajah Terdaftar">
-                                            <svg class="w-2 h-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
-                                        </span>
+                                        <img src="{{ asset('storage/' . $g->foto_wajah) }}" alt="{{ $g->nama_lengkap }}" class="w-10 h-10 rounded-full object-cover border border-emerald-300 shadow-sm">
                                     @elseif($g->foto_guru)
                                         <img src="{{ asset('storage/' . $g->foto_guru) }}" alt="{{ $g->nama_lengkap }}" class="w-10 h-10 rounded-full object-cover border border-slate-200">
                                     @else
-                                        <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200 text-slate-400">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                                        <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-sm border border-blue-100">
+                                            {{ substr($g->nama_lengkap, 0, 1) }}
                                         </div>
                                     @endif
+                                    <!-- Indicator dot at bottom right (like the image) -->
+                                    <span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white {{ $g->foto_wajah || $g->face_descriptor ? 'bg-emerald-500' : 'bg-slate-400' }}" title="{{ $g->foto_wajah || $g->face_descriptor ? 'Wajah Terdaftar' : 'Belum Ada Face ID' }}"></span>
                                 </div>
-                                <div>
-                                    <div class="font-medium text-slate-800">{{ $g->nama_lengkap }}</div>
-                                    @if($g->foto_wajah || $g->face_descriptor)
-                                        <span class="inline-flex items-center gap-1 text-[10px] text-emerald-600 font-semibold mt-0.5">
-                                            <svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3"/></svg>
-                                            Wajah Terdaftar
-                                        </span>
-                                    @else
-                                        <span class="inline-flex items-center gap-1 text-[10px] text-slate-400 font-medium mt-0.5">
-                                            Belum scan wajah
-                                        </span>
-                                    @endif
+                                <div class="min-w-0">
+                                    <div class="font-bold text-slate-800 text-sm leading-tight truncate">{{ $g->nama_lengkap }}</div>
+                                    <div class="text-xs text-slate-400 font-mono mt-0.5 truncate">
+                                        NIP: {{ $g->nip ?? '-' }}
+                                    </div>
                                 </div>
                             </div>
                         </td>
-                        <td class="p-4">
-                            <div class="text-slate-800 font-medium">{{ $g->nip ?? '-' }}</div>
+                        <td class="py-3.5 px-4">
+                            <div class="flex items-center gap-2">
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                                    <i class="ti ti-briefcase text-xs"></i>
+                                    <span>{{ $g->jabatan ?? 'Guru Pengajar' }}</span>
+                                </span>
+                                <span class="inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold {{ $g->jenis_kelamin == 'L' ? 'bg-indigo-50 text-indigo-600' : 'bg-pink-50 text-pink-600' }}" title="{{ $g->jenis_kelamin == 'L' ? 'Laki-laki' : 'Perempuan' }}">
+                                    {{ $g->jenis_kelamin }}
+                                </span>
+                            </div>
                         </td>
-                        <td class="p-4 font-medium text-slate-800">
-                            {{ $g->jabatan ?? '-' }}
+                        <td class="py-3.5 px-4 whitespace-nowrap">
+                            <div class="flex flex-col gap-0.5">
+                                @if($g->status == 'Aktif')
+                                    <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600">
+                                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                        Active
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400">
+                                        <span class="w-2 h-2 rounded-full bg-slate-400"></span>
+                                        Inactive
+                                    </span>
+                                @endif
+                                
+                                <span class="inline-flex items-center gap-1 text-[11px] {{ $g->foto_wajah || $g->face_descriptor ? 'text-emerald-600' : 'text-slate-400' }}">
+                                    <i class="ti {{ $g->foto_wajah || $g->face_descriptor ? 'ti-face-id' : 'ti-face-id-error' }} text-xs"></i>
+                                    {{ $g->foto_wajah || $g->face_descriptor ? 'Face ID Ready' : 'No Face ID' }}
+                                </span>
+                            </div>
                         </td>
-                        <td class="p-4">
-                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-md {{ $g->jenis_kelamin == 'L' ? 'bg-blue-100 text-blue-700' : 'bg-pink-100 text-pink-700' }} text-xs font-bold">
-                                {{ $g->jenis_kelamin }}
-                            </span>
+                        <td class="py-3.5 px-4 whitespace-nowrap text-xs text-slate-500 font-medium">
+                            {{ $g->created_at ? $g->created_at->format('M d, Y') : '-' }}
                         </td>
-                        <td class="p-4">
-                            <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-medium {{ $g->status == 'Aktif' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600' }}">
-                                {{ $g->status }}
-                            </span>
-                        </td>
-                        <td class="p-4">
-                            <div class="flex items-center justify-end gap-1.5 sm:gap-2">
+                        <td class="py-3.5 px-4 text-right">
+                            <div class="flex items-center justify-end gap-1">
                                 {{-- Tombol Reset Wajah --}}
                                 @if(!empty($g->face_descriptor) || !empty($g->foto_wajah))
                                 <form action="{{ route('guru.reset-face', $g->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin mereset pendaftaran wajah untuk guru {{ addslashes($g->nama_lengkap) }}?\n\nGuru harus memindai ulang wajahnya untuk absensi.');" class="inline">
                                     @csrf
-                                    <button type="submit" class="p-2 text-amber-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors" title="Reset Pendaftaran Wajah">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                        </svg>
+                                    <button type="submit" class="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-[7px] transition-colors" title="Reset Pendaftaran Wajah">
+                                        <i class="ti ti-rotate-clockwise text-base"></i>
                                     </button>
                                 </form>
-                                @else
-                                <button type="button" disabled class="p-2 text-slate-300 cursor-not-allowed rounded-lg" title="Wajah belum didaftarkan">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                    </svg>
-                                </button>
                                 @endif
 
-                                <button type="button" @click="$dispatch('open-qr', { id: '{{ $g->id }}', name: '{{ addslashes($g->nama_lengkap) }}', code: '{{ $g->nip ?? 'N/A' }}', printUrl: '{{ route('guru.id-card', $g->id) }}' })" class="p-2 text-sky-500 hover:bg-sky-50 rounded-lg transition-colors" title="Lihat QR Code">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
+                                <!-- View QR / ID Card Button (Eye icon like the image) -->
+                                <button type="button" @click="$dispatch('open-qr', { id: '{{ $g->id }}', name: '{{ addslashes($g->nama_lengkap) }}', code: '{{ $g->nip ?? 'N/A' }}', printUrl: '{{ route('guru.id-card', $g->id) }}' })" class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-[7px] transition-colors" title="Lihat QR Code & ID Card">
+                                    <i class="ti ti-eye text-base"></i>
                                 </button>
-                                <a href="{{ route('guru.edit', $g->id) }}" class="p-2 text-sky-500 hover:bg-sky-50 rounded-lg transition-colors" title="Edit">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                
+                                <!-- Edit Button (Pencil icon like the image) -->
+                                <a href="{{ route('guru.edit', $g->id) }}" class="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-[7px] transition-colors" title="Edit">
+                                    <i class="ti ti-pencil text-base"></i>
                                 </a>
-                                <form action="{{ route('guru.destroy', $g->id) }}" method="POST" onsubmit="return confirm('Hapus guru ini?');">
+
+                                <!-- Delete Button (Trash icon like the image) -->
+                                <form action="{{ route('guru.destroy', $g->id) }}" method="POST" onsubmit="return confirm('Hapus guru ini?');" class="inline">
                                     @csrf @method('DELETE')
-                                    <button type="submit" class="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors" title="Hapus">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                    <button type="submit" class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-[7px] transition-colors" title="Hapus">
+                                        <i class="ti ti-trash text-base"></i>
                                     </button>
                                 </form>
                             </div>
@@ -158,13 +163,51 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="8" class="p-8 text-center text-slate-500">
+                        <td colspan="6" class="p-8 text-center text-slate-400">
+                            <i class="ti ti-users-minus text-3xl mb-1 block"></i>
                             Belum ada data guru.
                         </td>
                     </tr>
                     @endforelse
                 </tbody>
             </table>
+        </div>
+
+        <!-- Table Footer: Pagination matching the user's design -->
+        <div class="px-6 py-4 bg-slate-50/70 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 font-medium">
+            <div>
+                Menampilkan <span class="font-bold text-slate-700" x-text="filteredTotal === 0 ? 0 : ((currentPage - 1) * perPage + 1)"></span> - <span class="font-bold text-slate-700" x-text="Math.min(currentPage * perPage, filteredTotal)"></span> dari <span class="font-bold text-slate-700" x-text="filteredTotal"></span> guru
+            </div>
+            <!-- Pagination Controls matching image style -->
+            <div class="flex items-center gap-1.5" x-show="totalPages > 1">
+                <!-- Prev -->
+                <button type="button" @click="prevPage()" :disabled="currentPage === 1" 
+                        class="w-8 h-8 rounded-[7px] border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-colors">
+                    <i class="ti ti-chevron-left text-xs"></i>
+                </button>
+
+                <!-- Page numbers -->
+                <template x-for="p in paginationPages" :key="p">
+                    <div>
+                        <template x-if="p === '...'">
+                            <span class="w-8 h-8 flex items-center justify-center text-slate-400 font-semibold">...</span>
+                        </template>
+                        <template x-if="p !== '...'">
+                            <button type="button" @click="goToPage(p)" 
+                                    class="w-8 h-8 rounded-[7px] font-semibold text-xs flex items-center justify-center transition-all"
+                                    :class="currentPage === p ? 'bg-teal-500 text-white shadow-sm' : 'border border-slate-200 bg-white hover:bg-slate-50 text-slate-700'"
+                                    x-text="p">
+                            </button>
+                        </template>
+                    </div>
+                </template>
+
+                <!-- Next -->
+                <button type="button" @click="nextPage()" :disabled="currentPage === totalPages" 
+                        class="w-8 h-8 rounded-[7px] border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-colors">
+                    <i class="ti ti-chevron-right text-xs"></i>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -365,4 +408,84 @@
         </div>
     </div>
 </div>
+@php
+    $guruJson = $guru->map(function($g) {
+        return [
+            'id' => (string) $g->id,
+            'search' => strtolower($g->nama_lengkap . ' ' . $g->nip . ' ' . ($g->jabatan ?? ''))
+        ];
+    })->values();
+@endphp
+<script>
+function guruPageController() {
+    const baseSync = typeof telegramSyncBulk === 'function' ? telegramSyncBulk('guru') : {};
+    return {
+        ...baseSync,
+        searchQuery: '',
+        allGuru: @json($guruJson),
+        currentPage: 1,
+        perPage: 10,
+
+        init() {
+            this.$watch('searchQuery', () => { this.currentPage = 1; });
+        },
+
+        get filteredGuru() {
+            if (!this.searchQuery) return this.allGuru;
+            const query = this.searchQuery.toLowerCase();
+            return this.allGuru.filter(g => g.search.includes(query));
+        },
+
+        get filteredTotal() {
+            return this.filteredGuru.length;
+        },
+
+        get totalPages() {
+            return Math.ceil(this.filteredTotal / this.perPage) || 1;
+        },
+
+        get pagedIds() {
+            const start = (this.currentPage - 1) * this.perPage;
+            return this.filteredGuru.slice(start, start + this.perPage).map(g => g.id);
+        },
+
+        isRowVisible(id) {
+            return this.pagedIds.includes(String(id));
+        },
+
+        get paginationPages() {
+            const total = this.totalPages;
+            const current = this.currentPage;
+            if (total <= 7) {
+                return Array.from({length: total}, (_, i) => i + 1);
+            }
+            if (current <= 3) {
+                return [1, 2, 3, 4, '...', total];
+            }
+            if (current >= total - 2) {
+                return [1, '...', total - 3, total - 2, total - 1, total];
+            }
+            return [1, '...', current - 1, current, current + 1, '...', total];
+        },
+
+        goToPage(page) {
+            if (page >= 1 && page <= this.totalPages) {
+                this.currentPage = page;
+            }
+        },
+
+        nextPage() {
+            if (this.currentPage < this.totalPages) {
+                this.currentPage++;
+            }
+        },
+
+        prevPage() {
+            if (this.currentPage > 1) {
+                this.currentPage--;
+            }
+        }
+    };
+}
+</script>
 @endsection

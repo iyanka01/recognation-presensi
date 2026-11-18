@@ -37,6 +37,9 @@ Route::middleware('auth:guru')->group(function () {
     Route::get('guru/informasi', [GuruInformasiController::class, 'index'])->name('guru.informasi.index');
     Route::get('guru/informasi/{id}', [GuruInformasiController::class, 'show'])->name('guru.informasi.show');
 
+    // Absen Kegiatan Khusus (Khusus Siswa yang discan oleh Guru)
+    Route::get('guru/kegiatan', [\App\Http\Controllers\GuruKegiatanController::class, 'index'])->name('guru.kegiatan.index');
+
     // Face Recognition (Absensi Wajah Guru)
     Route::get('face-scan', [FaceRecognitionController::class, 'scan'])->name('guru.face-scan');
     Route::get('face-descriptors', [FaceRecognitionController::class, 'getDescriptors'])->name('guru.face-descriptors');
