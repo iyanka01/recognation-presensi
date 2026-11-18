@@ -34,11 +34,11 @@
          x-transition:leave-end="opacity-0 -translate-y-1"
          class="pl-3.5 ml-4 space-y-0.5 border-l-2 border-slate-200 dark:border-slate-800">
 
-        {{-- Absen Umum --}}
+        {{-- Log Presensi --}}
         <a href="{{ route('presensi.index') }}"
            class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-[7px] text-xs {{ request()->routeIs('presensi.index') ? 'nav-active' : '' }}">
             <i class="ti ti-clipboard-list text-base shrink-0"></i>
-            <span class="font-medium">Absen Umum</span>
+            <span class="font-medium">Log Presensi</span>
         </a>
 
         {{-- Scan QR Masuk / Pulang --}}
