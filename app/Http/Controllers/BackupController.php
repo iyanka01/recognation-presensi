@@ -234,17 +234,30 @@ class BackupController extends Controller
 
                 if ($existingGuru) {
                     $guruMap[$oldId] = $existingGuru->id;
+                    // Update face_descriptor & foto_wajah jika guru sudah ada tapi belum punya data wajah
+                    $updateData = [];
+                    if (!empty($g['face_descriptor']) && empty($existingGuru->face_descriptor)) {
+                        $updateData['face_descriptor'] = $g['face_descriptor'];
+                    }
+                    if (!empty($g['foto_wajah']) && empty($existingGuru->foto_wajah)) {
+                        $updateData['foto_wajah'] = $g['foto_wajah'];
+                    }
+                    if (!empty($updateData)) {
+                        $existingGuru->update($updateData);
+                    }
                 } else {
                     $newGuru = \App\Models\Guru::create([
-                        'nip'            => $nip,
-                        'username'       => !empty($g['username']) ? trim($g['username']) : ($nip ?: null),
-                        'nama_lengkap'   => $nama,
-                        'jenis_kelamin'  => $g['jenis_kelamin'] ?? 'L',
-                        'jabatan'        => $g['jabatan'] ?? 'Guru',
-                        'no_hp'          => $g['no_hp'] ?? null,
-                        'foto_guru'      => null, // Foto fisik tidak dipindah via json
-                        'status'         => $g['status'] ?? 'Aktif',
-                        'password'       => $g['password'] ?? \Illuminate\Support\Facades\Hash::make('guru123'),
+                        'nip'             => $nip,
+                        'username'        => !empty($g['username']) ? trim($g['username']) : ($nip ?: null),
+                        'nama_lengkap'    => $nama,
+                        'jenis_kelamin'   => $g['jenis_kelamin'] ?? 'L',
+                        'jabatan'         => $g['jabatan'] ?? 'Guru',
+                        'no_hp'           => $g['no_hp'] ?? null,
+                        'foto_guru'       => null, // Foto fisik tidak dipindah via json
+                        'status'          => $g['status'] ?? 'Aktif',
+                        'password'        => $g['password'] ?? \Illuminate\Support\Facades\Hash::make('guru123'),
+                        'face_descriptor' => $g['face_descriptor'] ?? null,
+                        'foto_wajah'      => $g['foto_wajah'] ?? null,
                     ]);
                     $guruMap[$oldId] = $newGuru->id;
                     $countGuru++;
