@@ -217,6 +217,25 @@ class BackupController extends Controller
 
             // 2. GURU (Update or Insert berdasarkan NIP atau nama_lengkap)
             $guruMap = []; // old_id => new_id
+            // Helper untuk download file gambar fisik dari server lama ke storage lokal
+            $downloadImage = function ($filePath) use ($baseUrl) {
+                if (empty($filePath)) return null;
+                $cleanPath = ltrim($filePath, '/');
+                if (\Illuminate\Support\Facades\Storage::disk('public')->exists($cleanPath)) {
+                    return $cleanPath;
+                }
+                try {
+                    $fileUrl = $baseUrl . '/storage/' . $cleanPath;
+                    $res = \Illuminate\Support\Facades\Http::timeout(10)->withoutVerifying()->get($fileUrl);
+                    if ($res->successful() && strlen($res->body()) > 100) {
+                        \Illuminate\Support\Facades\Storage::disk('public')->put($cleanPath, $res->body());
+                    }
+                } catch (\Throwable $th) {
+                    // Fail gracefully jika foto di server lama tidak ada
+                }
+                return $cleanPath;
+            };
+
             foreach ($data['guru'] ?? [] as $g) {
                 $oldId = $g['id'];
                 $nip = !empty($g['nip']) ? trim($g['nip']) : null;
@@ -237,15 +256,21 @@ class BackupController extends Controller
                     $existingGuru = \App\Models\Guru::where('nama_lengkap', 'like', $cleanNama . '%')->first();
                 }
 
+                $fotoWajah = !empty($g['foto_wajah']) ? $downloadImage($g['foto_wajah']) : null;
+                $fotoGuru = !empty($g['foto_guru']) ? $downloadImage($g['foto_guru']) : null;
+
                 if ($existingGuru) {
                     $guruMap[$oldId] = $existingGuru->id;
-                    // Update face_descriptor & foto_wajah jika data dari Railway ada
+                    // Update face_descriptor & foto jika data dari Railway ada
                     $updateData = [];
                     if (!empty($g['face_descriptor'])) {
                         $updateData['face_descriptor'] = $g['face_descriptor'];
                     }
-                    if (!empty($g['foto_wajah'])) {
-                        $updateData['foto_wajah'] = $g['foto_wajah'];
+                    if (!empty($fotoWajah)) {
+                        $updateData['foto_wajah'] = $fotoWajah;
+                    }
+                    if (!empty($fotoGuru)) {
+                        $updateData['foto_guru'] = $fotoGuru;
                     }
                     if (!empty($updateData)) {
                         $existingGuru->update($updateData);
@@ -258,11 +283,11 @@ class BackupController extends Controller
                         'jenis_kelamin'   => $g['jenis_kelamin'] ?? 'L',
                         'jabatan'         => $g['jabatan'] ?? 'Guru',
                         'no_hp'           => $g['no_hp'] ?? null,
-                        'foto_guru'       => null, // Foto fisik tidak dipindah via json
+                        'foto_guru'       => $fotoGuru,
                         'status'          => $g['status'] ?? 'Aktif',
                         'password'        => $g['password'] ?? \Illuminate\Support\Facades\Hash::make('guru123'),
                         'face_descriptor' => $g['face_descriptor'] ?? null,
-                        'foto_wajah'      => $g['foto_wajah'] ?? null,
+                        'foto_wajah'      => $fotoWajah,
                     ]);
                     $guruMap[$oldId] = $newGuru->id;
                     $countGuru++;
