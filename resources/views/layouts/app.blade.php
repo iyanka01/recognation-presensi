@@ -3,7 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    @php($appTitle = (isset($globalLembaga) && $globalLembaga && $globalLembaga->nama_yayasan) ? $globalLembaga->nama_yayasan : (isset($globalLembaga) && $globalLembaga && $globalLembaga->nama_lembaga ? $globalLembaga->nama_lembaga : 'Sistem Presensi'))
+    @php
+        $appTitle = (isset($globalLembaga) && $globalLembaga && $globalLembaga->nama_yayasan)
+            ? $globalLembaga->nama_yayasan
+            : ((isset($globalLembaga) && $globalLembaga && $globalLembaga->nama_lembaga)
+                ? $globalLembaga->nama_lembaga
+                : 'Sistem Presensi');
+    @endphp
     <title>@yield('title', 'Dashboard') - {{ $appTitle }}</title>
     @php
         $appFavicon = (isset($globalLembaga) && $globalLembaga->logo) ? Storage::url($globalLembaga->logo) : asset('favicon.ico');

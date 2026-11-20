@@ -3,7 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    @php($appTitleSiswa = (isset($globalLembaga) && $globalLembaga && $globalLembaga->nama_yayasan) ? $globalLembaga->nama_yayasan : (isset($globalLembaga) && $globalLembaga && $globalLembaga->nama_lembaga ? $globalLembaga->nama_lembaga : 'Sistem Presensi'))
+    @php
+        $appTitleSiswa = (isset($globalLembaga) && $globalLembaga && $globalLembaga->nama_yayasan)
+            ? $globalLembaga->nama_yayasan
+            : ((isset($globalLembaga) && $globalLembaga && $globalLembaga->nama_lembaga)
+                ? $globalLembaga->nama_lembaga
+                : 'Sistem Presensi');
+    @endphp
     <title>@yield('title', 'Portal Siswa & Wali Murid') – {{ $appTitleSiswa }}</title>
     @php
         $appFavicon = (isset($globalLembaga) && $globalLembaga->logo) ? Storage::url($globalLembaga->logo) : asset('favicon.ico');
