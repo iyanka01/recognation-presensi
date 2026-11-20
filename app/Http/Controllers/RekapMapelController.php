@@ -246,8 +246,8 @@ class RekapMapelController extends Controller
     public function buildWhatsAppMessage(array $data, string $customNote = ''): string
     {
         $lembaga = $data['pengaturan'] ?? PengaturanLembaga::first();
-        $namaSekolah = $lembaga && !empty($lembaga->nama_yayasan) ? $lembaga->nama_yayasan : ($lembaga->nama_lembaga ?? 'Sistem Presensi');
         $kelas = $data['kelas'];
+        $namaSekolah = $kelas?->departemen?->nama_departemen ?: ($lembaga->nama_lembaga ?? 'Sistem Presensi');
         $mapel = $data['mapel'];
         $rekap = $data['rekap'] ?? collect();
 

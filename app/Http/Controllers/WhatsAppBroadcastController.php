@@ -306,15 +306,17 @@ class WhatsAppBroadcastController extends Controller
     protected function generateAttendanceData(string $tanggal, string $kelasId): array
     {
         $lembaga = PengaturanLembaga::with('kepalaSekolah')->first();
-        $namaLembaga = $lembaga && !empty($lembaga->nama_yayasan) ? $lembaga->nama_yayasan : ($lembaga->nama_lembaga ?? 'Sistem Presensi Sekolah');
+        $defaultNama = $lembaga && !empty($lembaga->nama_yayasan) ? $lembaga->nama_yayasan : ($lembaga->nama_lembaga ?? 'Sistem Presensi Sekolah');
 
         $siswaQuery = Siswa::with('kelas');
         $targetKelas = null;
 
         if ($kelasId !== 'all') {
             $siswaQuery->where('kelas_id', $kelasId);
-            $targetKelas = Kelas::with('waliKelas')->find($kelasId);
+            $targetKelas = Kelas::with(['waliKelas', 'departemen'])->find($kelasId);
         }
+
+        $namaLembaga = $targetKelas?->departemen?->nama_departemen ?: $defaultNama;
 
         $allSiswa = $siswaQuery->get();
         $totalSiswa = $allSiswa->count();

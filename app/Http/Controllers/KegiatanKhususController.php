@@ -323,7 +323,11 @@ class KegiatanKhususController extends Controller
     private function kirimNotifikasiKehadiran($kegiatan, $user, $userType, $waktu, $status, $tipeScan = 'Masuk')
     {
         $lembaga = PengaturanLembaga::first();
-        $namaSekolah = $lembaga && !empty($lembaga->nama_yayasan) ? $lembaga->nama_yayasan : ($lembaga->nama_lembaga ?? 'Sekolah');
+        if ($userType === 'siswa') {
+            $namaSekolah = $user->kelas?->departemen?->nama_departemen ?: ($lembaga->nama_lembaga ?? 'Sekolah');
+        } else {
+            $namaSekolah = $lembaga && !empty($lembaga->nama_yayasan) ? $lembaga->nama_yayasan : ($lembaga->nama_lembaga ?? 'Sekolah');
+        }
         $tglIndo = Carbon::parse($kegiatan->tanggal)->locale('id')->translatedFormat('l, d F Y');
         $jamFmt = $waktu->format('H:i:s') . ' WIB';
 

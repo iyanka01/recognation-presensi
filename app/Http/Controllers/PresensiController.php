@@ -169,7 +169,11 @@ class PresensiController extends Controller
                 try {
                     $waService = new \App\Services\WhatsAppService();
                     $lembaga = \App\Models\PengaturanLembaga::first();
-                    $namaSekolah = $lembaga && !empty($lembaga->nama_yayasan) ? $lembaga->nama_yayasan : ($lembaga->nama_lembaga ?? 'Sekolah');
+                    if ($userType === 'siswa') {
+                        $namaSekolah = $user->kelas?->departemen?->nama_departemen ?: ($lembaga->nama_lembaga ?? 'Sekolah');
+                    } else {
+                        $namaSekolah = $lembaga && !empty($lembaga->nama_yayasan) ? $lembaga->nama_yayasan : ($lembaga->nama_lembaga ?? 'Sekolah');
+                    }
                     $jamFmt = substr($jam_sekarang, 0, 5) . ' WIB';
 
                     $waMsg = "*📢 Laporan Presensi Pulang*\n";
@@ -256,7 +260,11 @@ class PresensiController extends Controller
             try {
                 $waService = new \App\Services\WhatsAppService();
                 $lembaga = \App\Models\PengaturanLembaga::first();
-                $namaSekolah = $lembaga && !empty($lembaga->nama_yayasan) ? $lembaga->nama_yayasan : ($lembaga->nama_lembaga ?? 'Sekolah');
+                if ($userType === 'siswa') {
+                    $namaSekolah = $user->kelas?->departemen?->nama_departemen ?: ($lembaga->nama_lembaga ?? 'Sekolah');
+                } else {
+                    $namaSekolah = $lembaga && !empty($lembaga->nama_yayasan) ? $lembaga->nama_yayasan : ($lembaga->nama_lembaga ?? 'Sekolah');
+                }
                 $jamFmt = substr($jam_sekarang, 0, 5) . ' WIB';
 
                 if ($status === 'Terlambat') {
