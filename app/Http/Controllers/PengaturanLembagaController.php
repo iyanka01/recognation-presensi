@@ -23,15 +23,18 @@ class PengaturanLembagaController extends Controller
     {
         $request->validate([
             'nama_yayasan' => 'nullable|string|max:255',
-            'nama_lembaga' => 'required|string|max:255',
+            'nama_lembaga' => 'nullable|string|max:255',
             'logo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'kepala_sekolah_id' => 'nullable|exists:guru,id',
-            'nama_kepala' => 'required|string|max:255',
+            'nama_kepala' => 'nullable|string|max:255',
             'nip' => 'nullable|string|max:255',
             'no_telp' => 'nullable|string|max:255',
             'telegram_bot_token' => 'nullable|string|max:255',
             'wanesia_token' => 'nullable|string|max:255',
             'wanesia_active' => 'nullable|boolean',
+            'batas_absen_guru_hari' => 'nullable|integer|min:1|max:365',
+            'notif_peringatan_guru_active' => 'nullable|boolean',
+            'template_peringatan_guru' => 'nullable|string|max:2000',
             'akreditasi' => 'nullable|in:A,B,C,D',
             'website' => 'nullable|string|max:255',
             'alamat' => 'nullable|string',
@@ -42,7 +45,11 @@ class PengaturanLembagaController extends Controller
         ]);
 
         $data = $request->except('logo');
+        if (empty($data['nama_lembaga'])) {
+            $data['nama_lembaga'] = $lembaga->nama_lembaga ?? (\App\Models\Departemen::first()?->nama_departemen ?? 'Sekolah');
+        }
         $data['wanesia_active'] = $request->has('wanesia_active');
+        $data['notif_peringatan_guru_active'] = $request->has('notif_peringatan_guru_active');
         $lembaga = PengaturanLembaga::first();
 
         // Jika kepala sekolah dipilih dari data guru, sinkronkan data profilnya
@@ -53,6 +60,10 @@ class PengaturanLembagaController extends Controller
                 if (!empty($guru->nip)) $data['nip'] = $guru->nip;
                 if (!empty($guru->no_hp)) $data['no_telp'] = $guru->no_hp;
             }
+        }
+
+        if (empty($data['nama_kepala'])) {
+            $data['nama_kepala'] = $lembaga->nama_kepala ?? '-';
         }
 
         if ($request->hasFile('logo')) {
