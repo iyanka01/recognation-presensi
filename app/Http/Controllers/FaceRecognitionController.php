@@ -599,7 +599,7 @@ class FaceRecognitionController extends Controller
         try {
             $telegram = new TelegramService();
             $lembaga = PengaturanLembaga::first();
-            $namaSekolah = $lembaga && !empty($lembaga->nama_lembaga) ? $lembaga->nama_lembaga : 'Sistem Presensi Sekolah';
+            $namaSekolah = $lembaga && !empty($lembaga->nama_yayasan) ? $lembaga->nama_yayasan : ($lembaga->nama_lembaga ?? 'Sistem Presensi Sekolah');
             $jamFmt = substr($jam, 0, 5) . ' WIB';
 
             if ($tipe === 'pulang') {
@@ -653,7 +653,7 @@ class FaceRecognitionController extends Controller
         try {
             $wa = new \App\Services\WhatsAppService();
             $lembaga = PengaturanLembaga::first();
-            $namaSekolah = $lembaga && !empty($lembaga->nama_lembaga) ? $lembaga->nama_lembaga : 'Sistem Presensi Sekolah';
+            $namaSekolah = $lembaga && !empty($lembaga->nama_yayasan) ? $lembaga->nama_yayasan : ($lembaga->nama_lembaga ?? 'Sistem Presensi Sekolah');
             $jamFmt = substr($jam, 0, 5) . ' WIB';
 
             if ($tipe === 'pulang') {

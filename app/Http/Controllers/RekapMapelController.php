@@ -13,48 +13,78 @@ class RekapMapelController extends Controller
 {
     public function index(Request $request)
     {
+        $departemenId = $request->query('departemen_id');
         $kelasId = $request->query('kelas_id');
         $mapelId = $request->query('mapel_id');
         $dari = $request->query('dari', Carbon::now()->startOfMonth()->toDateString());
         $sampai = $request->query('sampai', Carbon::today()->toDateString());
 
-        // Rekap agregat per siswa
-        $rekap = collect();
-        if ($kelasId) {
-            $siswaList = Kelas::findOrFail($kelasId)->siswa()->orderBy('nama_lengkap')->get();
+        $departemens = \App\Models\Departemen::orderBy('nama_departemen')->get();
 
-            $base = PresensiMapel::query()
-                ->selectRaw('siswa_id,
-                    SUM(status = "Hadir") as hadir,
-                    SUM(status = "Izin") as izin,
-                    SUM(status = "Sakit") as sakit,
-                    SUM(status = "Alpa") as alpa,
-                    COUNT(*) as total')
-                ->whereBetween('tanggal', [$dari, $sampai])
-                ->when($mapelId, function ($q) use ($mapelId) {
-                    $q->whereHas('jadwal', fn($j) => $j->where('mata_pelajaran_id', $mapelId));
-                })
-                ->groupBy('siswa_id');
+        // Daftar kelas difilter berdasarkan departemen jika dipilih
+        $kelasQuery = Kelas::with('waliKelas')->orderBy('tingkat')->orderBy('nama_rombel');
+        if ($departemenId && $departemenId !== 'all') {
+            $kelasQuery->where('departemen_id', $departemenId);
+        }
+        $kelasList = $kelasQuery->get();
 
-            $data = $base->get()->keyBy('siswa_id');
-
-            foreach ($siswaList as $s) {
-                $row = $data->get($s->id);
-                $total = (int) ($row->total ?? 0);
-                $hadir = (int) ($row->hadir ?? 0);
-                $rekap->push((object)[
-                    'siswa' => $s,
-                    'hadir' => $hadir,
-                    'izin' => (int) ($row->izin ?? 0),
-                    'sakit' => (int) ($row->sakit ?? 0),
-                    'alpa' => (int) ($row->alpa ?? 0),
-                    'total' => $total,
-                    'persen' => $total > 0 ? round($hadir / $total * 100, 1) : null,
-                ]);
+        // Jika departemen dipilih, pastikan kelasId yang dipilih valid berada di departemen tersebut
+        if ($departemenId && $departemenId !== 'all') {
+            if ($kelasId && !$kelasList->contains('id', $kelasId)) {
+                $kelasId = null;
             }
         }
 
-        $selectedKelas = $kelasId ? Kelas::with('waliKelas')->find($kelasId) : null;
+        // Mapel yang diajarkan pada kelas terpilih (jika kelas dipilih)
+        $mapelQuery = MataPelajaran::orderBy('nama_mapel');
+        if ($kelasId) {
+            $mapelIdsInKelas = \App\Models\JadwalPelajaran::where('kelas_id', $kelasId)->pluck('mata_pelajaran_id')->unique();
+            if ($mapelIdsInKelas->isNotEmpty()) {
+                $mapelQuery->whereIn('id', $mapelIdsInKelas);
+            }
+        }
+        $mapels = $mapelQuery->get();
+
+        // Rekap agregat per siswa (HANYA jika kelas dipilih dan kelas ada)
+        $rekap = collect();
+        if ($kelasId) {
+            $targetKelas = Kelas::find($kelasId);
+            if ($targetKelas) {
+                $siswaList = $targetKelas->siswa()->orderBy('nama_lengkap')->get();
+
+                $base = PresensiMapel::query()
+                    ->selectRaw('siswa_id,
+                        SUM(status = "Hadir") as hadir,
+                        SUM(status = "Izin") as izin,
+                        SUM(status = "Sakit") as sakit,
+                        SUM(status = "Alpa") as alpa,
+                        COUNT(*) as total')
+                    ->whereBetween('tanggal', [$dari, $sampai])
+                    ->when($mapelId, function ($q) use ($mapelId) {
+                        $q->whereHas('jadwal', fn($j) => $j->where('mata_pelajaran_id', $mapelId));
+                    })
+                    ->groupBy('siswa_id');
+
+                $data = $base->get()->keyBy('siswa_id');
+
+                foreach ($siswaList as $s) {
+                    $row = $data->get($s->id);
+                    $total = (int) ($row->total ?? 0);
+                    $hadir = (int) ($row->hadir ?? 0);
+                    $rekap->push((object)[
+                        'siswa' => $s,
+                        'hadir' => $hadir,
+                        'izin' => (int) ($row->izin ?? 0),
+                        'sakit' => (int) ($row->sakit ?? 0),
+                        'alpa' => (int) ($row->alpa ?? 0),
+                        'total' => $total,
+                        'persen' => $total > 0 ? round($hadir / $total * 100, 1) : null,
+                    ]);
+                }
+            }
+        }
+
+        $selectedKelas = $kelasId ? Kelas::with(['waliKelas', 'departemen'])->find($kelasId) : null;
         $targetGuruMapel = null;
         if ($kelasId && $mapelId) {
             $jadwal = \App\Models\JadwalPelajaran::with('guru')
@@ -66,8 +96,10 @@ class RekapMapelController extends Controller
 
         return view('rekap-mapel.index', [
             'rekap' => $rekap,
-            'kelasList' => Kelas::orderBy('tingkat')->orderBy('nama_rombel')->get(),
-            'mapels' => MataPelajaran::orderBy('nama_mapel')->get(),
+            'departemens' => $departemens,
+            'filterDepartemen' => $departemenId,
+            'kelasList' => $kelasList,
+            'mapels' => $mapels,
             'filterKelas' => $kelasId,
             'filterMapel' => $mapelId,
             'dari' => $dari,
@@ -95,7 +127,7 @@ class RekapMapelController extends Controller
         $rekap = collect();
         $kelas = null;
         if ($kelasId) {
-            $kelas = Kelas::find($kelasId);
+            $kelas = Kelas::with('departemen.kepalaSekolah')->find($kelasId);
             $siswaList = $kelas->siswa()->orderBy('nama_lengkap')->get();
 
             $data = PresensiMapel::query()
@@ -214,7 +246,7 @@ class RekapMapelController extends Controller
     public function buildWhatsAppMessage(array $data, string $customNote = ''): string
     {
         $lembaga = $data['pengaturan'] ?? PengaturanLembaga::first();
-        $namaSekolah = $lembaga->nama_lembaga ?? 'Sistem Presensi';
+        $namaSekolah = $lembaga && !empty($lembaga->nama_yayasan) ? $lembaga->nama_yayasan : ($lembaga->nama_lembaga ?? 'Sistem Presensi');
         $kelas = $data['kelas'];
         $mapel = $data['mapel'];
         $rekap = $data['rekap'] ?? collect();

@@ -22,19 +22,61 @@ class WhatsAppBroadcastController extends Controller
         $kelasId = $request->get('kelas_id', 'all');
 
         $kelasList = Kelas::with('waliKelas')->orderBy('tingkat')->orderBy('nama_rombel')->get();
+        $departemens = \App\Models\Departemen::orderBy('nama_departemen')->get();
         $gurus = Guru::orderBy('nama_lengkap', 'asc')->get();
         $lembaga = PengaturanLembaga::with('kepalaSekolah')->first();
 
         // Ambil data laporan berdasarkan filter
         $reportData = $this->generateAttendanceData($tanggal, $kelasId);
 
+        // Ambil data Guru untuk Tab Monitoring & Peringatan Otomatis Guru
+        $batasHari = (int) ($lembaga->batas_absen_guru_hari ?? 14);
+        $startDate = Carbon::today()->subDays(30);
+
+        // Hitung akumulasi alpa 30 hari terakhir untuk setiap guru
+        $alpaGuruStats = Presensi::where('user_type', 'guru')
+            ->where('status', 'Alpa')
+            ->where('tanggal', '>=', $startDate)
+            ->selectRaw('user_id, COUNT(*) as total_alpa')
+            ->groupBy('user_id')
+            ->pluck('total_alpa', 'user_id')
+            ->toArray();
+
+        $latestPeringatan = \App\Models\PeringatanGuru::latest()
+            ->get()
+            ->groupBy('guru_id')
+            ->map(fn($items) => $items->first());
+
+        $monitoringGurus = $gurus->map(function ($g) use ($alpaGuruStats, $latestPeringatan, $batasHari) {
+            $alpa = $alpaGuruStats[$g->id] ?? 0;
+            $peringatan = $latestPeringatan->get($g->id);
+
+            return (object) [
+                'id' => $g->id,
+                'nama_lengkap' => $g->nama_lengkap,
+                'nip' => $g->nip,
+                'no_hp' => $g->no_hp,
+                'total_alpa' => $alpa,
+                'batas_hari' => $batasHari,
+                'is_over_limit' => ($alpa >= $batasHari),
+                'terakhir_kirim' => $peringatan ? Carbon::parse($peringatan->tanggal_kirim)->translatedFormat('d M Y') : null,
+                'status_kirim' => $peringatan ? $peringatan->status_kirim : null,
+            ];
+        })->sortByDesc('total_alpa')->values();
+
+        $riwayatPeringatan = \App\Models\PeringatanGuru::with('guru')->latest()->take(20)->get();
+
         return view('whatsapp.broadcast', compact(
             'tanggal',
             'kelasId',
             'kelasList',
+            'departemens',
             'gurus',
             'lembaga',
-            'reportData'
+            'reportData',
+            'monitoringGurus',
+            'riwayatPeringatan',
+            'batasHari'
         ));
     }
 
@@ -127,12 +169,144 @@ class WhatsAppBroadcastController extends Controller
     }
 
     /**
+     * Kirim Pesan WhatsApp Manual (Sesuai Form Desain Jendela Sekolah / Broadcast Kelas)
+     */
+    public function sendManualBroadcast(Request $request, WhatsAppService $wa)
+    {
+        $request->validate([
+            'pesan' => 'required|string|max:1000',
+        ], [
+            'pesan.required' => 'Pesan broadcast tidak boleh kosong.',
+        ]);
+
+        $lembaga = PengaturanLembaga::first();
+        if (!$lembaga || empty($lembaga->wanesia_token)) {
+            return redirect()->back()->with('error', 'Token API WhatsApp (Wanesia) belum dikonfigurasi di Pengaturan Lembaga.');
+        }
+
+        $tujuan = $request->input('tujuan', 'kelas');
+        $kelasIds = $request->input('kelas_ids', []);
+        $pesan = $request->input('pesan');
+
+        $recipients = [];
+
+        if ($tujuan === 'siswa_per_kelas' || $tujuan === 'kelas') {
+            if (empty($kelasIds)) {
+                return redirect()->back()->with('error', 'Pilih minimal satu kelas tujuan pengiriman.');
+            }
+
+            // Ambil seluruh no_hp_wali dari siswa pada kelas terpilih
+            $siswas = Siswa::whereIn('kelas_id', $kelasIds)
+                ->whereNotNull('no_hp_wali')
+                ->where('no_hp_wali', '!=', '')
+                ->get();
+
+            foreach ($siswas as $s) {
+                $recipients[] = $s->no_hp_wali;
+            }
+        } elseif ($tujuan === 'guru') {
+            $gurus = Guru::whereNotNull('no_hp')->where('no_hp', '!=', '')->get();
+            foreach ($gurus as $g) {
+                $recipients[] = $g->no_hp;
+            }
+        }
+
+        // Nomor manual tambahan jika ada
+        if ($request->filled('manual_number')) {
+            $recipients[] = $request->input('manual_number');
+        }
+
+        $recipients = array_values(array_unique(array_filter(array_map('trim', $recipients))));
+
+        if (empty($recipients)) {
+            return redirect()->back()->with('error', 'Tidak ditemukan nomor tujuan (nomor WhatsApp orang tua/wali siswa di kelas terpilih belum diisi).');
+        }
+
+        $successCount = 0;
+        $failCount = 0;
+        $failedNumbers = [];
+
+        foreach ($recipients as $phone) {
+            $res = $wa->sendMessage($phone, $pesan);
+            if ($res['success']) {
+                $successCount++;
+            } else {
+                $failCount++;
+                $failedNumbers[] = $phone;
+            }
+        }
+
+        if ($successCount > 0 && $failCount === 0) {
+            return redirect()->back()->with('success', "Pesan broadcast manual berhasil dikirimkan ke {$successCount} nomor! 🎉");
+        } elseif ($successCount > 0 && $failCount > 0) {
+            return redirect()->back()->with('warning', "Pesan berhasil terkirim ke {$successCount} nomor, gagal ke {$failCount} nomor.");
+        } else {
+            return redirect()->back()->with('error', "Gagal mengirimkan pesan broadcast ke seluruh nomor tujuan.");
+        }
+    }
+
+    /**
+     * Kirim Pesan Peringatan Guru Secara Manual dari Tombol Monitoring Admin
+     */
+    public function kirimPeringatanGuruManual(Request $request, WhatsAppService $wa)
+    {
+        $guruId = $request->input('guru_id');
+        $guru = Guru::findOrFail($guruId);
+
+        if (empty($guru->no_hp)) {
+            return redirect()->back()->with('error', "Guru {$guru->nama_lengkap} belum memiliki nomor WhatsApp terdaftar.");
+        }
+
+        $lembaga = PengaturanLembaga::first();
+        if (!$lembaga || empty($lembaga->wanesia_token)) {
+            return redirect()->back()->with('error', 'Token WhatsApp Gateway (Wanesia) belum dikonfigurasi di Pengaturan Lembaga.');
+        }
+
+        $startDate = Carbon::today()->subDays(30);
+        $alpaCount = Presensi::where('user_type', 'guru')
+            ->where('user_id', $guru->id)
+            ->where('status', 'Alpa')
+            ->where('tanggal', '>=', $startDate)
+            ->count();
+
+        $defaultTemplate = "Halo Bapak/Ibu {nama_guru},\n\nKami menginformasikan dari Bagian Kepegawaian & Kurikulum {nama_sekolah}.\n\nBerdasarkan data presensi sistem, tercatat Bapak/Ibu belum melakukan presensi kehadiran selama {jumlah_hari} hari terakhir.\n\nJika terdapat kendala teknis pada aplikasi, perubahan jadwal, atau kondisi izin/sakit, mohon segera mengonfirmasikannya kepada pihak kurikulum atau Kepala Sekolah.\n\nTerima kasih atas perhatian dan kerjasamanya.\nSistem Presensi {nama_sekolah}";
+        $template = $lembaga->template_peringatan_guru ?: $defaultTemplate;
+
+        $namaInstansi = !empty($lembaga->nama_yayasan) ? $lembaga->nama_yayasan : ($lembaga->nama_lembaga ?? 'Sekolah');
+        $pesan = str_replace(
+            ['{nama_guru}', '{jumlah_hari}', '{nama_sekolah}'],
+            [$guru->nama_lengkap, $alpaCount > 0 ? $alpaCount : ($lembaga->batas_absen_guru_hari ?? 14), $namaInstansi],
+            $template
+        );
+
+        $res = $wa->sendMessage($guru->no_hp, $pesan);
+        $statusKirim = $res['success'] ? 'Terkirim' : 'Gagal';
+        $keterangan = $res['message'] ?? null;
+
+        \App\Models\PeringatanGuru::create([
+            'guru_id' => $guru->id,
+            'jumlah_hari_alpa' => $alpaCount,
+            'tanggal_kirim' => Carbon::today()->toDateString(),
+            'no_hp' => $guru->no_hp,
+            'pesan' => $pesan,
+            'status_kirim' => $statusKirim,
+            'keterangan' => $keterangan,
+        ]);
+
+        if ($res['success']) {
+            return redirect()->back()->with('success', "Pesan peringatan WhatsApp berhasil dikirimkan ke {$guru->nama_lengkap} ({$guru->no_hp})! 🚀");
+        } else {
+            return redirect()->back()->with('error', "Gagal mengirimkan pesan peringatan WhatsApp ke {$guru->nama_lengkap}: {$keterangan}");
+        }
+    }
+
+    /**
      * Helper menghitung data kehadiran dan perizinan (Hadir, Sakit, Izin, Alpa)
      */
     protected function generateAttendanceData(string $tanggal, string $kelasId): array
     {
         $lembaga = PengaturanLembaga::with('kepalaSekolah')->first();
-        $namaLembaga = $lembaga->nama_lembaga ?? 'Sistem Presensi Sekolah';
+        $namaLembaga = $lembaga && !empty($lembaga->nama_yayasan) ? $lembaga->nama_yayasan : ($lembaga->nama_lembaga ?? 'Sistem Presensi Sekolah');
 
         $siswaQuery = Siswa::with('kelas');
         $targetKelas = null;
