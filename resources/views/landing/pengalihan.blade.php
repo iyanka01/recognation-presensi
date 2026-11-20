@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Presensi Resmi Berpindah Alamat - Layanan Terpadu Satu Pintu</title>
+    @php($namaLembagaPengalihan = (isset($globalLembaga) && $globalLembaga && $globalLembaga->nama_yayasan) ? $globalLembaga->nama_yayasan : (isset($globalLembaga) && $globalLembaga && $globalLembaga->nama_lembaga ? $globalLembaga->nama_lembaga : 'Sistem Presensi'))
+    <title>{{ $namaLembagaPengalihan }} – Layanan Terpadu Satu Pintu</title>
     
     <!-- Google Fonts & Tailwind CSS CDN -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -151,7 +152,7 @@
             <!-- Top Pill Badge -->
             <div class="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs sm:text-sm font-semibold tracking-wide mb-6 shadow-sm">
                 <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-                <span>🚀 Gerbang Layanan Terpadu Satu Pintu</span>
+                <span>🚀 {{ $namaLembagaPengalihan }} — Satu Pintu</span>
             </div>
 
             <!-- ======================================================= -->
@@ -333,7 +334,7 @@
 
         <!-- Footer -->
         <p class="text-center text-[11px] text-slate-500 mt-5">
-            &copy; {{ date('Y') }} Sistem Presensi Sekolah &bull; Layanan Terpadu Satu Pintu
+            &copy; {{ date('Y') }} {{ $namaLembagaPengalihan }} &bull; Layanan Terpadu Satu Pintu
         </p>
     </div>
 

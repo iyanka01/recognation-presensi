@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', 'Mayantara Presensi') - Admin Panel</title>
+    @php($appTitle = (isset($globalLembaga) && $globalLembaga && $globalLembaga->nama_yayasan) ? $globalLembaga->nama_yayasan : (isset($globalLembaga) && $globalLembaga && $globalLembaga->nama_lembaga ? $globalLembaga->nama_lembaga : 'Sistem Presensi'))
+    <title>@yield('title', 'Dashboard') - {{ $appTitle }}</title>
     @php
         $appFavicon = (isset($globalLembaga) && $globalLembaga->logo) ? Storage::url($globalLembaga->logo) : asset('favicon.ico');
     @endphp
@@ -127,7 +128,7 @@
                     <!-- Name -->
                     <div x-show="sidebarOpen" x-transition:enter="transition-opacity duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" class="min-w-0">
                         <p class="font-bold text-sm leading-tight text-slate-800 dark:text-slate-100 truncate">
-                            {{ isset($globalLembaga) && $globalLembaga ? $globalLembaga->nama_lembaga : 'Mayantara' }}
+                            {{ (isset($globalLembaga) && $globalLembaga && $globalLembaga->nama_yayasan) ? $globalLembaga->nama_yayasan : (isset($globalLembaga) && $globalLembaga ? $globalLembaga->nama_lembaga : 'Mayantara') }}
                         </p>
                         <p class="text-[10px] text-blue-600 dark:text-blue-400 font-semibold tracking-wider uppercase mt-0.5">Sistem Presensi</p>
                     </div>

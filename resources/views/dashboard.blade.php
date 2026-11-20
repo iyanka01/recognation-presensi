@@ -269,7 +269,7 @@
                 </div>
             </div>
             <div class="p-4 border-t border-white/10 text-center bg-black/10">
-                <p class="text-xs font-medium text-sky-100">Mayantara Presensi &mdash; Made with <span class="text-rose-300">❤️</span> by <span class="font-bold text-white">iyank</span></p>
+                <p class="text-xs font-medium text-sky-100">{{ (isset($globalLembaga) && $globalLembaga && $globalLembaga->nama_yayasan) ? $globalLembaga->nama_yayasan : (isset($globalLembaga) && $globalLembaga ? $globalLembaga->nama_lembaga : 'Sistem Presensi') }} &mdash; Made with <span class="text-rose-300">❤️</span> by <span class="font-bold text-white">iyank</span></p>
             </div>
         </div>
     </div>
