@@ -282,7 +282,7 @@
             <!-- Footer Policy / Note -->
             <div class="pt-8 border-t border-slate-100 text-[11px] text-slate-400 text-center">
                 <p>Akses terbatas hanya untuk staf dan administrator yang berwenang.</p>
-                <p class="mt-1 font-medium">&copy; {{ date('Y') }} {{ isset($globalLembaga) && $globalLembaga->nama_lembaga ? $globalLembaga->nama_lembaga : 'Mayantara Presensi' }}</p>
+                <p class="mt-1 font-medium">&copy; {{ date('Y') }} {{ isset($globalLembaga) && $globalLembaga->nama_yayasan ? $globalLembaga->nama_yayasan : (isset($globalLembaga) && $globalLembaga->nama_lembaga ? $globalLembaga->nama_lembaga : 'Sistem Presensi') }}</p>
             </div>
         </div>
 
