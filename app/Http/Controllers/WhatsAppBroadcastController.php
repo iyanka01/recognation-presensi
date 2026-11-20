@@ -269,13 +269,15 @@ class WhatsAppBroadcastController extends Controller
             ->where('tanggal', '>=', $startDate)
             ->count();
 
-        $defaultTemplate = "Halo Bapak/Ibu {nama_guru},\n\nKami menginformasikan dari Bagian Kepegawaian & Kurikulum {nama_sekolah}.\n\nBerdasarkan data presensi sistem, tercatat Bapak/Ibu belum melakukan presensi kehadiran selama {jumlah_hari} hari terakhir.\n\nJika terdapat kendala teknis pada aplikasi, perubahan jadwal, atau kondisi izin/sakit, mohon segera mengonfirmasikannya kepada pihak kurikulum atau Kepala Sekolah.\n\nTerima kasih atas perhatian dan kerjasamanya.\nSistem Presensi {nama_sekolah}";
+        $defaultTemplate = "Halo Bapak/Ibu {nama_guru},\n\nKami menginformasikan dari Bagian Kepegawaian & Kurikulum {nama_yayasan}.\n\nBerdasarkan data presensi sistem, tercatat Bapak/Ibu belum melakukan presensi kehadiran selama {jumlah_hari} hari terakhir.\n\nJika terdapat kendala teknis pada aplikasi, perubahan jadwal, atau kondisi izin/sakit, mohon segera mengonfirmasikannya kepada pihak kurikulum atau Kepala Sekolah.\n\nTerima kasih atas perhatian dan kerjasamanya.\nSistem Presensi {nama_sekolah}";
         $template = $lembaga->template_peringatan_guru ?: $defaultTemplate;
 
-        $namaInstansi = !empty($lembaga->nama_yayasan) ? $lembaga->nama_yayasan : ($lembaga->nama_lembaga ?? 'Sekolah');
+        $namaYayasan = !empty($lembaga->nama_yayasan) ? $lembaga->nama_yayasan : ($lembaga->nama_lembaga ?? 'Yayasan / Sekolah');
+        $namaSekolah = $lembaga->nama_lembaga ?? ($lembaga->nama_yayasan ?? 'Sekolah');
+
         $pesan = str_replace(
-            ['{nama_guru}', '{jumlah_hari}', '{nama_sekolah}'],
-            [$guru->nama_lengkap, $alpaCount > 0 ? $alpaCount : ($lembaga->batas_absen_guru_hari ?? 14), $namaInstansi],
+            ['{nama_guru}', '{jumlah_hari}', '{nama_yayasan}', '{nama_sekolah}'],
+            [$guru->nama_lengkap, $alpaCount > 0 ? $alpaCount : ($lembaga->batas_absen_guru_hari ?? 14), $namaYayasan, $namaSekolah],
             $template
         );
 

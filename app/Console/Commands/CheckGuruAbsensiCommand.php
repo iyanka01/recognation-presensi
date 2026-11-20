@@ -84,10 +84,12 @@ class CheckGuruAbsensiCommand extends Command
                 }
 
                 // Susun pesan sesuai template
-                $namaInstansi = !empty($lembaga->nama_yayasan) ? $lembaga->nama_yayasan : ($lembaga->nama_lembaga ?? 'Sekolah');
+                $namaYayasan = !empty($lembaga->nama_yayasan) ? $lembaga->nama_yayasan : ($lembaga->nama_lembaga ?? 'Yayasan / Sekolah');
+                $namaSekolah = $lembaga->nama_lembaga ?? ($lembaga->nama_yayasan ?? 'Sekolah');
+
                 $pesan = str_replace(
-                    ['{nama_guru}', '{jumlah_hari}', '{nama_sekolah}'],
-                    [$guru->nama_lengkap, $alpaCount, $namaInstansi],
+                    ['{nama_guru}', '{jumlah_hari}', '{nama_yayasan}', '{nama_sekolah}'],
+                    [$guru->nama_lengkap, $alpaCount, $namaYayasan, $namaSekolah],
                     $template
                 );
 
