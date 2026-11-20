@@ -31,8 +31,12 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [AuthController::class, 'login'])->name('login.post');
 });
 
-// Route inisialisasi darurat untuk Admin
+// Route inisialisasi darurat untuk Admin (Hanya aktif di mode LOCAL / pengembangan)
 Route::get('/init-admin', function () {
+    if (config('app.env') !== 'local') {
+        abort(404);
+    }
+
     try {
         $admin = \App\Models\AdminUser::firstOrNew(['username' => 'admin']);
         if (!$admin->exists) {
@@ -62,8 +66,12 @@ Route::get('/init-admin', function () {
     }
 });
 
-// Route diagnosa sistem
+// Route diagnosa sistem (Hanya aktif di mode LOCAL / pengembangan)
 Route::get('/cek', function () {
+    if (config('app.env') !== 'local') {
+        abort(404);
+    }
+
     $dbOk = false;
     $dbError = null;
     $tables = [];
@@ -119,4 +127,29 @@ Route::get('/storage/{path}', function ($path) {
     }
     return response()->file($filePath);
 })->where('path', '.*');
+
+// Endpoint API Ekspor Data Migrasi Sekolah (Dapat diakses dengan Token Rahasia)
+Route::get('/api/export-migrasi-sekolah', function (\Illuminate\Http\Request $request) {
+    $tokenRahasia = 'mayantara-migrasi-2026';
+
+    if ($request->query('api_token') !== $tokenRahasia) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Akses ditolak: Token API tidak valid.'
+        ], 403);
+    }
+
+    return response()->json([
+        'success'   => true,
+        'timestamp' => now()->toDateTimeString(),
+        'data'      => [
+            'kelas'    => \App\Models\Kelas::all(),
+            'guru'     => \App\Models\Guru::all(),
+            'siswa'    => \App\Models\Siswa::all(),
+            'mapel'    => \App\Models\MataPelajaran::all(),
+            'jadwal'   => \App\Models\JadwalPelajaran::all(),
+            'presensi' => \App\Models\Presensi::latest()->take(10000)->get(),
+        ]
+    ]);
+});
 
