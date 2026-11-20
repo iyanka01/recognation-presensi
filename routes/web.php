@@ -151,6 +151,8 @@ Route::get('/api/export-migrasi-sekolah', function (\Illuminate\Http\Request $re
             'presensi'        => \App\Models\Presensi::latest()->take(20000)->get(),
             'presensi_mapel'  => \App\Models\PresensiMapel::latest()->take(30000)->get(),
             'jurnal_mengajar' => \App\Models\JurnalMengajar::latest()->take(10000)->get(),
+            'pengaturan_jam'  => \App\Models\PengaturanJam::all(),
+            'pengaturan_lembaga' => \App\Models\PengaturanLembaga::first(),
         ]
     ]);
 });

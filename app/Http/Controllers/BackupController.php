@@ -231,15 +231,20 @@ class BackupController extends Controller
                 if (!$existingGuru) {
                     $existingGuru = \App\Models\Guru::where('nama_lengkap', $nama)->first();
                 }
+                if (!$existingGuru) {
+                    // Cari tanpa gelar (ambil nama depan & tengah)
+                    $cleanNama = trim(explode(',', $nama)[0]);
+                    $existingGuru = \App\Models\Guru::where('nama_lengkap', 'like', $cleanNama . '%')->first();
+                }
 
                 if ($existingGuru) {
                     $guruMap[$oldId] = $existingGuru->id;
-                    // Update face_descriptor & foto_wajah jika guru sudah ada tapi belum punya data wajah
+                    // Update face_descriptor & foto_wajah jika data dari Railway ada
                     $updateData = [];
-                    if (!empty($g['face_descriptor']) && empty($existingGuru->face_descriptor)) {
+                    if (!empty($g['face_descriptor'])) {
                         $updateData['face_descriptor'] = $g['face_descriptor'];
                     }
-                    if (!empty($g['foto_wajah']) && empty($existingGuru->foto_wajah)) {
+                    if (!empty($g['foto_wajah'])) {
                         $updateData['foto_wajah'] = $g['foto_wajah'];
                     }
                     if (!empty($updateData)) {
@@ -465,6 +470,41 @@ class BackupController extends Controller
                         'keterangan'         => $jm['keterangan'] ?? ($jm['catatan'] ?? null),
                     ]);
                     $countJurnal++;
+                }
+            // 9. PENGATURAN JAM ABSENSI (Jam Kerja Guru & Jadwal Kelas)
+            $countJam = 0;
+            foreach ($data['pengaturan_jam'] ?? [] as $pj) {
+                $tipe = $pj['tipe'] ?? 'kelas';
+                $hari = $pj['hari'] ?? 'Senin';
+                $oldKelasId = $pj['kelas_id'] ?? null;
+                $newKelasId = $tipe === 'kelas' ? ($kelasMap[$oldKelasId] ?? null) : null;
+
+                // Jika tipe kelas tapi kelas tidak ditemukan, lewati
+                if ($tipe === 'kelas' && !$newKelasId && !empty($oldKelasId)) {
+                    continue;
+                }
+
+                $existingJam = \App\Models\PengaturanJam::where('tipe', $tipe)
+                    ->where('hari', $hari)
+                    ->when($tipe === 'kelas', fn($q) => $q->where('kelas_id', $newKelasId))
+                    ->first();
+
+                if ($existingJam) {
+                    $existingJam->update([
+                        'jam_mulai'     => $pj['jam_mulai'] ?? $existingJam->jam_mulai,
+                        'jam_terlambat' => $pj['jam_terlambat'] ?? $existingJam->jam_terlambat,
+                        'jam_pulang'    => $pj['jam_pulang'] ?? $existingJam->jam_pulang,
+                    ]);
+                } else {
+                    \App\Models\PengaturanJam::create([
+                        'tipe'          => $tipe,
+                        'kelas_id'      => $newKelasId,
+                        'hari'          => $hari,
+                        'jam_mulai'     => $pj['jam_mulai'] ?? '07:00:00',
+                        'jam_terlambat' => $pj['jam_terlambat'] ?? '07:15:00',
+                        'jam_pulang'    => $pj['jam_pulang'] ?? '15:00:00',
+                    ]);
+                    $countJam++;
                 }
             }
 
