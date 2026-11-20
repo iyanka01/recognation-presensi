@@ -143,12 +143,14 @@ Route::get('/api/export-migrasi-sekolah', function (\Illuminate\Http\Request $re
         'success'   => true,
         'timestamp' => now()->toDateTimeString(),
         'data'      => [
-            'kelas'    => \App\Models\Kelas::all(),
-            'guru'     => \App\Models\Guru::all(),
-            'siswa'    => \App\Models\Siswa::all(),
-            'mapel'    => \App\Models\MataPelajaran::all(),
-            'jadwal'   => \App\Models\JadwalPelajaran::all(),
-            'presensi' => \App\Models\Presensi::latest()->take(10000)->get(),
+            'kelas'           => \App\Models\Kelas::all(),
+            'guru'            => \App\Models\Guru::all(),
+            'siswa'           => \App\Models\Siswa::all(),
+            'mapel'           => \App\Models\MataPelajaran::all(),
+            'jadwal'          => \App\Models\JadwalPelajaran::all(),
+            'presensi'        => \App\Models\Presensi::latest()->take(20000)->get(),
+            'presensi_mapel'  => \App\Models\PresensiMapel::latest()->take(30000)->get(),
+            'jurnal_mengajar' => \App\Models\JurnalMengajar::latest()->take(10000)->get(),
         ]
     ]);
 });
