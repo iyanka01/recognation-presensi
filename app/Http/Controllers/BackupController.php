@@ -471,6 +471,8 @@ class BackupController extends Controller
                     ]);
                     $countJurnal++;
                 }
+            }
+
             // 9. PENGATURAN JAM ABSENSI (Jam Kerja Guru & Jadwal Kelas)
             $countJam = 0;
             foreach ($data['pengaturan_jam'] ?? [] as $pj) {
