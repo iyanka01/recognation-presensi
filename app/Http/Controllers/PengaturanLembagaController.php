@@ -100,7 +100,10 @@ class PengaturanLembagaController extends Controller
             'test_token'  => 'nullable|string',
         ]);
 
-        $pesan = "Halo! Ini adalah pesan uji coba integrasi WhatsApp Gateway (Wanesia) dari Sistem Presensi Sekolah Mayantara. Integrasi BERHASIL aktif! ✅";
+        $lembaga = PengaturanLembaga::first();
+        $namaInstansi = $lembaga && !empty($lembaga->nama_yayasan) ? $lembaga->nama_yayasan : ($lembaga->nama_lembaga ?? 'Sistem Presensi Sekolah');
+
+        $pesan = "Halo! Ini adalah pesan uji coba integrasi WhatsApp Gateway (Wanesia) dari {$namaInstansi}. Integrasi BERHASIL aktif! ✅";
         $res = $wa->sendMessage($request->test_number, $pesan, $request->test_token);
 
         return response()->json($res);
