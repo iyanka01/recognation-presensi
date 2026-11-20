@@ -85,7 +85,10 @@ class CheckGuruAbsensiCommand extends Command
 
                 // Susun pesan sesuai template
                 $namaYayasan = !empty($lembaga->nama_yayasan) ? $lembaga->nama_yayasan : ($lembaga->nama_lembaga ?? 'Yayasan / Sekolah');
-                $namaSekolah = $lembaga->nama_lembaga ?? ($lembaga->nama_yayasan ?? 'Sekolah');
+                
+                // Gabungkan seluruh nama departemen (SMA AN NAJA / SMP-AN NAJA BOARDING SCHOOL)
+                $semuaDep = \App\Models\Departemen::orderBy('nama_departemen')->pluck('nama_departemen');
+                $namaSekolah = $semuaDep->isNotEmpty() ? $semuaDep->implode(' / ') : ($lembaga->nama_lembaga ?? 'Sekolah');
 
                 $pesan = str_replace(
                     ['{nama_guru}', '{jumlah_hari}', '{nama_yayasan}', '{nama_sekolah}'],
