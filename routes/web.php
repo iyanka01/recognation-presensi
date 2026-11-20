@@ -21,9 +21,23 @@ use App\Http\Controllers\RekapMapelController;
 */
 
 // Halaman Utama / Landing Page
-Route::get('/', function () {
+Route::get('/', function (\Illuminate\Http\Request $request) {
+    if (!$request->boolean('force')) {
+        $currentHost = $request->getHost();
+        $isLocalDev = in_array($currentHost, ['localhost', '127.0.0.1']);
+        $isNewDomain = ($currentHost === 'presensi.sabiilunnaja.web.id');
+
+        if (!$isNewDomain && !$isLocalDev) {
+            return view('landing.pengalihan');
+        }
+    }
     return redirect()->route('login');
 });
+
+// Route Preview Langsung Halaman Pengalihan Satu Pintu
+Route::get('/pengalihan', function () {
+    return view('landing.pengalihan');
+})->name('landing.pengalihan');
 
 // Autentikasi Pengguna (Guest)
 Route::middleware('guest')->group(function () {

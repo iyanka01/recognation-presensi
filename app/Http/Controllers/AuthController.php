@@ -10,8 +10,18 @@ use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
-    public function showLoginForm()
+    public function showLoginForm(Request $request)
     {
+        if (!$request->boolean('force')) {
+            $currentHost = $request->getHost();
+            $isLocalDev = in_array($currentHost, ['localhost', '127.0.0.1']);
+            $isNewDomain = ($currentHost === 'presensi.sabiilunnaja.web.id');
+
+            if (!$isNewDomain && !$isLocalDev) {
+                return view('landing.pengalihan');
+            }
+        }
+
         if (Auth::guard('guru')->check() || Auth::guard('web')->check()) {
             return redirect()->route('dashboard');
         }
@@ -26,7 +36,7 @@ class AuthController extends Controller
         $request->validate([
             'username' => ['required', 'string'],
             'password' => ['required', 'string'],
-            'role'     => ['nullable', 'in:guru,siswa,admin'],
+            'role'     => ['nullable', 'in:guru,siswa'],
         ]);
 
         $usernameInput = trim($request->input('username'));
@@ -78,26 +88,15 @@ class AuthController extends Controller
             return null;
         };
 
-        // Helper login Admin
-        $tryAdminLogin = function () use ($usernameInput, $passwordInput, $remember, $request) {
-            $admin = \App\Models\AdminUser::where('username', $usernameInput)->first();
-            if ($admin && Hash::check($passwordInput, $admin->password)) {
-                Auth::guard('web')->login($admin, $remember);
-                $request->session()->regenerate();
-                return ['success' => true];
-            }
-            return null;
-        };
-
-        if ($rolePreference === 'admin') {
-            $res = $tryAdminLogin();
-            if ($res && $res['success']) {
-                return redirect()->intended(route('dashboard'));
-            }
+        // Cek jika akun yang dimasukkan adalah akun administrator
+        $cekAdmin = \App\Models\AdminUser::where('username', $usernameInput)->first();
+        if ($cekAdmin && Hash::check($passwordInput, $cekAdmin->password)) {
             return back()->withErrors([
-                'username' => 'Username atau kata sandi admin tidak sesuai.',
+                'username' => 'Akun Administrator tidak dapat login di halaman ini. Silakan login melalui Panel Administrator di /admin/login.',
             ])->onlyInput('username');
-        } elseif ($rolePreference === 'siswa') {
+        }
+
+        if ($rolePreference === 'siswa') {
             $res = $trySiswaLogin();
             if ($res && $res['success']) {
                 return redirect()->route('siswa.dashboard');
@@ -112,12 +111,6 @@ class AuthController extends Controller
                 return redirect()->intended(route('dashboard'));
             } elseif ($res && isset($res['error'])) {
                 return back()->withErrors(['username' => $res['error']])->onlyInput('username');
-            }
-
-            // Fallback: Jika pengguna ternyata admin
-            $resAdmin = $tryAdminLogin();
-            if ($resAdmin && $resAdmin['success']) {
-                return redirect()->intended(route('dashboard'));
             }
 
             // Fallback: Jika pengguna ternyata siswa yang mengetik di tab guru
