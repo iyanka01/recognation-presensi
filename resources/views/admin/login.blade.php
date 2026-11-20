@@ -68,7 +68,7 @@
 
             <!-- Title & Subtitle -->
             <h2 class="text-xl sm:text-2xl font-black tracking-tight text-white mb-1">
-                {{ $activeLembagaSplash && $activeLembagaSplash->nama_lembaga ? $activeLembagaSplash->nama_lembaga : 'Panel Administrator' }}
+                {{ $activeLembagaSplash && $activeLembagaSplash->nama_yayasan ? $activeLembagaSplash->nama_yayasan : ($activeLembagaSplash && $activeLembagaSplash->nama_lembaga ? $activeLembagaSplash->nama_lembaga : 'Panel Administrator') }}
             </h2>
             <p class="text-xs sm:text-sm font-semibold text-emerald-400 tracking-wider uppercase mb-6 flex items-center gap-1.5">
                 <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
@@ -151,7 +151,7 @@
                     <img src="{{ Storage::url($globalLembaga->logo) }}" alt="Logo" class="w-8 h-8 object-contain rounded-lg bg-white p-1 shadow-sm border border-slate-200">
                 @endif
                 <span class="text-xs font-bold text-slate-700">
-                    {{ isset($globalLembaga) && $globalLembaga->nama_lembaga ? $globalLembaga->nama_lembaga : 'Mayantara Presensi' }}
+                    {{ isset($globalLembaga) && $globalLembaga->nama_yayasan ? $globalLembaga->nama_yayasan : (isset($globalLembaga) && $globalLembaga->nama_lembaga ? $globalLembaga->nama_lembaga : 'Sistem Presensi') }}
                 </span>
             </div>
         </div>
@@ -178,7 +178,7 @@
                         @endif
                         <div class="min-w-0">
                             <span class="text-base sm:text-lg font-black tracking-tight text-slate-800 truncate block">
-                                {{ $activeLembaga && $activeLembaga->nama_lembaga ? $activeLembaga->nama_lembaga : 'Panel Administrator' }}
+                                {{ $activeLembaga && $activeLembaga->nama_yayasan ? $activeLembaga->nama_yayasan : ($activeLembaga && $activeLembaga->nama_lembaga ? $activeLembaga->nama_lembaga : 'Panel Administrator') }}
                             </span>
                             <span class="text-[10px] uppercase font-bold text-emerald-600 tracking-wider block">
                                 Administrator Portal
