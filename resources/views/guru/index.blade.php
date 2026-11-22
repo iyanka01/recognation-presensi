@@ -124,6 +124,19 @@
                                     <i class="ti {{ $g->foto_wajah || $g->face_descriptor ? 'ti-face-id' : 'ti-face-id-error' }} text-xs"></i>
                                     {{ $g->foto_wajah || $g->face_descriptor ? 'Face ID Ready' : 'No Face ID' }}
                                 </span>
+
+                                {{-- Status Kunci Perangkat (Lock Device) --}}
+                                @if(!empty($g->device_id))
+                                    <span class="inline-flex items-center gap-1 text-[10px] text-teal-700 bg-teal-50 border border-teal-200 px-1.5 py-0.5 rounded-[5px]" title="Terkunci: {{ $g->device_name }} ({{ $g->device_locked_at ? \Carbon\Carbon::parse($g->device_locked_at)->diffForHumans() : '' }})">
+                                        <i class="ti ti-device-mobile-check text-xs text-teal-600"></i>
+                                        <span class="max-w-[110px] truncate">{{ $g->device_name ?: 'Device Locked' }}</span>
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center gap-1 text-[10px] text-slate-400 bg-slate-50 border border-slate-200 px-1.5 py-0.5 rounded-[5px]" title="Belum terkunci ke perangkat manapun">
+                                        <i class="ti ti-device-mobile-cancel text-xs"></i>
+                                        <span>Belum Kunci HP</span>
+                                    </span>
+                                @endif
                             </div>
                         </td>
                         <td class="py-3.5 px-4 whitespace-nowrap text-xs text-slate-500 font-medium">
@@ -131,6 +144,16 @@
                         </td>
                         <td class="py-3.5 px-4 text-right">
                             <div class="flex items-center justify-end gap-1">
+                                {{-- Tombol Reset Kunci Perangkat (Lock Device) --}}
+                                @if(!empty($g->device_id))
+                                <form action="{{ route('guru.reset-device', $g->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin mereset kunci perangkat untuk guru {{ addslashes($g->nama_lengkap) }}?\n\nGuru akan dapat login di HP/perangkat baru.');" class="inline">
+                                    @csrf
+                                    <button type="submit" class="p-1.5 text-teal-600 hover:text-teal-700 hover:bg-teal-50 rounded-[7px] transition-colors" title="Reset Kunci Perangkat (HP)">
+                                        <i class="ti ti-device-mobile-message text-base"></i>
+                                    </button>
+                                </form>
+                                @endif
+
                                 {{-- Tombol Reset Wajah --}}
                                 @if(!empty($g->face_descriptor) || !empty($g->foto_wajah))
                                 <form action="{{ route('guru.reset-face', $g->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin mereset pendaftaran wajah untuk guru {{ addslashes($g->nama_lengkap) }}?\n\nGuru harus memindai ulang wajahnya untuk absensi.');" class="inline">

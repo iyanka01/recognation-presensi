@@ -58,6 +58,30 @@ class AuthController extends Controller
                         'error'   => 'Akun guru Anda berstatus "' . $guru->status . '". Silakan hubungi admin sekolah.',
                     ];
                 }
+
+                // Cek Lock Device untuk Guru
+                $deviceId = trim($request->input('device_id', ''));
+                $deviceName = trim($request->input('device_name', ''));
+
+                if (empty($guru->device_id)) {
+                    // Jika belum terikat pada perangkat manapun, kunci ke perangkat ini
+                    if (!empty($deviceId)) {
+                        $guru->update([
+                            'device_id'        => $deviceId,
+                            'device_name'      => $deviceName ?: 'Browser / Mobile',
+                            'device_locked_at' => now(),
+                        ]);
+                    }
+                } else {
+                    // Jika sudah terkunci, pastikan device_id sama persis
+                    if (!empty($deviceId) && $guru->device_id !== $deviceId) {
+                        return [
+                            'success' => false,
+                            'error'   => '⛔ Perangkat tidak diizinkan! Akun Anda telah terkunci pada perangkat (' . ($guru->device_name ?: 'Perangkat Lain') . '). Silakan hubungi Admin Sekolah untuk melakukan Reset Perangkat jika Anda berganti HP.',
+                        ];
+                    }
+                }
+
                 Auth::guard('guru')->login($guru, $remember);
                 $request->session()->regenerate();
                 return ['success' => true];

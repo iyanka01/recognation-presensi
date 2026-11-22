@@ -43,6 +43,13 @@ Route::get('admin', function () {
 
 Route::middleware('auth:web')->group(function () {
     Route::match(['get', 'post'], 'admin/logout', [AdminAuthController::class, 'logout'])->name('admin.logout');
+
+    // Master Departemen / Instansi
+    Route::resource('departemen', \App\Http\Controllers\DepartemenController::class)->except(['create', 'show']);
+
+    // Master Tahun Ajaran
+    Route::resource('tahun-ajaran', \App\Http\Controllers\TahunAjaranController::class)->except(['create', 'show']);
+
     // Master Kelas
     Route::resource('kelas', KelasController::class)->parameters(['kelas' => 'kelas'])->except(['create', 'show']);
     
@@ -57,6 +64,7 @@ Route::middleware('auth:web')->group(function () {
     Route::post('guru/bulk-delete', [GuruController::class, 'bulkDestroy'])->name('guru.bulkDestroy');
     Route::get('guru/{id}/id-card', [GuruController::class, 'printIdCard'])->name('guru.id-card');
     Route::post('guru/{id}/reset-face', [GuruController::class, 'resetFace'])->name('guru.reset-face');
+    Route::post('guru/{id}/reset-device', [GuruController::class, 'resetDevice'])->name('guru.reset-device');
     Route::post('guru/import', [GuruController::class, 'import'])->name('guru.import');
     Route::get('guru/download-template', [GuruController::class, 'downloadTemplate'])->name('guru.downloadTemplate');
     Route::resource('guru', GuruController::class)->whereUuid('guru')->except(['show']);
@@ -103,6 +111,7 @@ Route::middleware('auth:web')->group(function () {
     Route::get('backup/download/{file}', [BackupController::class, 'download'])->name('backup.download');
     Route::delete('backup/delete/{file}', [BackupController::class, 'destroy'])->name('backup.destroy');
     Route::post('backup/restore', [BackupController::class, 'restore'])->name('backup.restore');
+    Route::post('backup/tarik-api', [BackupController::class, 'tarikApi'])->name('backup.tarikApi');
 
     // Notifikasi Telegram
     Route::get('telegram/get-updates', [TelegramController::class, 'fetchUpdates'])->name('telegram.getUpdates');
@@ -111,6 +120,8 @@ Route::middleware('auth:web')->group(function () {
     // Broadcast & Laporan WhatsApp (Wanesia Gateway)
     Route::get('whatsapp-broadcast', [WhatsAppBroadcastController::class, 'index'])->name('whatsapp-broadcast.index');
     Route::post('whatsapp-broadcast/send', [WhatsAppBroadcastController::class, 'send'])->name('whatsapp-broadcast.send');
+    Route::post('whatsapp-broadcast/send-manual', [WhatsAppBroadcastController::class, 'sendManualBroadcast'])->name('whatsapp-broadcast.sendManual');
+    Route::post('whatsapp-broadcast/send-peringatan-guru', [WhatsAppBroadcastController::class, 'kirimPeringatanGuruManual'])->name('whatsapp-broadcast.sendPeringatanGuru');
     Route::get('whatsapp-broadcast/preview', [WhatsAppBroadcastController::class, 'previewMessage'])->name('whatsapp-broadcast.preview');
     
     // Cetak Kartu ID

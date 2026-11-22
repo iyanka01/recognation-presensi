@@ -132,6 +132,17 @@ class GuruController extends Controller
         return redirect()->route('guru.index')->with('success', "Data scan wajah guru {$guru->nama_lengkap} berhasil direset! Guru dapat mendaftarkan wajahnya kembali.");
     }
 
+    public function resetDevice($id)
+    {
+        $guru = Guru::findOrFail($id);
+        $guru->device_id = null;
+        $guru->device_name = null;
+        $guru->device_locked_at = null;
+        $guru->save();
+
+        return redirect()->route('guru.index')->with('success', "Kunci perangkat (Lock Device) guru {$guru->nama_lengkap} berhasil direset! Guru dapat login di perangkat baru.");
+    }
+
     public function printIdCard($id)
     {
         $user = Guru::findOrFail($id);
