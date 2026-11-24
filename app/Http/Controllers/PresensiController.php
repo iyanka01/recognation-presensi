@@ -20,19 +20,16 @@ class PresensiController extends Controller
 
         if ($isFilteringDate) {
             // Jika admin sengaja memilih tanggal di filter pencarian
-            $presensi = Presensi::with('user')
-                ->whereDate('tanggal', $tanggal)
+            $presensi = Presensi::whereDate('tanggal', $tanggal)
                 ->orderBy('jam_masuk', 'desc')
                 ->get();
         } else {
             // Default: Tampilkan presensi hari ini + guru hari-hari sebelumnya yang BELUM absen pulang dan BELUM di-unlock (minta reset)
-            $presensiHariIni = Presensi::with('user')
-                ->whereDate('tanggal', $today)
+            $presensiHariIni = Presensi::whereDate('tanggal', $today)
                 ->orderBy('jam_masuk', 'desc')
                 ->get();
 
-            $guruBelumPulangSebelumnya = Presensi::with('user')
-                ->where('user_type', 'guru')
+            $guruBelumPulangSebelumnya = Presensi::where('user_type', 'guru')
                 ->whereDate('tanggal', '<', $today)
                 ->whereNotNull('jam_masuk')
                 ->whereNull('jam_pulang')
