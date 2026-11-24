@@ -121,8 +121,6 @@
                     @csrf
                     <!-- Hidden Role Input synced with Alpine.js -->
                     <input type="hidden" name="role" :value="role">
-                    <input type="hidden" name="device_id" id="login_device_id" value="">
-                    <input type="hidden" name="device_name" id="login_device_name" value="">
 
                     <!-- Username / NIP / NIS -->
                     <div>
@@ -264,59 +262,9 @@
         </div>
     </div>
 
-    <!-- Script PWA & Device Fingerprint -->
+    <!-- Script PWA Installation -->
     <script>
-        // 1. Device ID Fingerprint Generation & Persistence
-        function getOrCreateDeviceId() {
-            let deviceId = localStorage.getItem('presensi_device_uuid');
-            if (!deviceId) {
-                // Generate UUID v4 random unik
-                if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-                    deviceId = crypto.randomUUID();
-                } else {
-                    deviceId = 'dev_' + Date.now() + '_' + Math.random().toString(36).substring(2, 15);
-                }
-                localStorage.setItem('presensi_device_uuid', deviceId);
-            }
-            return deviceId;
-        }
-
-        // 2. Human-Readable Device Name Detection
-        function detectDeviceName() {
-            const ua = navigator.userAgent || '';
-            let os = 'Unknown Device';
-            let browser = 'Browser';
-
-            if (/iPhone|iPad|iPod/i.test(ua)) {
-                os = 'Apple iPhone/iOS';
-            } else if (/Android/i.test(ua)) {
-                const match = ua.match(/Android\s([0-9\.]+);.*?([A-Za-z0-9\s_\-]+)\sBuild/i);
-                os = match && match[2] ? ('Android (' + match[2].trim() + ')') : 'Android Phone';
-            } else if (/Windows NT/i.test(ua)) {
-                os = 'Windows PC';
-            } else if (/Macintosh|Mac OS X/i.test(ua)) {
-                os = 'MacBook / MacOS';
-            } else if (/Linux/i.test(ua)) {
-                os = 'Linux PC';
-            }
-
-            if (/Chrome/i.test(ua) && !/Edg/i.test(ua)) browser = 'Chrome';
-            else if (/Safari/i.test(ua) && !/Chrome/i.test(ua)) browser = 'Safari';
-            else if (/Firefox/i.test(ua)) browser = 'Firefox';
-            else if (/Edg/i.test(ua)) browser = 'Edge';
-
-            return os + ' - ' + browser;
-        }
-
-        // Terapkan ke form saat halaman siap
-        document.addEventListener('DOMContentLoaded', function() {
-            const devIdEl = document.getElementById('login_device_id');
-            const devNameEl = document.getElementById('login_device_name');
-            if (devIdEl) devIdEl.value = getOrCreateDeviceId();
-            if (devNameEl) devNameEl.value = detectDeviceName();
-        });
-
-        // 3. Register Service Worker untuk PWA
+        // 1. Register Service Worker untuk PWA
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js').catch(err => {
@@ -325,7 +273,7 @@
             });
         }
 
-        // 4. PWA Installation Prompt Logic
+        // 2. PWA Installation Prompt Logic
         let deferredPrompt;
         const pwaAndroidBanner = document.getElementById('pwa-android-banner');
         const btnPwaInstall = document.getElementById('btn-pwa-install');
