@@ -101,22 +101,48 @@
 
     <table>
         <thead>
-            <tr>
-                <th width="4%">No</th>
-                <th>Nama Lengkap</th>
-                <th>Identitas (NIS/NIP)</th>
-                @if($tipe == 'siswa')
-                <th>Kelas</th>
-                @endif
-                <th width="8%">Jam Masuk</th>
-                <th width="8%">Jam Pulang</th>
-                <th width="6%">Hadir</th>
-                <th width="6%">Telat</th>
-                <th width="6%">Izin</th>
-                <th width="6%">Sakit</th>
-                <th width="6%">Alpa</th>
-                <th width="7%">% Hadir</th>
-            </tr>
+            @if(isset($periodDates) && count($periodDates) > 0)
+                <tr>
+                    <th rowspan="2" width="3%">No</th>
+                    <th rowspan="2">Nama Lengkap</th>
+                    <th rowspan="2" width="10%">Identitas (NIS/NIP)</th>
+                    @if($tipe == 'siswa')
+                    <th rowspan="2" width="8%">Kelas</th>
+                    @endif
+                    <th colspan="{{ count($periodDates) }}">Rincian Presensi Harian (M: Masuk / P: Pulang)</th>
+                    <th colspan="5">Total Rekap</th>
+                </tr>
+                <tr>
+                    @foreach($periodDates as $d)
+                    <th style="font-size: 10px; padding: 4px 2px;">
+                        <div>{{ $d['day_name'] }}</div>
+                        <div>{{ $d['day_number'] }}</div>
+                    </th>
+                    @endforeach
+                    <th width="4%">H</th>
+                    <th width="4%">T</th>
+                    <th width="4%">I</th>
+                    <th width="4%">S</th>
+                    <th width="5%">%</th>
+                </tr>
+            @else
+                <tr>
+                    <th width="4%">No</th>
+                    <th>Nama Lengkap</th>
+                    <th>Identitas (NIS/NIP)</th>
+                    @if($tipe == 'siswa')
+                    <th>Kelas</th>
+                    @endif
+                    <th width="8%">Jam Masuk</th>
+                    <th width="8%">Jam Pulang</th>
+                    <th width="6%">Hadir</th>
+                    <th width="6%">Telat</th>
+                    <th width="6%">Izin</th>
+                    <th width="6%">Sakit</th>
+                    <th width="6%">Alpa</th>
+                    <th width="7%">% Hadir</th>
+                </tr>
+            @endif
         </thead>
         <tbody>
             @forelse($laporan as $idx => $row)
@@ -127,18 +153,51 @@
                 @if($tipe == 'siswa')
                 <td class="center">{{ $row['user']->kelas->nama_rombel ?? '-' }}</td>
                 @endif
-                <td class="center">{{ $row['jam_masuk'] ?? '-' }}</td>
-                <td class="center">{{ $row['jam_pulang'] ?? '-' }}</td>
-                <td class="center">{{ $row['hadir'] ?: '-' }}</td>
-                <td class="center">{{ $row['terlambat'] ?: '-' }}</td>
-                <td class="center">{{ $row['izin'] ?: '-' }}</td>
-                <td class="center">{{ $row['sakit'] ?: '-' }}</td>
-                <td class="center">{{ $row['alpa'] ?: '-' }}</td>
-                <td class="center"><strong>{{ $row['persen'] }}%</strong></td>
+
+                @if(isset($periodDates) && count($periodDates) > 0)
+                    @foreach($periodDates as $d)
+                        @php
+                            $cell = $row['daily'][$d['date']] ?? null;
+                            $status = $cell['status'] ?? null;
+                            $m = $cell['jam_masuk'] ?? null;
+                            $p = $cell['jam_pulang'] ?? null;
+                        @endphp
+                        <td class="center" style="font-size: 9px; padding: 3px 1px; white-space: nowrap;">
+                            @if($status === 'Hadir' || $status === 'Terlambat')
+                                <div style="color: {{ $status === 'Terlambat' ? '#dc2626' : '#15803d' }}; font-weight: bold;">M:{{ $m ?: '-' }}</div>
+                                <div style="color: #1d4ed8;">P:{{ $p ?: '--:--' }}</div>
+                            @elseif($status === 'Izin')
+                                <strong style="color: #0369a1;">I</strong>
+                            @elseif($status === 'Sakit')
+                                <strong style="color: #b45309;">S</strong>
+                            @elseif($status === 'Alpa')
+                                <strong style="color: #dc2626;">A</strong>
+                            @elseif($cell['is_libur'] ?? false)
+                                <span style="color: #94a3b8;">-</span>
+                            @else
+                                <span style="color: #cbd5e1;">-</span>
+                            @endif
+                        </td>
+                    @endforeach
+                    <td class="center" style="font-weight: bold; color: #15803d;">{{ $row['hadir'] ?: '-' }}</td>
+                    <td class="center" style="font-weight: bold; color: #dc2626;">{{ $row['terlambat'] ?: '-' }}</td>
+                    <td class="center">{{ $row['izin'] ?: '-' }}</td>
+                    <td class="center">{{ $row['sakit'] ?: '-' }}</td>
+                    <td class="center"><strong>{{ $row['persen'] }}%</strong></td>
+                @else
+                    <td class="center">{{ $row['jam_masuk'] ?? '-' }}</td>
+                    <td class="center">{{ $row['jam_pulang'] ?? '-' }}</td>
+                    <td class="center">{{ $row['hadir'] ?: '-' }}</td>
+                    <td class="center">{{ $row['terlambat'] ?: '-' }}</td>
+                    <td class="center">{{ $row['izin'] ?: '-' }}</td>
+                    <td class="center">{{ $row['sakit'] ?: '-' }}</td>
+                    <td class="center">{{ $row['alpa'] ?: '-' }}</td>
+                    <td class="center"><strong>{{ $row['persen'] }}%</strong></td>
+                @endif
             </tr>
             @empty
             <tr>
-                <td colspan="{{ $tipe == 'siswa' ? 12 : 11 }}" class="center">Tidak ada data untuk ditampilkan.</td>
+                <td colspan="20" class="center">Tidak ada data untuk ditampilkan.</td>
             </tr>
             @endforelse
         </tbody>

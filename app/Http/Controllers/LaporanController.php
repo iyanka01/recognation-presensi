@@ -55,16 +55,27 @@ class LaporanController extends Controller
             $users = Guru::orderBy('nama_lengkap')->get();
         }
 
-        // Daftar tanggal hari kerja efektif dalam periode terpilih
+        // Seluruh tanggal dalam rentang periode (untuk kolom tanggal matriks)
+        $periodDates = $this->getAllDatesInRange($startDate, $endDate);
+
+        // Daftar tanggal hari kerja efektif dalam periode terpilih (untuk pembagi % kehadiran)
         $effectiveDates = $this->getHariEfektifDatesByRange($startDate, $endDate);
         $totalHariEfektif = count($effectiveDates);
         $denominator = max($totalHariEfektif, 1);
+
+        // Daftar hari libur dalam periode untuk styling kolom
+        $hariLiburList = HariLibur::whereBetween('tanggal', [$startDate->toDateString(), $endDate->toDateString()])
+            ->pluck('keterangan', 'tanggal')
+            ->toArray();
 
         // Fetch all presensi for these users in this period to avoid N+1 per user
         $allPresensi = $query->get()->groupBy('user_id');
 
         foreach ($users as $user) {
             $userPresensi = $allPresensi->get($user->id, collect());
+            $presensiByDate = $userPresensi->keyBy(function($item) {
+                return is_string($item->tanggal) ? substr($item->tanggal, 0, 10) : Carbon::parse($item->tanggal)->toDateString();
+            });
             
             $hadir = $userPresensi->where('status', 'Hadir')->count();
             $terlambat = $userPresensi->where('status', 'Terlambat')->count();
@@ -86,12 +97,21 @@ class LaporanController extends Controller
             
             $persen = round(($hadir / $denominator) * 100, 1);
 
-            // Ambil log jam masuk dan jam pulang terbaru dalam periode
-            $latestHadir = $userPresensi->whereNotNull('jam_masuk')->sortByDesc('tanggal')->first();
-            $jamMasuk = $latestHadir ? substr($latestHadir->jam_masuk, 0, 5) : '-';
-            
-            $latestPulang = $userPresensi->whereNotNull('jam_pulang')->sortByDesc('tanggal')->first();
-            $jamPulang = $latestPulang ? substr($latestPulang->jam_pulang, 0, 5) : '-';
+            // Log jam per tanggal untuk matriks kalender
+            $dailyAttendance = [];
+            foreach ($periodDates as $d) {
+                $p = $presensiByDate->get($d['date']);
+                $isLibur = isset($hariLiburList[$d['date']]) || $d['is_sunday'];
+                
+                $dailyAttendance[$d['date']] = [
+                    'presensi' => $p,
+                    'status' => $p ? $p->status : ($isLibur ? 'Libur' : ($d['is_past'] && $tipe === 'guru' ? 'Alpa' : null)),
+                    'jam_masuk' => $p && $p->jam_masuk ? substr($p->jam_masuk, 0, 5) : null,
+                    'jam_pulang' => $p && $p->jam_pulang ? substr($p->jam_pulang, 0, 5) : null,
+                    'is_libur' => $isLibur,
+                    'libur_keterangan' => $hariLiburList[$d['date']] ?? ($d['is_sunday'] ? 'Minggu' : null),
+                ];
+            }
             
             $rekap = [
                 'user' => $user,
@@ -101,8 +121,7 @@ class LaporanController extends Controller
                 'sakit' => $sakit,
                 'alpa' => $alpa,
                 'persen' => $persen,
-                'jam_masuk' => $jamMasuk,
-                'jam_pulang' => $jamPulang,
+                'daily' => $dailyAttendance,
             ];
             
             $laporan[] = $rekap;
@@ -115,7 +134,7 @@ class LaporanController extends Controller
         $kelasList = $kelasQuery->get();
 
         return view('laporan.index', compact(
-            'laporan', 'kelasList', 'bulan', 'dari', 'sampai', 'mode', 'tipe', 'kelas_id', 'departemens', 'departemen_id', 'totalHariEfektif'
+            'laporan', 'kelasList', 'bulan', 'dari', 'sampai', 'mode', 'tipe', 'kelas_id', 'departemens', 'departemen_id', 'totalHariEfektif', 'periodDates'
         ));
     }
 
@@ -174,13 +193,22 @@ class LaporanController extends Controller
         $allPresensi = $query->get()->groupBy('user_id');
         $laporan = [];
         
+        $periodDates = $this->getAllDatesInRange($startDate, $endDate);
+
         // Daftar tanggal hari kerja efektif yang sudah berlalu
         $effectiveDates = $this->getHariEfektifDatesByRange($startDate, $endDate);
         $totalHariEfektif = count($effectiveDates);
         $denominator = max($totalHariEfektif, 1);
 
+        $hariLiburList = HariLibur::whereBetween('tanggal', [$startDate->toDateString(), $endDate->toDateString()])
+            ->pluck('keterangan', 'tanggal')
+            ->toArray();
+
         foreach ($users as $user) {
             $userPresensi = $allPresensi->get($user->id, collect());
+            $presensiByDate = $userPresensi->keyBy(function($item) {
+                return is_string($item->tanggal) ? substr($item->tanggal, 0, 10) : Carbon::parse($item->tanggal)->toDateString();
+            });
             
             $hadir = $userPresensi->where('status', 'Hadir')->count();
             $terlambat = $userPresensi->where('status', 'Terlambat')->count();
@@ -188,7 +216,6 @@ class LaporanController extends Controller
             $sakit = $userPresensi->where('status', 'Sakit')->count();
 
             if ($tipe === 'guru') {
-                // Untuk Guru: Setiap hari kerja efektif yang tidak ada presensi dihitung ALPA
                 $recordedDates = $userPresensi->pluck('tanggal')->map(fn($t) => is_string($t) ? substr($t, 0, 10) : Carbon::parse($t)->toDateString())->toArray();
                 $alpa = 0;
                 foreach ($effectiveDates as $effDate) {
@@ -203,11 +230,20 @@ class LaporanController extends Controller
             
             $persen = round(($hadir / $denominator) * 100, 1);
 
-            $latestHadir = $userPresensi->whereNotNull('jam_masuk')->sortByDesc('tanggal')->first();
-            $jamMasuk = $latestHadir ? substr($latestHadir->jam_masuk, 0, 5) : '-';
-            
-            $latestPulang = $userPresensi->whereNotNull('jam_pulang')->sortByDesc('tanggal')->first();
-            $jamPulang = $latestPulang ? substr($latestPulang->jam_pulang, 0, 5) : '-';
+            $dailyAttendance = [];
+            foreach ($periodDates as $d) {
+                $p = $presensiByDate->get($d['date']);
+                $isLibur = isset($hariLiburList[$d['date']]) || $d['is_sunday'];
+                
+                $dailyAttendance[$d['date']] = [
+                    'presensi' => $p,
+                    'status' => $p ? $p->status : ($isLibur ? 'Libur' : ($d['is_past'] && $tipe === 'guru' ? 'Alpa' : null)),
+                    'jam_masuk' => $p && $p->jam_masuk ? substr($p->jam_masuk, 0, 5) : null,
+                    'jam_pulang' => $p && $p->jam_pulang ? substr($p->jam_pulang, 0, 5) : null,
+                    'is_libur' => $isLibur,
+                    'libur_keterangan' => $hariLiburList[$d['date']] ?? ($d['is_sunday'] ? 'Minggu' : null),
+                ];
+            }
             
             $laporan[] = [
                 'user' => $user,
@@ -217,8 +253,7 @@ class LaporanController extends Controller
                 'sakit' => $sakit,
                 'alpa' => $alpa,
                 'persen' => $persen,
-                'jam_masuk' => $jamMasuk,
-                'jam_pulang' => $jamPulang,
+                'daily' => $dailyAttendance,
             ];
         }
 
@@ -240,7 +275,7 @@ class LaporanController extends Controller
         $judul = "Laporan Presensi " . ucfirst($tipe) . " - " . $periodeStr;
         $pengaturan = \App\Models\PengaturanLembaga::first();
 
-        return view('laporan.print', compact('laporan', 'judul', 'tipe', 'kelasStr', 'pengaturan', 'activeDepartemen', 'periodeStr'));
+        return view('laporan.print', compact('laporan', 'judul', 'tipe', 'kelasStr', 'pengaturan', 'activeDepartemen', 'periodeStr', 'periodDates'));
     }
 
     public function printSiswa(Request $request)
@@ -558,18 +593,32 @@ class LaporanController extends Controller
     }
 
     /**
-     * Helper menghitung daftar tanggal hari kerja efektif yang sudah berlalu dalam satu bulan.
-     * Hari libur sepenuhnya ditentukan oleh menu Hari Libur yang disetel di aplikasi.
+     * Helper menghasilkan seluruh tanggal dalam rentang periode (termasuk hari libur)
+     * Digunakan untuk kolom matriks presensi kalender
      */
-    protected function getHariEfektifDates(string $bulan): array
+    protected function getAllDatesInRange(Carbon $startDate, Carbon $endDate): array
     {
-        $year = (int) substr($bulan, 0, 4);
-        $month = (int) substr($bulan, 5, 2);
+        $start = $startDate->copy()->startOfDay();
+        $end = $endDate->copy()->endOfDay();
+        $today = Carbon::today()->endOfDay();
 
-        $startOfMonth = Carbon::createFromDate($year, $month, 1)->startOfDay();
-        $daysInMonth = $startOfMonth->daysInMonth;
-        $endOfMonth = Carbon::createFromDate($year, $month, $daysInMonth)->endOfDay();
+        $dates = [];
+        $current = $start->copy();
 
-        return $this->getHariEfektifDatesByRange($startOfMonth, $endOfMonth);
+        while ($current->lte($end)) {
+            $tglStr = $current->toDateString();
+            $dates[] = [
+                'date' => $tglStr,
+                'day_name' => $current->locale('id')->isoFormat('ddd'), // Sen, Sel, Rab, ...
+                'day_number' => $current->format('d'),                 // 01, 02, ...
+                'day_month' => $current->locale('id')->isoFormat('D MMM'), // 20 Nov
+                'is_sunday' => $current->isSunday(),
+                'is_today' => $current->isToday(),
+                'is_past' => $current->lte($today),
+            ];
+            $current->addDay();
+        }
+
+        return $dates;
     }
 }

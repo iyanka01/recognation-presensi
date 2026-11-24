@@ -6,7 +6,7 @@
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
         <div>
             <h1 class="text-xl font-extrabold text-slate-800 tracking-tight">Laporan & Rekapitulasi Presensi</h1>
-            <p class="text-xs text-slate-500 mt-0.5">Cetak dan unduh rekap presensi per bulan atau rentang tanggal tertentu.</p>
+            <p class="text-xs text-slate-500 mt-0.5">Matriks presensi harian lengkap dengan Jam Masuk (M) dan Jam Pulang (P).</p>
         </div>
         <div class="flex items-center gap-2.5">
             <a href="{{ route('laporan.export', request()->all()) }}" class="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-xs rounded-xl flex items-center gap-1.5 transition-colors border border-emerald-200 shadow-sm">
@@ -59,7 +59,7 @@
                     </select>
                 </div>
 
-                <!-- 2. Tipe Pengguna (Dialihkan persis sesudah Departemen) -->
+                <!-- 2. Tipe Pengguna -->
                 <div class="w-full sm:w-36">
                     <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Tipe Pengguna</label>
                     <select name="tipe" x-model="tipeUser" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-sky-400/30 transition-all">
@@ -106,73 +106,120 @@
         </form>
     </div>
 
-    <!-- Data Table -->
+    <!-- Data Table Matriks Kalender -->
     <div class="bg-white rounded-[7px] shadow-[rgba(145,158,171,0.2)_0px_0px_2px_0px,rgba(145,158,171,0.12)_0px_12px_24px_-4px] border border-slate-200 overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
                 <thead>
-                    <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 text-[11px] font-bold uppercase tracking-wider">
-                        <th class="py-2.5 px-3 w-12 text-center font-semibold text-slate-600">NO</th>
-                        <th class="py-2.5 px-3 font-semibold text-slate-600">NAMA LENGKAP</th>
+                    <!-- Baris Header 1 -->
+                    <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 text-[11px] font-bold uppercase tracking-wider">
+                        <th class="py-2.5 px-3 w-10 text-center font-semibold text-slate-600 border-r border-slate-200" rowspan="2">NO</th>
+                        <th class="py-2.5 px-3 font-semibold text-slate-600 min-w-[160px] border-r border-slate-200" rowspan="2">NAMA LENGKAP</th>
                         @if($tipe == 'siswa')
-                        <th class="py-2.5 px-3 font-semibold text-slate-600">KELAS</th>
-                        <th class="py-2.5 px-3 font-semibold text-slate-600">NIS</th>
+                        <th class="py-2.5 px-3 font-semibold text-slate-600 border-r border-slate-200" rowspan="2">KELAS</th>
+                        <th class="py-2.5 px-3 font-semibold text-slate-600 border-r border-slate-200" rowspan="2">NIS</th>
                         @else
-                        <th class="py-2.5 px-3 font-semibold text-slate-600">NIP / NRY</th>
+                        <th class="py-2.5 px-3 font-semibold text-slate-600 border-r border-slate-200" rowspan="2">NIP / NRY</th>
                         @endif
-                        <th class="py-2.5 px-3 font-semibold text-center text-slate-600">JAM MASUK</th>
-                        <th class="py-2.5 px-3 font-semibold text-center text-slate-600">JAM PULANG</th>
-                        <th class="py-2.5 px-3 font-semibold text-center text-emerald-700 bg-emerald-50/50">HADIR</th>
-                        <th class="py-2.5 px-3 font-semibold text-center text-rose-700 bg-rose-50/50">TERLAMBAT</th>
-                        <th class="py-2.5 px-3 font-semibold text-center text-sky-700 bg-sky-50/50">IZIN</th>
-                        <th class="py-2.5 px-3 font-semibold text-center text-amber-700 bg-amber-50/50">SAKIT</th>
-                        <th class="py-2.5 px-3 font-semibold text-center text-slate-600 bg-slate-100/50">ALPA</th>
-                        <th class="py-2.5 px-3 font-semibold text-center text-indigo-700 bg-indigo-50/50">% HADIR</th>
-                        <th class="py-2.5 px-3 font-semibold text-center text-slate-600">AKSI</th>
+
+                        <!-- Header Span Kolom Tanggal -->
+                        <th class="py-2 px-2 text-center border-r border-slate-200 bg-sky-50/70 text-sky-800" colspan="{{ count($periodDates) }}">
+                            RINCIAN PRESENSI SETIAP TANGGAL (MASUK &amp; PULANG)
+                        </th>
+
+                        <!-- Header Span Rekap -->
+                        <th class="py-2 px-2 text-center bg-slate-100 text-slate-700" colspan="6">
+                            TOTAL REKAP
+                        </th>
+                    </tr>
+
+                    <!-- Baris Header 2: Daftar Tanggal & Sub Kolom Rekap -->
+                    <tr class="bg-slate-100/70 border-b border-slate-200 text-[10px] font-bold text-center text-slate-700">
+                        @foreach($periodDates as $d)
+                        <th class="py-1.5 px-2 border-r border-slate-200 min-w-[65px] {{ $d['is_sunday'] ? 'bg-rose-50 text-rose-700' : '' }} {{ $d['is_today'] ? 'bg-amber-50 text-amber-800' : '' }}">
+                            <div class="text-[9px] uppercase">{{ $d['day_name'] }}</div>
+                            <div class="text-[11px] font-extrabold leading-tight">{{ $d['day_month'] }}</div>
+                        </th>
+                        @endforeach
+
+                        <th class="py-1.5 px-2 border-r border-slate-200 text-emerald-700 bg-emerald-50/40 w-11">Hadir</th>
+                        <th class="py-1.5 px-2 border-r border-slate-200 text-rose-700 bg-rose-50/40 w-11">Telat</th>
+                        <th class="py-1.5 px-2 border-r border-slate-200 text-sky-700 bg-sky-50/40 w-11">Izin</th>
+                        <th class="py-1.5 px-2 border-r border-slate-200 text-amber-700 bg-amber-50/40 w-11">Sakit</th>
+                        <th class="py-1.5 px-2 border-r border-slate-200 text-slate-600 bg-slate-100/50 w-11">Alpa</th>
+                        <th class="py-1.5 px-2 text-indigo-700 bg-indigo-50/40 w-14">% Hadir</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 text-xs">
                     @forelse($laporan as $idx => $row)
                     <tr class="hover:bg-slate-50/70 transition-colors">
-                        <td class="py-2.5 px-3 text-center text-slate-400 font-medium">{{ $idx + 1 }}</td>
-                        <td class="py-2.5 px-3 font-bold text-slate-800">{{ $row['user']->nama_lengkap }}</td>
+                        <td class="py-2.5 px-3 text-center text-slate-400 font-medium border-r border-slate-100">{{ $idx + 1 }}</td>
+                        <td class="py-2.5 px-3 font-bold text-slate-800 border-r border-slate-100">
+                            {{ $row['user']->nama_lengkap }}
+                            @if($tipe == 'guru' && isset($row['user']->jabatan))
+                            <div class="text-[10px] text-slate-400 font-normal leading-tight">{{ $row['user']->jabatan }}</div>
+                            @endif
+                        </td>
                         
                         @if($tipe == 'siswa')
-                        <td class="py-2.5 px-3 text-slate-600 font-medium">
+                        <td class="py-2.5 px-3 text-slate-600 font-medium border-r border-slate-100">
                             <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
                                 {{ $row['user']->kelas->nama_rombel ?? '-' }}
                             </span>
                         </td>
-                        <td class="py-2.5 px-3 text-slate-600 font-mono text-[11px]">{{ $row['user']->nis ?? '-' }}</td>
+                        <td class="py-2.5 px-3 text-slate-600 font-mono text-[11px] border-r border-slate-100">{{ $row['user']->nis ?? '-' }}</td>
                         @else
-                        <td class="py-2.5 px-3 text-slate-600 font-mono text-[11px]">{{ $row['user']->nip ?? '-' }}</td>
+                        <td class="py-2.5 px-3 text-slate-600 font-mono text-[11px] border-r border-slate-100">{{ $row['user']->nip ?? '-' }}</td>
                         @endif
 
-                        <td class="py-2.5 px-3 text-center font-mono font-medium text-slate-700">{{ $row['jam_masuk'] ?? '-' }}</td>
-                        <td class="py-2.5 px-3 text-center font-mono font-medium text-slate-700">{{ $row['jam_pulang'] ?? '-' }}</td>
-                        
-                        <td class="py-2.5 px-3 text-center font-bold text-emerald-700 bg-emerald-50/30">{{ $row['hadir'] ?: '-' }}</td>
-                        <td class="py-2.5 px-3 text-center font-bold text-rose-700 bg-rose-50/30">{{ $row['terlambat'] ?: '-' }}</td>
-                        <td class="py-2.5 px-3 text-center font-bold text-sky-700 bg-sky-50/30">{{ $row['izin'] ?: '-' }}</td>
-                        <td class="py-2.5 px-3 text-center font-bold text-amber-700 bg-amber-50/30">{{ $row['sakit'] ?: '-' }}</td>
-                        <td class="py-2.5 px-3 text-center font-bold text-slate-500 bg-slate-50/30">{{ $row['alpa'] ?: '-' }}</td>
-                        <td class="py-2.5 px-3 text-center font-black text-indigo-700 bg-indigo-50/30">
-                            <span class="inline-flex px-2 py-0.5 rounded text-[11px] font-bold {{ $row['persen'] >= 90 ? 'bg-emerald-100 text-emerald-800' : ($row['persen'] >= 75 ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800') }}">
+                        <!-- Kolom Tiap Tanggal (Jam Masuk M: dan Jam Pulang P:) -->
+                        @foreach($periodDates as $d)
+                            @php
+                                $cell = $row['daily'][$d['date']] ?? null;
+                                $status = $cell['status'] ?? null;
+                                $m = $cell['jam_masuk'] ?? null;
+                                $p = $cell['jam_pulang'] ?? null;
+                            @endphp
+
+                            <td class="py-1.5 px-1.5 text-center border-r border-slate-100 whitespace-nowrap {{ $d['is_sunday'] ? 'bg-slate-50/70' : '' }}">
+                                @if($status === 'Hadir' || $status === 'Terlambat')
+                                    <div class="flex flex-col items-center justify-center">
+                                        <span class="font-mono text-[10px] font-bold leading-tight {{ $status === 'Terlambat' ? 'text-rose-600' : 'text-emerald-700' }}" title="{{ $status }}">
+                                            M: {{ $m ?: '-' }}
+                                        </span>
+                                        <span class="font-mono text-[10px] font-semibold leading-tight text-blue-700" title="Jam Pulang">
+                                            P: {{ $p ?: '--:--' }}
+                                        </span>
+                                    </div>
+                                @elseif($status === 'Izin')
+                                    <span class="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold bg-sky-100 text-sky-800" title="Izin">IZIN</span>
+                                @elseif($status === 'Sakit')
+                                    <span class="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-800" title="Sakit">SAKIT</span>
+                                @elseif($status === 'Alpa')
+                                    <span class="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-100 text-rose-800" title="Alpa / Tanpa Keterangan">ALPA</span>
+                                @elseif($cell['is_libur'] ?? false)
+                                    <span class="text-slate-300 font-bold" title="{{ $cell['libur_keterangan'] ?? 'Libur' }}">-</span>
+                                @else
+                                    <span class="text-slate-300">-</span>
+                                @endif
+                            </td>
+                        @endforeach
+
+                        <!-- Kolom Rekapitulasi Total -->
+                        <td class="py-2.5 px-2 text-center font-bold text-emerald-700 bg-emerald-50/20 border-r border-slate-100">{{ $row['hadir'] ?: '-' }}</td>
+                        <td class="py-2.5 px-2 text-center font-bold text-rose-700 bg-rose-50/20 border-r border-slate-100">{{ $row['terlambat'] ?: '-' }}</td>
+                        <td class="py-2.5 px-2 text-center font-bold text-sky-700 bg-sky-50/20 border-r border-slate-100">{{ $row['izin'] ?: '-' }}</td>
+                        <td class="py-2.5 px-2 text-center font-bold text-amber-700 bg-amber-50/20 border-r border-slate-100">{{ $row['sakit'] ?: '-' }}</td>
+                        <td class="py-2.5 px-2 text-center font-bold text-slate-500 bg-slate-50/30 border-r border-slate-100">{{ $row['alpa'] ?: '-' }}</td>
+                        <td class="py-2.5 px-2 text-center font-black text-indigo-700 bg-indigo-50/30">
+                            <span class="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold {{ $row['persen'] >= 90 ? 'bg-emerald-100 text-emerald-800' : ($row['persen'] >= 75 ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800') }}">
                                 {{ $row['persen'] }}%
                             </span>
-                        </td>
-                        <td class="py-2.5 px-3 text-center">
-                            @php
-                                $detailParams = array_merge(request()->all(), ['id' => $row['user']->id, 'tipe' => $tipe]);
-                            @endphp
-                            <a href="{{ route('laporan.print_siswa', $detailParams) }}" target="_blank" class="inline-flex items-center justify-center p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg transition-colors" title="Cetak Rincian Individual">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
-                            </a>
                         </td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="{{ $tipe == 'siswa' ? 13 : 12 }}" class="py-12 text-center bg-white">
+                        <td colspan="{{ count($periodDates) + ($tipe == 'siswa' ? 10 : 9) }}" class="py-12 text-center bg-white">
                             <div class="flex flex-col items-center justify-center">
                                 <i class="ti ti-database-off text-3xl text-slate-300 mb-2"></i>
                                 <h3 class="text-sm font-bold text-slate-700">Data Tidak Ditemukan</h3>
@@ -181,6 +228,29 @@
                         </td>
                     </tr>
                     @endforelse
+
+                    <!-- Legend Informasi di Kaki Tabel -->
+                    @if(count($laporan) > 0)
+                    <tr class="bg-slate-50/80 font-medium text-[11px] text-slate-500 border-t border-slate-200">
+                        <td colspan="{{ count($periodDates) + ($tipe == 'siswa' ? 10 : 9) }}" class="py-2.5 px-3">
+                            <div class="flex flex-wrap items-center gap-4">
+                                <span class="font-bold text-slate-700">Petunjuk Sel Presensi:</span>
+                                <span class="inline-flex items-center gap-1 text-emerald-700 font-bold">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> M: = Jam Masuk Tepat Waktu
+                                </span>
+                                <span class="inline-flex items-center gap-1 text-rose-600 font-bold">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> M: = Jam Masuk Terlambat
+                                </span>
+                                <span class="inline-flex items-center gap-1 text-blue-700 font-semibold">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span> P: = Jam Pulang
+                                </span>
+                                <span class="inline-flex items-center gap-1 text-slate-400">
+                                    --:-- = Belum Absen Pulang
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                    @endif
                 </tbody>
             </table>
         </div>
