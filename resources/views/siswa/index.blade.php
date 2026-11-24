@@ -26,50 +26,79 @@
         </div>
     </div>
 
-    <!-- Filter Bar Model Dropdown Bertingkat -->
-    <div class="bg-white rounded-[7px] p-4 sm:p-5 border border-slate-200 shadow-sm space-y-3">
-        <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                <i class="ti ti-filter text-blue-600 text-sm"></i>
-                Filter & Pencarian Siswa
-            </span>
-            <button type="button" @click="resetFilter()" x-show="selectedTingkat || selectedKelasId || searchQuery" class="text-xs text-rose-600 hover:text-rose-700 font-semibold flex items-center gap-1 cursor-pointer transition-colors">
-                <i class="ti ti-x text-sm"></i>
-                Reset Semua Filter
-            </button>
-        </div>
+    <!-- Filter Bar Model Dropdown Bertingkat 2 Baris (Sesuai Desain Gambar) -->
+    <div class="bg-white rounded-[7px] p-4 sm:p-5 border border-slate-200 shadow-sm space-y-4">
+        <form action="{{ route('siswa.index') }}" method="GET" class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+            
+            <div class="space-y-3 flex-1">
+                <!-- BARIS 1: Departemen & Tahun Ajaran -->
+                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                    <!-- Dropdown Departemen -->
+                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                        <label class="w-24 text-xs font-bold text-slate-700 whitespace-nowrap">Departemen</label>
+                        <select name="departemen_id" onchange="this.form.submit()" class="w-full sm:w-64 px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-[7px] text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer shadow-xs">
+                            @foreach($departemens as $dep)
+                                <option value="{{ $dep->id }}" {{ $selectedDepartemenId == $dep->id ? 'selected' : '' }}>
+                                    {{ $dep->kode_departemen }} - {{ $dep->nama_departemen }}
+                                </option>
+                            @endforeach
+                            <option value="all" {{ $selectedDepartemenId === 'all' ? 'selected' : '' }}>-- Semua Departemen --</option>
+                        </select>
+                    </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
-            <!-- 1. Input Pencarian Teks -->
-            <div class="sm:col-span-5 relative">
-                <input type="text" x-model="searchQuery" placeholder="Cari nama, NIS, atau rombel siswa..." class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-[7px] text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all">
-                <i class="ti ti-search text-slate-400 absolute left-3 top-3 text-base"></i>
+                    <!-- Tahun Ajaran (Otomatis Aktif) -->
+                    <div class="flex items-center gap-2 w-full sm:w-auto sm:ml-4">
+                        <label class="text-xs font-bold text-slate-700 whitespace-nowrap">Tahun Ajaran</label>
+                        <div class="px-3 py-1.5 bg-slate-100 border border-slate-200 rounded-[7px] text-xs font-mono font-bold text-slate-800 shadow-inner">
+                            {{ $tahunAjaranAktif ? $tahunAjaranAktif->tahun_ajaran : '2026/2027' }}
+                        </div>
+                        <input type="hidden" name="tahun_ajaran_id" value="{{ $selectedTahunAjaranId }}">
+                    </div>
+                </div>
+
+                <!-- BARIS 2: Tingkat & Kelas / Rombel -->
+                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                        <label class="w-24 text-xs font-bold text-slate-700 whitespace-nowrap">Kelas</label>
+                        
+                        <!-- Dropdown Tingkat -->
+                        <select x-model="selectedTingkat" @change="onTingkatChange()" class="w-28 px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-[7px] text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer shadow-xs">
+                            <option value="">-- Semua --</option>
+                            @foreach($tingkatList as $t)
+                                <option value="{{ $t }}">{{ $t }}</option>
+                            @endforeach
+                        </select>
+
+                        <!-- Dropdown Sub-Kelas / Rombel -->
+                        <select x-model="selectedKelasId" :disabled="!selectedTingkat" class="w-full sm:w-56 px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-[7px] text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer shadow-xs disabled:bg-slate-100 disabled:text-slate-400">
+                            <option value="" x-text="selectedTingkat ? '-- Semua Rombel Tingkat ' + selectedTingkat + ' --' : '-- Pilih Rombel --'"></option>
+                            <template x-for="r in availableRombels" :key="r.id">
+                                <option :value="r.id" x-text="r.nama_rombel + ' (' + r.siswa_count + ' siswa)'"></option>
+                            </template>
+                        </select>
+                    </div>
+
+                    <!-- Input Pencarian Nama / NIS (Opsional) -->
+                    <div class="relative w-full sm:w-64 sm:ml-2">
+                        <input type="text" x-model="searchQuery" placeholder="Ketik nama atau NIS..." class="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-[7px] text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+                        <i class="ti ti-search text-slate-400 absolute left-2.5 top-2 text-xs"></i>
+                    </div>
+                </div>
             </div>
 
-            <!-- 2. Dropdown 1: Pilih Tingkat / Kelas Utama -->
-            <div class="sm:col-span-3.5 sm:col-span-3 relative">
-                <select x-model="selectedTingkat" @change="onTingkatChange()" class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-[7px] text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer">
-                    <option value="">-- Semua Kelas --</option>
-                    @foreach($tingkatList as $t)
-                        @php
-                            $tClean = \Illuminate\Support\Str::startsWith(strtolower($t), 'kelas') ? $t : 'Kelas ' . $t;
-                            $countInTingkat = $kelasList->where('tingkat', $t)->sum('siswa_count');
-                        @endphp
-                        <option value="{{ $t }}">{{ $tClean }} ({{ $countInTingkat }} Siswa)</option>
-                    @endforeach
-                </select>
+            <!-- Tombol Kaca Pembesar 🔍 (Sesuai Gambar) -->
+            <div class="flex items-center justify-end lg:pl-4 border-t lg:border-t-0 lg:border-l border-slate-100 pt-3 lg:pt-0 shrink-0">
+                <button type="button" @click="currentPage = 1" class="w-12 h-12 rounded-2xl bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200 flex items-center justify-center shadow-sm hover:scale-105 active:scale-95 transition-all cursor-pointer" title="Cari / Terapkan Filter">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                </button>
+                <button type="button" @click="resetFilter()" x-show="selectedTingkat || selectedKelasId || searchQuery" class="ml-2 text-xs text-rose-500 hover:text-rose-700 underline font-semibold" style="display: none;">
+                    Reset
+                </button>
             </div>
 
-            <!-- 3. Dropdown 2: Pilih Sub-Kelas / Rombel -->
-            <div class="sm:col-span-3.5 sm:col-span-4 relative">
-                <select x-model="selectedKelasId" :disabled="!selectedTingkat" class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-[7px] text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed">
-                    <option value="" x-text="selectedTingkat ? '-- Semua Rombel (' + (selectedTingkat.toLowerCase().startsWith('kelas') ? selectedTingkat : 'Kelas ' + selectedTingkat) + ') --' : '-- Pilih Kelas Dulu --'"></option>
-                    <template x-for="r in availableRombels" :key="r.id">
-                        <option :value="r.id" x-text="r.nama_rombel + ' (' + r.siswa_count + ' siswa)'"></option>
-                    </template>
-                </select>
-            </div>
-        </div>
+        </form>
     </div>
 
     <!-- Data Table Siswa -->
@@ -95,94 +124,94 @@
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
                 <thead>
-                    <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 text-xs uppercase tracking-wider">
-                        <th class="py-3.5 px-4 w-12 text-center">
-                            <input type="checkbox" @click="toggleAll()" :checked="selectAll" class="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                    <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 text-[11px] font-bold uppercase tracking-wider">
+                        <th class="py-2.5 px-3 w-10 text-center">
+                            <input type="checkbox" @click="toggleAll()" :checked="selectAll" class="w-3.5 h-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
                         </th>
-                        <th class="py-3.5 px-4 font-semibold text-slate-600">USER</th>
-                        <th class="py-3.5 px-4 font-semibold text-slate-600">ROLE / KELAS</th>
-                        <th class="py-3.5 px-4 font-semibold text-slate-600">STATUS</th>
-                        <th class="py-3.5 px-4 font-semibold text-slate-600">JOINED</th>
-                        <th class="py-3.5 px-4 font-semibold text-slate-600 text-right">ACTIONS</th>
+                        <th class="py-2.5 px-3 font-semibold text-slate-600">USER</th>
+                        <th class="py-2.5 px-3 font-semibold text-slate-600">ROLE / KELAS</th>
+                        <th class="py-2.5 px-3 font-semibold text-slate-600">STATUS</th>
+                        <th class="py-2.5 px-3 font-semibold text-slate-600">JOINED</th>
+                        <th class="py-2.5 px-3 font-semibold text-slate-600 text-right">ACTIONS</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100 text-sm">
+                <tbody class="divide-y divide-slate-100 text-xs">
                     @forelse($siswa as $index => $s)
                     <tr x-show="isRowVisible('{{ $s->id }}')"
                         class="hover:bg-slate-50/70 transition-colors" 
                         :class="{'bg-rose-50/30': selected.includes('{{ $s->id }}')}">
-                        <td class="py-3.5 px-4 text-center">
-                            <input type="checkbox" value="{{ $s->id }}" x-model="selected" class="siswa-checkbox w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                        <td class="py-2.5 px-3 text-center">
+                            <input type="checkbox" value="{{ $s->id }}" x-model="selected" class="siswa-checkbox w-3.5 h-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
                         </td>
-                        <td class="py-3.5 px-4">
-                            <div class="flex items-center gap-3">
+                        <td class="py-2.5 px-3">
+                            <div class="flex items-center gap-2.5">
                                 <div class="relative shrink-0">
                                     @if($s->foto_siswa)
-                                        <img src="{{ asset('storage/' . $s->foto_siswa) }}" alt="{{ $s->nama_lengkap }}" class="w-10 h-10 rounded-full object-cover border border-slate-200">
+                                        <img src="{{ asset('storage/' . $s->foto_siswa) }}" alt="{{ $s->nama_lengkap }}" class="w-8 h-8 rounded-full object-cover border border-slate-200">
                                     @else
-                                        <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-sm border border-blue-100">
+                                        <div class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xs border border-blue-100">
                                             {{ substr($s->nama_lengkap, 0, 1) }}
                                         </div>
                                     @endif
-                                    <!-- Indicator dot at bottom right (like the image) -->
-                                    <span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white {{ $s->status == 'Aktif' ? 'bg-emerald-500' : 'bg-slate-400' }}"></span>
+                                    <!-- Indicator dot at bottom right -->
+                                    <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white {{ $s->status == 'Aktif' ? 'bg-emerald-500' : 'bg-slate-400' }}"></span>
                                 </div>
                                 <div class="min-w-0">
-                                    <div class="font-bold text-slate-800 text-sm leading-tight truncate">{{ $s->nama_lengkap }}</div>
-                                    <div class="text-xs text-slate-400 font-mono mt-0.5 truncate">
+                                    <div class="font-bold text-slate-800 text-xs leading-tight truncate">{{ $s->nama_lengkap }}</div>
+                                    <div class="text-[11px] text-slate-400 font-mono mt-0.5 truncate">
                                         NIS: {{ $s->nis ?? '-' }} • NISN: {{ $s->nisn ?? '-' }}
                                     </div>
                                 </div>
                             </div>
                         </td>
-                        <td class="py-3.5 px-4">
-                            <div class="flex items-center gap-2">
+                        <td class="py-2.5 px-3">
+                            <div class="flex items-center gap-1.5">
                                 @if($s->kelas)
-                                    <button type="button" @click="selectTingkat('{{ addslashes($s->kelas->tingkat) }}'); selectRombel('{{ $s->kelas_id }}')" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors" title="Filter rombel ini">
-                                        <i class="ti ti-school text-xs"></i>
+                                    <button type="button" @click="selectTingkat('{{ addslashes($s->kelas->tingkat) }}'); selectRombel('{{ $s->kelas_id }}')" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors" title="Filter rombel ini">
+                                        <i class="ti ti-school text-[11px]"></i>
                                         <span>{{ $s->kelas->tingkat }} • {{ $s->kelas->nama_rombel }}</span>
                                     </button>
                                 @else
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-500">
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-500">
                                         Tanpa Kelas
                                     </span>
                                 @endif
-                                <span class="inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold {{ $s->jenis_kelamin == 'L' ? 'bg-indigo-50 text-indigo-600' : 'bg-pink-50 text-pink-600' }}" title="{{ $s->jenis_kelamin == 'L' ? 'Laki-laki' : 'Perempuan' }}">
+                                <span class="inline-flex items-center justify-center w-4 h-4 rounded-full text-[9px] font-bold {{ $s->jenis_kelamin == 'L' ? 'bg-indigo-50 text-indigo-600' : 'bg-pink-50 text-pink-600' }}" title="{{ $s->jenis_kelamin == 'L' ? 'Laki-laki' : 'Perempuan' }}">
                                     {{ $s->jenis_kelamin }}
                                 </span>
                             </div>
                         </td>
-                        <td class="py-3.5 px-4 whitespace-nowrap">
+                        <td class="py-2.5 px-3 whitespace-nowrap">
                             @if($s->status == 'Aktif')
-                                <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600">
-                                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                                     Active
                                 </span>
                             @else
-                                <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400">
-                                    <span class="w-2 h-2 rounded-full bg-slate-400"></span>
+                                <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-400">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
                                     Inactive
                                 </span>
                             @endif
                         </td>
-                        <td class="py-3.5 px-4 whitespace-nowrap text-xs text-slate-500 font-medium">
+                        <td class="py-2.5 px-3 whitespace-nowrap text-[11px] text-slate-500 font-medium">
                             {{ $s->created_at ? $s->created_at->format('M d, Y') : '-' }}
                         </td>
-                        <td class="py-3.5 px-4 text-right">
+                        <td class="py-2.5 px-3 text-right">
                             <div class="flex items-center justify-end gap-1">
-                                <!-- View / QR Button (Eye Icon like the image) -->
-                                <button type="button" @click="$dispatch('open-qr', { id: '{{ $s->id }}', name: '{{ addslashes($s->nama_lengkap) }}', code: '{{ $s->nis }}', printUrl: '{{ route('siswa.id-card', $s->id) }}' })" class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-[7px] transition-colors" title="Lihat QR Code & ID Card">
-                                    <i class="ti ti-eye text-base"></i>
+                                <!-- View / QR Button -->
+                                <button type="button" @click="$dispatch('open-qr', { id: '{{ $s->id }}', name: '{{ addslashes($s->nama_lengkap) }}', code: '{{ $s->nis }}', printUrl: '{{ route('siswa.id-card', $s->id) }}' })" class="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-[6px] transition-colors" title="Lihat QR Code & ID Card">
+                                    <i class="ti ti-eye text-sm"></i>
                                 </button>
-                                <!-- Edit Button (Pencil Icon like the image) -->
-                                <a href="{{ route('siswa.edit', $s->id) }}" class="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-[7px] transition-colors" title="Edit">
-                                    <i class="ti ti-pencil text-base"></i>
+                                <!-- Edit Button -->
+                                <a href="{{ route('siswa.edit', $s->id) }}" class="p-1 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-[6px] transition-colors" title="Edit">
+                                    <i class="ti ti-pencil text-sm"></i>
                                 </a>
-                                <!-- Delete Button (Trash Icon like the image) -->
+                                <!-- Delete Button -->
                                 <form action="{{ route('siswa.destroy', $s->id) }}" method="POST" onsubmit="return confirm('Hapus siswa ini?');" class="inline">
                                     @csrf @method('DELETE')
-                                    <button type="submit" class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-[7px] transition-colors" title="Hapus">
-                                        <i class="ti ti-trash text-base"></i>
+                                    <button type="submit" class="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-[6px] transition-colors" title="Hapus">
+                                        <i class="ti ti-trash text-sm"></i>
                                     </button>
                                 </form>
                             </div>
@@ -320,23 +349,59 @@
                                 </div>
                                 <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left w-full">
                                     <h3 class="text-base font-semibold leading-6 text-slate-900" id="modal-title">Import Data Siswa</h3>
-                                    <p class="text-sm text-slate-500 mb-2">Pilih file Excel (.xlsx) atau CSV untuk mengunggah data siswa secara massal. Format penomoran (NIS, NISN, No HP) menggunakan tanda petik satu di depan (misal: <code>'0081...</code>) dan format tanggal lahir menggunakan <strong>DD-MM-YYYY</strong> (contoh: <code>07-07-2002</code>).</p>
+                                    <p class="text-xs text-slate-500 mb-3">Pilih file Excel (.xlsx) atau CSV untuk mengunggah data siswa secara massal. Format penomoran (NIS, NISN, No HP) menggunakan tanda petik satu di depan (misal: <code>'0081...</code>) dan format tanggal lahir menggunakan <strong>DD-MM-YYYY</strong> (contoh: <code>07-07-2002</code>).</p>
                                         
-                                    <a href="{{ route('siswa.downloadTemplate') }}" class="inline-flex items-center gap-2 text-xs sm:text-sm text-emerald-700 hover:text-emerald-800 font-bold mb-5 bg-emerald-50 hover:bg-emerald-100 px-3.5 py-2.5 rounded-xl transition-all border border-emerald-200 shadow-sm">
+                                    <a href="{{ route('siswa.downloadTemplate') }}" class="inline-flex items-center gap-2 text-xs text-emerald-700 hover:text-emerald-800 font-bold mb-4 bg-emerald-50 hover:bg-emerald-100 px-3.5 py-2 rounded-xl transition-all border border-emerald-200 shadow-sm">
                                         <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                                         <span>Download Template Excel (.xlsx)</span>
                                     </a>
 
-                                    <div class="mt-2">
-                                        <label for="file_import" class="block text-sm font-medium leading-6 text-slate-900">Pilih File (.xlsx, .xls, .csv)</label>
-                                        <input type="file" name="file_import" id="file_import" accept=".xlsx,.xls,.csv" required class="mt-2 block w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 border border-sky-200 rounded-xl cursor-pointer">
+                                    @if($departemens->isEmpty())
+                                        <!-- Peringatan Jika Departemen Belum Dibuat -->
+                                        <div class="p-3.5 mb-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-2.5">
+                                            <i class="ti ti-alert-triangle text-amber-600 text-lg shrink-0 mt-0.5"></i>
+                                            <div>
+                                                <p class="font-bold">Departemen Belum Dibuat!</p>
+                                                <p class="mt-0.5 text-amber-800 leading-relaxed">
+                                                    Anda belum memiliki data Departemen / Unit Sekolah (misal: SMP atau SMA). Silakan buat Departemen terlebih dahulu sebelum mengimpor siswa.
+                                                </p>
+                                                <a href="{{ route('departemen.index') }}" class="inline-flex items-center gap-1 font-bold text-amber-900 underline mt-1.5 hover:text-amber-950">
+                                                    <span>Buat Departemen Sekarang &rarr;</span>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    @else
+                                        <!-- Pilihan Departemen Tujuan (Wajib) -->
+                                        <div class="mb-3 text-left">
+                                            <label for="modal_departemen_id" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                                                Departemen / Unit Sekolah <span class="text-rose-500">*</span>
+                                            </label>
+                                            <select name="departemen_id" id="modal_departemen_id" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition-all shadow-xs">
+                                                <option value="">-- Pilih Departemen Tujuan Siswa --</option>
+                                                @foreach($departemens as $dep)
+                                                    <option value="{{ $dep->id }}" {{ (isset($selectedDepartemenId) && $selectedDepartemenId == $dep->id) ? 'selected' : '' }}>
+                                                        🏫 {{ $dep->nama_departemen }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                            <p class="text-[11px] text-slate-400 mt-1">Siswa dan rombel kelas pada file akan otomatis didaftarkan ke unit sekolah ini.</p>
+                                        </div>
+                                    @endif
+
+                                    <div class="text-left">
+                                        <label for="file_import" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Pilih File (.xlsx, .xls, .csv) <span class="text-rose-500">*</span></label>
+                                        <input type="file" name="file_import" id="file_import" accept=".xlsx,.xls,.csv" required {{ $departemens->isEmpty() ? 'disabled' : '' }} class="block w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 border border-slate-200 rounded-xl cursor-pointer">
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="bg-sky-50/50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
-                            <button type="submit" class="inline-flex w-full justify-center rounded-xl bg-emerald-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-500 sm:ml-3 sm:w-auto transition-colors">Mulai Import</button>
-                            <button type="button" @click="open = false" class="mt-3 inline-flex w-full justify-center rounded-xl bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50 sm:mt-0 sm:w-auto transition-colors">Batal</button>
+                        <div class="bg-slate-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6 gap-2">
+                            <button type="submit" {{ $departemens->isEmpty() ? 'disabled' : '' }} class="inline-flex w-full justify-center rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-500 sm:w-auto transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
+                                Mulai Import
+                            </button>
+                            <button type="button" @click="open = false" class="mt-2 sm:mt-0 inline-flex w-full justify-center rounded-xl bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-100 sm:w-auto transition-colors cursor-pointer">
+                                Batal
+                            </button>
                         </div>
                     </form>
                 </div>

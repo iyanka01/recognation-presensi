@@ -322,7 +322,8 @@ class GuruController extends Controller
             return redirect()->route('guru.index')->with('error', 'File tidak memiliki baris data yang valid.');
         }
 
-        $sukses = 0;
+        $suksesBaru = 0;
+        $suksesUpdate = 0;
         $gagal = 0;
 
         // Tambah batas eksekusi & memori agar tidak timeout saat data banyak
@@ -388,16 +389,24 @@ class GuruController extends Controller
                         $guruData['username'] = $nip;
                     }
 
-                    $existing = !empty($nip) ? Guru::where('nip', $nip)->first() : null;
+                    // Cari existing guru: utamakan NIP jika ada, jika tidak ada cari berdasarkan nama_lengkap
+                    $existing = null;
+                    if (!empty($nip)) {
+                        $existing = Guru::where('nip', $nip)->first();
+                    }
+                    if (!$existing) {
+                        $existing = Guru::where('nama_lengkap', $nama)->first();
+                    }
 
                     if (!$existing) {
                         $guruData['password'] = $defaultPasswordHash;
                         Guru::create($guruData);
+                        $suksesBaru++;
                     } else {
+                        // Update biodata tanpa menghapus foto profil, foto wajah, face descriptor, atau password
                         $existing->update($guruData);
+                        $suksesUpdate++;
                     }
-
-                    $sukses++;
                 } catch (\Exception $e) {
                     \Log::error("Exception saat import guru row: " . $e->getMessage(), (array)$row);
                     $gagal++;
@@ -410,7 +419,8 @@ class GuruController extends Controller
             return redirect()->route('guru.index')->with('error', 'Terjadi kesalahan saat memproses data guru: ' . $th->getMessage());
         }
 
-        $msg = "Import guru selesai! Berhasil: $sukses data guru tersimpan, Gagal/Dilewati: $gagal baris.";
+        $totalProses = $suksesBaru + $suksesUpdate;
+        $msg = "Import guru selesai! Total diproses: {$totalProses} ({$suksesUpdate} data diperbarui, {$suksesBaru} data baru ditambahkan). Dilewati/Gagal: {$gagal} baris.";
         return redirect()->route('guru.index')->with('success', $msg);
     }
 }

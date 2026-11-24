@@ -12,14 +12,35 @@ class SiswaController extends Controller
     public function index(?Request $request = null)
     {
         $request = $request ?? request();
-        $query = Siswa::with('kelas');
 
+        $departemens = \App\Models\Departemen::where('status', 'Aktif')->orderBy('nama_departemen')->get();
+        $tahunAjarans = \App\Models\TahunAjaran::orderBy('created_at', 'desc')->get();
+        $tahunAjaranAktif = $tahunAjarans->firstWhere('status', 'Aktif') ?: $tahunAjarans->first();
+
+        $selectedDepartemenId = $request->input('departemen_id');
+        if (!$selectedDepartemenId && $departemens->isNotEmpty()) {
+            $selectedDepartemenId = $departemens->first()->id;
+        }
+
+        $selectedTahunAjaranId = $request->input('tahun_ajaran_id', $tahunAjaranAktif?->id);
+
+        $query = Siswa::with('kelas.departemen');
+
+        // Filter Departemen
+        if ($selectedDepartemenId && $selectedDepartemenId !== 'all') {
+            $query->whereHas('kelas', function ($q) use ($selectedDepartemenId) {
+                $q->where('departemen_id', $selectedDepartemenId);
+            });
+        }
+
+        // Filter Tingkat
         if ($request->filled('tingkat')) {
             $query->whereHas('kelas', function ($q) use ($request) {
                 $q->where('tingkat', $request->tingkat);
             });
         }
 
+        // Filter Kelas / Rombel spesifik
         if ($request->filled('kelas_id')) {
             $query->where('kelas_id', $request->kelas_id);
         }
@@ -34,10 +55,25 @@ class SiswaController extends Controller
         }
 
         $siswa = $query->latest()->get();
-        $kelasList = Kelas::withCount('siswa')->orderBy('tingkat')->orderBy('nama_rombel')->get();
+
+        // Ambil kelas yang sesuai departemen terpilih untuk dropdown filter bertingkat
+        $kelasQuery = Kelas::withCount('siswa')->orderBy('tingkat')->orderBy('nama_rombel');
+        if ($selectedDepartemenId && $selectedDepartemenId !== 'all') {
+            $kelasQuery->where('departemen_id', $selectedDepartemenId);
+        }
+        $kelasList = $kelasQuery->get();
         $tingkatList = $kelasList->pluck('tingkat')->unique()->values();
 
-        return view('siswa.index', compact('siswa', 'kelasList', 'tingkatList'));
+        return view('siswa.index', compact(
+            'siswa', 
+            'kelasList', 
+            'tingkatList', 
+            'departemens', 
+            'selectedDepartemenId', 
+            'tahunAjarans', 
+            'selectedTahunAjaranId', 
+            'tahunAjaranAktif'
+        ));
     }
 
     public function create()
@@ -241,9 +277,22 @@ class SiswaController extends Controller
 
     public function import(Request $request)
     {
+        // Pastikan departemen sudah ada di sistem
+        $totalDepartemen = \App\Models\Departemen::count();
+        if ($totalDepartemen === 0) {
+            return redirect()->route('siswa.index')->with('error', 'Departemen / Unit Sekolah belum dibuat. Silakan tambahkan Departemen terlebih dahulu di menu Pengaturan > Departemen sebelum mengimpor data siswa.');
+        }
+
         $request->validate([
+            'departemen_id' => 'required|exists:departemen,id',
             'file_import' => 'required|file|mimes:xlsx,xls,csv,txt|max:8192'
+        ], [
+            'departemen_id.required' => 'Pilih Departemen / Unit Sekolah terlebih dahulu sebelum mengimpor siswa.',
+            'departemen_id.exists'   => 'Departemen yang dipilih tidak valid.',
+            'file_import.required'   => 'File Excel/CSV wajib diunggah.',
         ]);
+
+        $departemenId = $request->input('departemen_id');
 
         $file = $request->file('file_import');
         $filePath = $file->getRealPath();
@@ -275,14 +324,14 @@ class SiswaController extends Controller
                     $rows[] = array_values($rData);
                 }
             } catch (\Throwable $e) {
-                return redirect()->route('siswa.index')->with('error', 'Gagal membaca file Excel: ' . $e->getMessage());
+                return redirect()->route('siswa.index', ['departemen_id' => $departemenId])->with('error', 'Gagal membaca file Excel: ' . $e->getMessage());
             }
         } else {
             // 2. Baca file CSV
             ini_set('auto_detect_line_endings', true);
             $lines = file($filePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
             if (empty($lines)) {
-                return redirect()->route('siswa.index')->with('error', 'File CSV kosong atau tidak valid.');
+                return redirect()->route('siswa.index', ['departemen_id' => $departemenId])->with('error', 'File CSV kosong atau tidak valid.');
             }
 
             if (!empty($lines) && str_starts_with($lines[0], "\xEF\xBB\xBF")) {
@@ -309,10 +358,11 @@ class SiswaController extends Controller
         }
 
         if (empty($rows)) {
-            return redirect()->route('siswa.index')->with('error', 'File tidak memiliki baris data yang valid.');
+            return redirect()->route('siswa.index', ['departemen_id' => $departemenId])->with('error', 'File tidak memiliki baris data yang valid.');
         }
 
-        $sukses = 0;
+        $suksesBaru = 0;
+        $suksesUpdate = 0;
         $gagal = 0;
 
         // Tambah batas eksekusi & memori agar tidak timeout saat data banyak
@@ -322,8 +372,8 @@ class SiswaController extends Controller
         // Pre-hash password satu kali di luar loop untuk menghemat waktu CPU 95%+
         $defaultPasswordHash = \Illuminate\Support\Facades\Hash::make('siswa123');
 
-        // Pre-load semua kelas ke memori (key: nama_rombel lowercase & trim)
-        $kelasList = Kelas::all()->keyBy(function($item) {
+        // Pre-load semua kelas milik departemen terpilih ke memori (key: nama_rombel lowercase & trim)
+        $kelasList = Kelas::where('departemen_id', $departemenId)->get()->keyBy(function($item) {
             return strtolower(trim($item->nama_rombel));
         });
 
@@ -346,8 +396,8 @@ class SiswaController extends Controller
                     $namaKelas = $cleanValue($row[7] ?? '');
                     $noHp      = $cleanValue($row[8] ?? '');
 
-                    // Validasi data krusial
-                    if (empty($nis) || empty($nama) || empty($namaKelas)) {
+                    // Validasi data krusial: nama dan kelas wajib ada
+                    if (empty($nama) || empty($namaKelas) || (empty($nis) && empty($nisn))) {
                         $gagal++;
                         continue;
                     }
@@ -379,7 +429,7 @@ class SiswaController extends Controller
                         $detectedTingkat = $romMap[$rom] ?? $rom;
                     }
 
-                    // Ambil dari cache kelas atau buat baru jika belum ada
+                    // Ambil dari cache kelas atau buat baru jika belum ada untuk departemen terpilih
                     $keyKelas = strtolower(trim($namaKelas));
                     if ($kelasList->has($keyKelas)) {
                         $kelas = $kelasList->get($keyKelas);
@@ -390,13 +440,26 @@ class SiswaController extends Controller
                         }
                     } else {
                         $kelas = Kelas::firstOrCreate(
-                            ['nama_rombel' => $namaKelas],
-                            ['tingkat' => $detectedTingkat]
+                            [
+                                'nama_rombel'   => $namaKelas,
+                                'departemen_id' => $departemenId
+                            ],
+                            [
+                                'tingkat'       => $detectedTingkat
+                            ]
                         );
                         $kelasList->put($keyKelas, $kelas);
                     }
 
-                    // Update or Create Siswa berdasarkan NIS
+                    // Cari existing siswa untuk update: cek NIS dulu, jika tidak ada cek NISN
+                    $existing = null;
+                    if (!empty($nis)) {
+                        $existing = Siswa::where('nis', $nis)->first();
+                    }
+                    if (!$existing && !empty($nisn)) {
+                        $existing = Siswa::where('nisn', $nisn)->first();
+                    }
+
                     $siswaData = [
                         'nisn'          => $nisn,
                         'nama_lengkap'  => $nama,
@@ -409,16 +472,20 @@ class SiswaController extends Controller
                         'status'        => 'Aktif'
                     ];
 
-                    $existing = Siswa::where('nis', $nis)->first();
+                    if (!empty($nis)) {
+                        $siswaData['nis'] = $nis;
+                    }
+
                     if (!$existing) {
                         $siswaData['password'] = $defaultPasswordHash;
                         $siswaData['is_password_changed'] = false;
-                        Siswa::create(array_merge(['nis' => $nis], $siswaData));
+                        Siswa::create($siswaData);
+                        $suksesBaru++;
                     } else {
+                        // Update data siswa tanpa menghapus foto, kartu, rfid, atau mereset password
                         $existing->update($siswaData);
+                        $suksesUpdate++;
                     }
-
-                    $sukses++;
                 } catch (\Exception $e) {
                     \Log::error("Exception saat import row: " . $e->getMessage(), (array)$row);
                     $gagal++;
@@ -428,11 +495,12 @@ class SiswaController extends Controller
             \Illuminate\Support\Facades\DB::commit();
         } catch (\Throwable $th) {
             \Illuminate\Support\Facades\DB::rollBack();
-            return redirect()->route('siswa.index')->with('error', 'Terjadi kesalahan saat memproses data: ' . $th->getMessage());
+            return redirect()->route('siswa.index', ['departemen_id' => $departemenId])->with('error', 'Terjadi kesalahan saat memproses data: ' . $th->getMessage());
         }
 
-        $msg = "Import selesai! Berhasil: $sukses data siswa tersimpan, Gagal/Dilewati: $gagal baris.";
-        return redirect()->route('siswa.index')->with('success', $msg);
+        $totalProses = $suksesBaru + $suksesUpdate;
+        $msg = "Import selesai! Total diproses: {$totalProses} ({$suksesUpdate} data diperbarui, {$suksesBaru} data baru ditambahkan). Dilewati/Gagal: {$gagal} baris.";
+        return redirect()->route('siswa.index', ['departemen_id' => $departemenId])->with('success', $msg);
     }
 
     public function printIdCard($id)

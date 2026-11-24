@@ -48,26 +48,26 @@
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
                 <thead>
-                    <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 text-xs uppercase tracking-wider">
-                        <th class="py-3.5 px-4 w-12 text-center">
-                            <input type="checkbox" @click="toggleAll()" :checked="selectAll" class="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                    <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 text-[11px] font-bold uppercase tracking-wider">
+                        <th class="py-2.5 px-3 w-10 text-center">
+                            <input type="checkbox" @click="toggleAll()" :checked="selectAll" class="w-3.5 h-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
                         </th>
-                        <th class="py-3.5 px-4 font-semibold text-slate-600">USER</th>
-                        <th class="py-3.5 px-4 font-semibold text-slate-600">ROLE / JABATAN</th>
-                        <th class="py-3.5 px-4 font-semibold text-slate-600">STATUS</th>
-                        <th class="py-3.5 px-4 font-semibold text-slate-600">JOINED</th>
-                        <th class="py-3.5 px-4 font-semibold text-slate-600 text-right">ACTIONS</th>
+                        <th class="py-2.5 px-3 font-semibold text-slate-600">USER</th>
+                        <th class="py-2.5 px-3 font-semibold text-slate-600">ROLE / JABATAN</th>
+                        <th class="py-2.5 px-3 font-semibold text-slate-600">STATUS</th>
+                        <th class="py-2.5 px-3 font-semibold text-slate-600">JOINED</th>
+                        <th class="py-2.5 px-3 font-semibold text-slate-600 text-right">ACTIONS</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100 text-sm">
+                <tbody class="divide-y divide-slate-100 text-xs">
                     @forelse($guru as $index => $g)
                     <tr x-show="isRowVisible('{{ $g->id }}')"
                         class="hover:bg-slate-50/70 transition-colors" :class="{'bg-rose-50/30': selected.includes('{{ $g->id }}')}">
-                        <td class="py-3.5 px-4 text-center">
-                            <input type="checkbox" value="{{ $g->id }}" x-model="selected" class="guru-checkbox w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                        <td class="py-2.5 px-3 text-center">
+                            <input type="checkbox" value="{{ $g->id }}" x-model="selected" class="guru-checkbox w-3.5 h-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
                         </td>
-                        <td class="py-3.5 px-4">
-                            <div class="flex items-center gap-3">
+                        <td class="py-2.5 px-3">
+                            <div class="flex items-center gap-2.5">
                                 <div class="relative shrink-0 cursor-pointer" 
                                      @if($g->foto_wajah)
                                      @click="$dispatch('preview-face', { name: '{{ addslashes($g->nama_lengkap) }}', nip: '{{ $g->nip ?? '-' }}', photo: '{{ asset('storage/' . $g->foto_wajah) }}', registeredAt: '{{ $g->updated_at ? $g->updated_at->format('d M Y H:i') : '-' }}' })"
@@ -76,87 +76,87 @@
                                      title="{{ $g->foto_guru ? 'Foto Profil Guru' : 'Belum Ada Foto' }}"
                                      @endif>
                                     @if($g->foto_wajah)
-                                        <img src="{{ asset('storage/' . $g->foto_wajah) }}" alt="{{ $g->nama_lengkap }}" class="w-10 h-10 rounded-full object-cover border border-emerald-300 shadow-sm">
+                                        <img src="{{ asset('storage/' . $g->foto_wajah) }}" alt="{{ $g->nama_lengkap }}" class="w-8 h-8 rounded-full object-cover border border-emerald-300 shadow-sm">
                                     @elseif($g->foto_guru)
-                                        <img src="{{ asset('storage/' . $g->foto_guru) }}" alt="{{ $g->nama_lengkap }}" class="w-10 h-10 rounded-full object-cover border border-slate-200">
+                                        <img src="{{ asset('storage/' . $g->foto_guru) }}" alt="{{ $g->nama_lengkap }}" class="w-8 h-8 rounded-full object-cover border border-slate-200">
                                     @else
-                                        <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-sm border border-blue-100">
+                                        <div class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xs border border-blue-100">
                                             {{ substr($g->nama_lengkap, 0, 1) }}
                                         </div>
                                     @endif
-                                    <!-- Indicator dot at bottom right (like the image) -->
-                                    <span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white {{ $g->foto_wajah || $g->face_descriptor ? 'bg-emerald-500' : 'bg-slate-400' }}" title="{{ $g->foto_wajah || $g->face_descriptor ? 'Wajah Terdaftar' : 'Belum Ada Face ID' }}"></span>
+                                    <!-- Indicator dot at bottom right -->
+                                    <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white {{ $g->foto_wajah || $g->face_descriptor ? 'bg-emerald-500' : 'bg-slate-400' }}" title="{{ $g->foto_wajah || $g->face_descriptor ? 'Wajah Terdaftar' : 'Belum Ada Face ID' }}"></span>
                                 </div>
                                 <div class="min-w-0">
-                                    <div class="font-bold text-slate-800 text-sm leading-tight truncate">{{ $g->nama_lengkap }}</div>
-                                    <div class="text-xs text-slate-400 font-mono mt-0.5 truncate">
+                                    <div class="font-bold text-slate-800 text-xs leading-tight truncate">{{ $g->nama_lengkap }}</div>
+                                    <div class="text-[11px] text-slate-400 font-mono mt-0.5 truncate">
                                         NIP: {{ $g->nip ?? '-' }}
                                     </div>
                                 </div>
                             </div>
                         </td>
-                        <td class="py-3.5 px-4">
-                            <div class="flex items-center gap-2">
-                                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                                    <i class="ti ti-briefcase text-xs"></i>
+                        <td class="py-2.5 px-3">
+                            <div class="flex items-center gap-1.5">
+                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                                    <i class="ti ti-briefcase text-[11px]"></i>
                                     <span>{{ $g->jabatan ?? 'Guru Pengajar' }}</span>
                                 </span>
-                                <span class="inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold {{ $g->jenis_kelamin == 'L' ? 'bg-indigo-50 text-indigo-600' : 'bg-pink-50 text-pink-600' }}" title="{{ $g->jenis_kelamin == 'L' ? 'Laki-laki' : 'Perempuan' }}">
+                                <span class="inline-flex items-center justify-center w-4 h-4 rounded-full text-[9px] font-bold {{ $g->jenis_kelamin == 'L' ? 'bg-indigo-50 text-indigo-600' : 'bg-pink-50 text-pink-600' }}" title="{{ $g->jenis_kelamin == 'L' ? 'Laki-laki' : 'Perempuan' }}">
                                     {{ $g->jenis_kelamin }}
                                 </span>
                             </div>
                         </td>
-                        <td class="py-3.5 px-4 whitespace-nowrap">
+                        <td class="py-2.5 px-3 whitespace-nowrap">
                             <div class="flex flex-col gap-0.5">
                                 @if($g->status == 'Aktif')
-                                    <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600">
-                                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                    <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                                         Active
                                     </span>
                                 @else
-                                    <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400">
-                                        <span class="w-2 h-2 rounded-full bg-slate-400"></span>
+                                    <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-400">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
                                         Inactive
                                     </span>
                                 @endif
                                 
-                                <span class="inline-flex items-center gap-1 text-[11px] {{ $g->foto_wajah || $g->face_descriptor ? 'text-emerald-600' : 'text-slate-400' }}">
-                                    <i class="ti {{ $g->foto_wajah || $g->face_descriptor ? 'ti-face-id' : 'ti-face-id-error' }} text-xs"></i>
+                                <span class="inline-flex items-center gap-1 text-[10px] {{ $g->foto_wajah || $g->face_descriptor ? 'text-emerald-600' : 'text-slate-400' }}">
+                                    <i class="ti {{ $g->foto_wajah || $g->face_descriptor ? 'ti-face-id' : 'ti-face-id-error' }} text-[11px]"></i>
                                     {{ $g->foto_wajah || $g->face_descriptor ? 'Face ID Ready' : 'No Face ID' }}
                                 </span>
                             </div>
                         </td>
-                        <td class="py-3.5 px-4 whitespace-nowrap text-xs text-slate-500 font-medium">
+                        <td class="py-2.5 px-3 whitespace-nowrap text-[11px] text-slate-500 font-medium">
                             {{ $g->created_at ? $g->created_at->format('M d, Y') : '-' }}
                         </td>
-                        <td class="py-3.5 px-4 text-right">
+                        <td class="py-2.5 px-3 text-right">
                             <div class="flex items-center justify-end gap-1">
 
                                 {{-- Tombol Reset Wajah --}}
                                 @if(!empty($g->face_descriptor) || !empty($g->foto_wajah))
                                 <form action="{{ route('guru.reset-face', $g->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin mereset pendaftaran wajah untuk guru {{ addslashes($g->nama_lengkap) }}?\n\nGuru harus memindai ulang wajahnya untuk absensi.');" class="inline">
                                     @csrf
-                                    <button type="submit" class="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-[7px] transition-colors" title="Reset Pendaftaran Wajah">
-                                        <i class="ti ti-rotate-clockwise text-base"></i>
+                                    <button type="submit" class="p-1 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-[6px] transition-colors" title="Reset Pendaftaran Wajah">
+                                        <i class="ti ti-rotate-clockwise text-sm"></i>
                                     </button>
                                 </form>
                                 @endif
 
-                                <!-- View QR / ID Card Button (Eye icon like the image) -->
-                                <button type="button" @click="$dispatch('open-qr', { id: '{{ $g->id }}', name: '{{ addslashes($g->nama_lengkap) }}', code: '{{ $g->nip ?? 'N/A' }}', printUrl: '{{ route('guru.id-card', $g->id) }}' })" class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-[7px] transition-colors" title="Lihat QR Code & ID Card">
-                                    <i class="ti ti-eye text-base"></i>
+                                <!-- View QR / ID Card Button -->
+                                <button type="button" @click="$dispatch('open-qr', { id: '{{ $g->id }}', name: '{{ addslashes($g->nama_lengkap) }}', code: '{{ $g->nip ?? 'N/A' }}', printUrl: '{{ route('guru.id-card', $g->id) }}' })" class="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-[6px] transition-colors" title="Lihat QR Code & ID Card">
+                                    <i class="ti ti-eye text-sm"></i>
                                 </button>
                                 
-                                <!-- Edit Button (Pencil icon like the image) -->
-                                <a href="{{ route('guru.edit', $g->id) }}" class="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-[7px] transition-colors" title="Edit">
-                                    <i class="ti ti-pencil text-base"></i>
+                                <!-- Edit Button -->
+                                <a href="{{ route('guru.edit', $g->id) }}" class="p-1 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-[6px] transition-colors" title="Edit">
+                                    <i class="ti ti-pencil text-sm"></i>
                                 </a>
 
-                                <!-- Delete Button (Trash icon like the image) -->
+                                <!-- Delete Button -->
                                 <form action="{{ route('guru.destroy', $g->id) }}" method="POST" onsubmit="return confirm('Hapus guru ini?');" class="inline">
                                     @csrf @method('DELETE')
-                                    <button type="submit" class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-[7px] transition-colors" title="Hapus">
-                                        <i class="ti ti-trash text-base"></i>
+                                    <button type="submit" class="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-[6px] transition-colors" title="Hapus">
+                                        <i class="ti ti-trash text-sm"></i>
                                     </button>
                                 </form>
                             </div>
