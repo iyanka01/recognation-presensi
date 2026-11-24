@@ -14,13 +14,38 @@ class PresensiController extends Controller
     // Display the attendance logs
     public function index(Request $request)
     {
-        $tanggal = $request->tanggal ?? Carbon::today()->toDateString();
-        
-        $presensi = Presensi::whereDate('tanggal', $tanggal)
-            ->orderBy('jam_masuk', 'desc')
-            ->get();
-            
-        return view('presensi.index', compact('presensi', 'tanggal'));
+        $today = Carbon::today()->toDateString();
+        $isFilteringDate = $request->filled('tanggal');
+        $tanggal = $request->input('tanggal', $today);
+
+        if ($isFilteringDate) {
+            // Jika admin sengaja memilih tanggal di filter pencarian
+            $presensi = Presensi::with('user')
+                ->whereDate('tanggal', $tanggal)
+                ->orderBy('jam_masuk', 'desc')
+                ->get();
+        } else {
+            // Default: Tampilkan presensi hari ini + guru hari-hari sebelumnya yang BELUM absen pulang dan BELUM di-unlock (minta reset)
+            $presensiHariIni = Presensi::with('user')
+                ->whereDate('tanggal', $today)
+                ->orderBy('jam_masuk', 'desc')
+                ->get();
+
+            $guruBelumPulangSebelumnya = Presensi::with('user')
+                ->where('user_type', 'guru')
+                ->whereDate('tanggal', '<', $today)
+                ->whereNotNull('jam_masuk')
+                ->whereNull('jam_pulang')
+                ->where('is_unlocked', false)
+                ->orderBy('tanggal', 'desc')
+                ->orderBy('jam_masuk', 'desc')
+                ->get();
+
+            // Gabungkan: letakkan guru yang terkunci/minta reset di posisi paling atas agar langsung dilihat admin
+            $presensi = $guruBelumPulangSebelumnya->concat($presensiHariIni);
+        }
+
+        return view('presensi.index', compact('presensi', 'tanggal', 'isFilteringDate'));
     }
 
     // Display the scanner page

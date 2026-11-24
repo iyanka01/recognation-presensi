@@ -75,6 +75,7 @@
                         <th class="p-4 font-semibold w-16 text-center">No</th>
                         <th class="p-4 font-semibold">Tipe</th>
                         <th class="p-4 font-semibold">Nama Lengkap</th>
+                        <th class="p-4 font-semibold">Tanggal</th>
                         <th class="p-4 font-semibold">Jam Masuk</th>
                         <th class="p-4 font-semibold">Jam Pulang</th>
                         <th class="p-4 font-semibold">Status</th>
@@ -84,7 +85,10 @@
                 </thead>
                 <tbody class="divide-y divide-gray-100 text-sm text-slate-700">
                     @forelse($presensi as $index => $p)
-                    <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors" :class="{'bg-blue-50/40': selectedIds.includes('{{ $p->id }}')}">
+                    @php
+                        $isPastLocked = ($p->user_type === 'guru' && $p->tanggal < \Carbon\Carbon::today()->toDateString() && !$p->jam_pulang && !$p->is_unlocked);
+                    @endphp
+                    <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors {{ $isPastLocked ? 'bg-amber-50/70 border-amber-200' : '' }}" :class="{'bg-blue-50/40': selectedIds.includes('{{ $p->id }}')}">
                         <td class="p-4 text-center">
                             <input type="checkbox" x-model="selectedIds" value="{{ $p->id }}" class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer">
                         </td>
@@ -104,11 +108,28 @@
                                 <span class="text-slate-400 italic text-xs">Data terhapus</span>
                             @endif
                         </td>
+                        <td class="p-4 whitespace-nowrap text-xs">
+                            @if($isPastLocked)
+                                <span class="inline-flex items-center gap-1 font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
+                                    <svg class="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                                    {{ \Carbon\Carbon::parse($p->tanggal)->translatedFormat('d M Y') }}
+                                </span>
+                            @else
+                                <span class="text-slate-600 font-medium">{{ \Carbon\Carbon::parse($p->tanggal)->translatedFormat('d M Y') }}</span>
+                            @endif
+                        </td>
                         <td class="p-4 whitespace-nowrap font-medium text-slate-700">
                             {{ $p->jam_masuk ?? '-' }}
                         </td>
                         <td class="p-4 whitespace-nowrap font-medium text-slate-700">
-                            {{ $p->jam_pulang ?? '-' }}
+                            @if($isPastLocked)
+                                <span class="text-rose-600 font-bold text-xs flex items-center gap-1">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                    Belum Pulang
+                                </span>
+                            @else
+                                {{ $p->jam_pulang ?? '-' }}
+                            @endif
                         </td>
                         <td class="p-4 whitespace-nowrap">
                             @php
@@ -168,7 +189,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="9" class="p-12 text-center">
+                        <td colspan="10" class="p-12 text-center">
                             <div class="flex flex-col items-center justify-center">
                                 <div class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 mb-3">
                                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
