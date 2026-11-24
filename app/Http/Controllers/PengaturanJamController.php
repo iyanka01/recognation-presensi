@@ -17,28 +17,31 @@ class PengaturanJamController extends Controller
         $departemens = Departemen::where('status', 'Aktif')->orderBy('nama_departemen')->get();
         $kelases = Kelas::with('departemen')->orderBy('tingkat')->orderBy('nama_rombel')->get();
         
-        $allTargets = [];
-        $allTargets[] = ['id' => 'guru', 'nama' => 'Semua Guru (Umum)', 'tipe' => 'guru'];
-
-        // Tambah target Departemen
+        $targetDepartemen = [];
         foreach ($departemens as $d) {
-            $allTargets[] = [
+            $targetDepartemen[] = [
                 'id' => 'dep_' . $d->id,
                 'departemen_id' => $d->id,
-                'nama' => 'Departemen: ' . $d->nama_departemen,
+                'nama' => $d->nama_departemen,
                 'tipe' => 'departemen'
             ];
         }
 
-        // Tambah target Kelas Rombel
+        $targetGuru = [
+            ['id' => 'guru', 'nama' => 'Semua Guru (Umum)', 'tipe' => 'guru']
+        ];
+
+        $targetKelas = [];
         foreach ($kelases as $k) {
             $namaDep = $k->departemen ? (' (' . $k->departemen->nama_departemen . ')') : '';
-            $allTargets[] = [
+            $targetKelas[] = [
                 'id' => $k->id,
                 'nama' => 'Kelas ' . $k->nama_rombel . $namaDep,
                 'tipe' => 'kelas'
             ];
         }
+
+        $allTargets = array_merge($targetDepartemen, $targetGuru, $targetKelas);
 
         $hariList = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
 
@@ -69,7 +72,17 @@ class PengaturanJamController extends Controller
             return isset($activeTargetIds[$t['id']]);
         });
 
-        return view('jam-absensi.index', compact('activeTargets', 'allTargets', 'departemens', 'kelases', 'hariList', 'matrix'));
+        return view('jam-absensi.index', compact(
+            'activeTargets', 
+            'allTargets', 
+            'targetDepartemen', 
+            'targetGuru', 
+            'targetKelas', 
+            'departemens', 
+            'kelases', 
+            'hariList', 
+            'matrix'
+        ));
     }
 
     public function store(Request $request)
@@ -104,6 +117,20 @@ class PengaturanJamController extends Controller
                 'departemen_id' => null,
                 'kelas_id' => $targetId
             ];
+        }
+
+        // Handle copying to other departemens
+        if ($request->has('copy_to_departemens') && is_array($request->copy_to_departemens)) {
+            $currentDepId = str_starts_with($targetId, 'dep_') ? substr($targetId, 4) : null;
+            foreach ($request->copy_to_departemens as $depId) {
+                if ($depId !== $currentDepId) {
+                    $targetsToUpdate[] = [
+                        'tipe' => 'departemen',
+                        'departemen_id' => $depId,
+                        'kelas_id' => null
+                    ];
+                }
+            }
         }
 
         // Handle copying to other classes

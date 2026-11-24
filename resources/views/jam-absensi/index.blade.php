@@ -14,6 +14,8 @@
     jam_mulai: '06:00',
     jam_terlambat: '07:00',
     jam_pulang: '14:00',
+    showCopyDep: false,
+    copyDepartemens: [],
     showCopy: false,
     copyClasses: [],
 
@@ -86,7 +88,7 @@
     <!-- Container Utama -->
     <div class="bg-white dark:bg-slate-800 rounded-[7px] border border-slate-200 dark:border-slate-700 shadow-sm p-5 sm:p-6">
         
-        <!-- Target Selector Dropdown -->
+        <!-- Target Selector Dropdown dengan Grouping Jelas -->
         <div class="max-w-md mx-auto mb-8 text-center">
             <label class="block text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider mb-2">
                 Pilih Departemen / Guru / Kelas:
@@ -94,9 +96,28 @@
             <div class="relative">
                 <select x-model="selectedTarget" class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[7px] text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer">
                     <option value="" disabled>-- Pilih Target Aturan Jam --</option>
-                    <template x-for="target in targets" :key="target.id">
-                        <option :value="target.id" x-text="target.nama"></option>
-                    </template>
+                    
+                    @if(count($targetDepartemen) > 0)
+                    <optgroup label="🏢 PER DEPARTEMEN / UNIT SEKOLAH">
+                        @foreach($targetDepartemen as $t)
+                            <option value="{{ $t['id'] }}">Departemen: {{ $t['nama'] }}</option>
+                        @endforeach
+                    </optgroup>
+                    @endif
+
+                    <optgroup label="👨‍🏫 GURU / TENDIK">
+                        @foreach($targetGuru as $t)
+                            <option value="{{ $t['id'] }}">{{ $t['nama'] }}</option>
+                        @endforeach
+                    </optgroup>
+
+                    @if(count($targetKelas) > 0)
+                    <optgroup label="🏫 PER ROMBEL KELAS">
+                        @foreach($targetKelas as $t)
+                            <option value="{{ $t['id'] }}">{{ $t['nama'] }}</option>
+                        @endforeach
+                    </optgroup>
+                    @endif
                 </select>
             </div>
         </div>
@@ -229,16 +250,16 @@
                         <div class="grid grid-cols-2 gap-3.5">
                             <div>
                                 <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Target Absensi <span class="text-rose-500">*</span></label>
-                                <select name="target_id" x-model="target_id" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[7px] text-xs font-medium text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
-                                    <optgroup label="Umum / Guru">
-                                        <option value="guru">Semua Guru (Umum)</option>
-                                    </optgroup>
-                                    <optgroup label="Per Departemen / Unit">
+                                <select name="target_id" x-model="target_id" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[7px] text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+                                    <optgroup label="🏢 PER DEPARTEMEN / UNIT">
                                         @foreach($departemens as $d)
                                             <option value="dep_{{ $d->id }}">Departemen: {{ $d->nama_departemen }}</option>
                                         @endforeach
                                     </optgroup>
-                                    <optgroup label="Per Rombel Kelas">
+                                    <optgroup label="👨‍🏫 GURU / TENDIK">
+                                        <option value="guru">Semua Guru (Umum)</option>
+                                    </optgroup>
+                                    <optgroup label="🏫 PER ROMBEL KELAS">
                                         @foreach($kelases as $k)
                                             <option value="{{ $k->id }}">Kelas {{ $k->nama_rombel }} {{ $k->departemen ? '('.$k->departemen->nama_departemen.')' : '' }}</option>
                                         @endforeach
@@ -270,7 +291,30 @@
                             </div>
                         </div>
 
-                        <!-- Opsi salin ke kelas lain jika target berupa kelas -->
+                        <!-- 1. Opsi Salin Jadwal ke Departemen Lain (Jika Target adalah Departemen) -->
+                        <div class="bg-blue-50/60 dark:bg-blue-950/30 p-3.5 rounded-[7px] border border-blue-200 dark:border-blue-800" x-show="target_id.startsWith('dep_')">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" x-model="showCopyDep" class="rounded text-blue-600 focus:ring-blue-500">
+                                <span class="text-xs font-bold text-blue-900 dark:text-blue-300">
+                                    <i class="ti ti-copy mr-1"></i>
+                                    Salin jadwal ini ke Departemen lainnya?
+                                </span>
+                            </label>
+                            
+                            <div x-show="showCopyDep" x-transition class="space-y-2 mt-3 pt-3 border-t border-blue-200 dark:border-blue-800 max-h-40 overflow-y-auto">
+                                <p class="text-[11px] text-slate-500 dark:text-slate-400">Pilih departemen tujuan salinan:</p>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    @foreach($departemens as $d)
+                                    <label class="flex items-center gap-2 cursor-pointer bg-white dark:bg-slate-800 px-2.5 py-1.5 rounded-[5px] border border-slate-200 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-300" x-show="target_id !== 'dep_{{ $d->id }}'">
+                                        <input type="checkbox" name="copy_to_departemens[]" value="{{ $d->id }}" class="rounded text-blue-600" x-model="copyDepartemens">
+                                        <span>{{ $d->nama_departemen }}</span>
+                                    </label>
+                                    @endforeach
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2. Opsi Salin Jadwal ke Kelas Lain (Jika Target adalah Rombel Kelas) -->
                         <div class="bg-slate-50 dark:bg-slate-900/50 p-3.5 rounded-[7px] border border-slate-200 dark:border-slate-700" x-show="!target_id.startsWith('dep_') && target_id !== 'guru'">
                             <label class="flex items-center gap-2 cursor-pointer">
                                 <input type="checkbox" x-model="showCopy" class="rounded text-blue-600 focus:ring-blue-500">
