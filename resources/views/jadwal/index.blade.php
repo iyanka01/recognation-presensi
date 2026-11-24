@@ -201,10 +201,11 @@
                                 @endphp
 
                                 @foreach($slotsHariIni as $slot)
-                                <tr x-show="selectedHari === '{{ $h }}'" class="hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition-colors">
+                                <tr x-show="selectedHari === 'Semua' || selectedHari === '{{ $h }}'" class="hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition-colors">
                                     <!-- Kolom Jam Mulai - Jam Selesai -->
                                     <td class="py-2.5 px-3 text-center border-r border-slate-200 dark:border-slate-700 font-mono text-[11px] font-bold text-slate-700 dark:text-slate-300 bg-slate-50/70 dark:bg-slate-900/40 sticky left-0 z-10 shadow-xs whitespace-nowrap">
                                         <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[5px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-2xs">
+                                            <span class="text-blue-600 font-bold" x-show="selectedHari === 'Semua'">{{ $h }} &bull; </span>
                                             <span>{{ $slot['range'] }}</span>
                                         </div>
                                     </td>
