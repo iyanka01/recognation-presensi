@@ -15,24 +15,55 @@ class JadwalController extends Controller
 
     public function index(Request $request)
     {
+        $departemenId = $request->query('departemen_id');
         $kelasId = $request->query('kelas_id');
         $hari = $request->query('hari');
 
-        $jadwals = JadwalPelajaran::with(['kelas', 'mataPelajaran', 'guru'])
+        $departemens = \App\Models\Departemen::orderBy('nama_departemen')->get();
+
+        // Jika departemen belum dipilih, gunakan departemen pertama sebagai default jika ada
+        if (!$departemenId && $departemens->isNotEmpty()) {
+            $departemenId = $departemens->first()->id;
+        }
+
+        // Ambil kelas yang HANYA milik departemen terpilih
+        $kelasList = collect();
+        if ($departemenId && $departemenId !== 'all') {
+            $kelasList = Kelas::where('departemen_id', $departemenId)->orderBy('tingkat')->orderBy('nama_rombel')->get();
+        } else {
+            $kelasList = Kelas::orderBy('tingkat')->orderBy('nama_rombel')->get();
+        }
+
+        // Validasi kelasId: jika kelasId yang dipilih tidak ada di departemen terpilih, reset
+        if ($kelasId && !$kelasList->contains('id', $kelasId)) {
+            $kelasId = null;
+        }
+
+        $jadwals = JadwalPelajaran::with(['kelas.departemen', 'mataPelajaran', 'guru'])
+            ->when($departemenId && $departemenId !== 'all', function ($q) use ($departemenId) {
+                $q->whereHas('kelas', fn($k) => $k->where('departemen_id', $departemenId));
+            })
             ->when($kelasId, fn($q) => $q->where('kelas_id', $kelasId))
             ->when($hari, fn($q) => $q->where('hari', $hari))
             ->orderByRaw("CASE hari WHEN 'Senin' THEN 1 WHEN 'Selasa' THEN 2 WHEN 'Rabu' THEN 3 WHEN 'Kamis' THEN 4 WHEN 'Jumat' THEN 5 WHEN 'Sabtu' THEN 6 ELSE 7 END")
             ->orderBy('jam_mulai')
             ->get();
 
+        // Hari aktif default (misal hari ini jika Senin-Sabtu, atau Senin)
+        $namaHariIni = \Carbon\Carbon::now()->locale('id')->dayName;
+        $activeHari = $hari ?: (in_array($namaHariIni, self::HARI) && $namaHariIni !== 'Minggu' ? $namaHariIni : 'Senin');
+
         return view('jadwal.index', [
             'jadwals' => $jadwals,
-            'kelasList' => Kelas::orderBy('tingkat')->orderBy('nama_rombel')->get(),
+            'departemens' => $departemens,
+            'filterDepartemen' => $departemenId,
+            'kelasList' => $kelasList,
             'mapels' => MataPelajaran::orderBy('nama_mapel')->get(),
             'gurus' => Guru::where('status', 'Aktif')->orderBy('nama_lengkap')->get(),
             'hariList' => self::HARI,
             'filterKelas' => $kelasId,
             'filterHari' => $hari,
+            'activeHari' => $activeHari,
         ]);
     }
 
@@ -51,12 +82,16 @@ class JadwalController extends Controller
             return back()->withInput()->with('error', $error);
         }
 
+        $kelas = Kelas::find($validated['kelas_id']);
+        $departemenId = $kelas?->departemen_id;
+
         JadwalPelajaran::create($validated);
 
-        return redirect()->route('jadwal.index', [
+        return redirect()->route('jadwal.index', array_filter([
+            'departemen_id' => $departemenId,
             'kelas_id' => $validated['kelas_id'],
             'hari' => $validated['hari'],
-        ])->with('success', 'Jadwal pelajaran berhasil ditambahkan!');
+        ]))->with('success', 'Jadwal pelajaran berhasil ditambahkan!');
     }
 
     public function update(Request $request, $id)
@@ -78,10 +113,14 @@ class JadwalController extends Controller
 
         $jadwal->update($validated);
 
-        return redirect()->route('jadwal.index', [
+        $kelas = Kelas::find($validated['kelas_id']);
+        $departemenId = $kelas?->departemen_id;
+
+        return redirect()->route('jadwal.index', array_filter([
+            'departemen_id' => $departemenId,
             'kelas_id' => $validated['kelas_id'],
             'hari' => $validated['hari'],
-        ])->with('success', 'Jadwal pelajaran berhasil diperbarui!');
+        ]))->with('success', 'Jadwal pelajaran berhasil diperbarui!');
     }
 
     public function destroy($id)
