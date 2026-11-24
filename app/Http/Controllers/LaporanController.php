@@ -14,19 +14,29 @@ class LaporanController extends Controller
 {
     public function index(Request $request)
     {
+        $mode = $request->mode ?? 'rentang'; // 'rentang' atau 'bulan'
         $bulan = $request->bulan ?? Carbon::now()->format('Y-m');
+        $dari = $request->dari ?? Carbon::now()->startOfMonth()->toDateString();
+        $sampai = $request->sampai ?? Carbon::now()->toDateString();
         $tipe = $request->tipe ?? 'siswa';
         $kelas_id = $request->kelas_id ?? '';
         $departemen_id = $request->departemen_id ?? '';
 
         $departemens = \App\Models\Departemen::where('status', 'Aktif')->orderBy('nama_departemen')->get();
 
-        $query = Presensi::whereMonth('tanggal', substr($bulan, 5, 2))
-            ->whereYear('tanggal', substr($bulan, 0, 4))
+        // Tentukan batas tanggal berdasarkan mode
+        if ($mode === 'bulan') {
+            $startDate = Carbon::parse($bulan . '-01')->startOfDay();
+            $endDate = Carbon::parse($bulan . '-01')->endOfMonth()->endOfDay();
+        } else {
+            $startDate = Carbon::parse($dari)->startOfDay();
+            $endDate = Carbon::parse($sampai)->endOfDay();
+        }
+
+        $query = Presensi::whereBetween('tanggal', [$startDate->toDateString(), $endDate->toDateString()])
             ->where('user_type', $tipe);
 
         $laporan = [];
-        $hariDalamBulan = Carbon::parse($bulan . '-01')->daysInMonth;
 
         if ($tipe == 'siswa') {
             $siswaQuery = Siswa::with('kelas.departemen')->orderBy('nama_lengkap');
@@ -42,15 +52,22 @@ class LaporanController extends Controller
             }
             $users = $siswaQuery->get();
         } else {
-            $users = Guru::orderBy('nama_lengkap')->get();
+            $guruQuery = Guru::orderBy('nama_lengkap');
+            if ($departemen_id && $departemen_id !== 'all') {
+                // Jika guru memiliki departemen_id
+                $guruQuery->where(function($q) use ($departemen_id) {
+                    $q->where('departemen_id', $departemen_id)->orWhereNull('departemen_id');
+                });
+            }
+            $users = $guruQuery->get();
         }
 
-        // Daftar tanggal hari kerja efektif (Senin-Sabtu) yang sudah berlalu
-        $effectiveDates = $this->getHariEfektifDates($bulan);
+        // Daftar tanggal hari kerja efektif dalam periode terpilih
+        $effectiveDates = $this->getHariEfektifDatesByRange($startDate, $endDate);
         $totalHariEfektif = count($effectiveDates);
         $denominator = max($totalHariEfektif, 1);
 
-        // Fetch all presensi for these users in this month to avoid N+1 per user per day
+        // Fetch all presensi for these users in this period to avoid N+1 per user
         $allPresensi = $query->get()->groupBy('user_id');
 
         foreach ($users as $user) {
@@ -62,7 +79,6 @@ class LaporanController extends Controller
             $sakit = $userPresensi->where('status', 'Sakit')->count();
 
             if ($tipe === 'guru') {
-                // Untuk Guru: Setiap hari kerja efektif yang tidak ada presensi (Hadir/Telat/Izin/Sakit) dihitung ALPA
                 $recordedDates = $userPresensi->pluck('tanggal')->map(fn($t) => is_string($t) ? substr($t, 0, 10) : Carbon::parse($t)->toDateString())->toArray();
                 $alpa = 0;
                 foreach ($effectiveDates as $effDate) {
@@ -70,7 +86,6 @@ class LaporanController extends Controller
                         $alpa++;
                     }
                 }
-                // Tambahkan juga jika ada data berstatus 'Alpa' di database
                 $alpa += $userPresensi->where('status', 'Alpa')->count();
             } else {
                 $alpa = $userPresensi->where('status', 'Alpa')->count();
@@ -97,17 +112,42 @@ class LaporanController extends Controller
         }
         $kelasList = $kelasQuery->get();
 
-        return view('laporan.index', compact('laporan', 'kelasList', 'bulan', 'tipe', 'kelas_id', 'departemens', 'departemen_id'));
+        return view('laporan.index', compact(
+            'laporan', 'kelasList', 'bulan', 'dari', 'sampai', 'mode', 'tipe', 'kelas_id', 'departemens', 'departemen_id', 'totalHariEfektif'
+        ));
     }
 
     public function print(Request $request)
     {
+        $mode = $request->mode ?? 'rentang';
         $bulan = $request->bulan ?? Carbon::now()->format('Y-m');
+        $dari = $request->dari ?? Carbon::now()->startOfMonth()->toDateString();
+        $sampai = $request->sampai ?? Carbon::now()->toDateString();
         $tipe = $request->tipe ?? 'siswa';
         $kelas_id = $request->kelas_id ?? '';
+        $departemen_id = $request->departemen_id ?? '';
 
-        $query = Presensi::whereMonth('tanggal', substr($bulan, 5, 2))
-            ->whereYear('tanggal', substr($bulan, 0, 4))
+        if ($mode === 'bulan') {
+            $startDate = Carbon::parse($bulan . '-01')->startOfDay();
+            $endDate = Carbon::parse($bulan . '-01')->endOfMonth()->endOfDay();
+            $periodeStr = Carbon::parse($bulan . '-01')->locale('id')->isoFormat('MMMM YYYY');
+        } else {
+            $startDate = Carbon::parse($dari)->startOfDay();
+            $endDate = Carbon::parse($sampai)->endOfDay();
+            $periodeStr = Carbon::parse($dari)->locale('id')->isoFormat('D MMMM YYYY') . ' s/d ' . Carbon::parse($sampai)->locale('id')->isoFormat('D MMMM YYYY');
+        }
+
+        if ($mode === 'bulan') {
+            $startDate = Carbon::parse($bulan . '-01')->startOfDay();
+            $endDate = Carbon::parse($bulan . '-01')->endOfMonth()->endOfDay();
+            $periodeStr = Carbon::parse($bulan . '-01')->locale('id')->isoFormat('MMMM YYYY');
+        } else {
+            $startDate = Carbon::parse($dari)->startOfDay();
+            $endDate = Carbon::parse($sampai)->endOfDay();
+            $periodeStr = Carbon::parse($dari)->locale('id')->isoFormat('D MMMM YYYY') . ' s/d ' . Carbon::parse($sampai)->locale('id')->isoFormat('D MMMM YYYY');
+        }
+
+        $query = Presensi::whereBetween('tanggal', [$startDate->toDateString(), $endDate->toDateString()])
             ->where('user_type', $tipe);
 
         $departemen_id = $request->departemen_id ?? '';
@@ -126,14 +166,20 @@ class LaporanController extends Controller
             }
             $users = $siswaQuery->get();
         } else {
-            $users = Guru::orderBy('nama_lengkap')->get();
+            $guruQuery = Guru::orderBy('nama_lengkap');
+            if ($departemen_id && $departemen_id !== 'all') {
+                $guruQuery->where(function($q) use ($departemen_id) {
+                    $q->where('departemen_id', $departemen_id)->orWhereNull('departemen_id');
+                });
+            }
+            $users = $guruQuery->get();
         }
 
         $allPresensi = $query->get()->groupBy('user_id');
         $laporan = [];
         
-        // Daftar tanggal hari kerja efektif (Senin-Sabtu) yang sudah berlalu
-        $effectiveDates = $this->getHariEfektifDates($bulan);
+        // Daftar tanggal hari kerja efektif yang sudah berlalu
+        $effectiveDates = $this->getHariEfektifDatesByRange($startDate, $endDate);
         $totalHariEfektif = count($effectiveDates);
         $denominator = max($totalHariEfektif, 1);
 
@@ -173,7 +219,6 @@ class LaporanController extends Controller
         }
 
         $kelasStr = 'Semua Kelas';
-        $departemen_id = $request->departemen_id ?? '';
         $activeDepartemen = null;
 
         if ($departemen_id && $departemen_id !== 'all') {
@@ -188,17 +233,20 @@ class LaporanController extends Controller
             }
         }
 
-        $judul = "Laporan Presensi " . ucfirst($tipe) . " - " . Carbon::parse($bulan . '-01')->locale('id')->isoFormat('MMMM YYYY');
+        $judul = "Laporan Presensi " . ucfirst($tipe) . " - " . $periodeStr;
         $pengaturan = \App\Models\PengaturanLembaga::first();
 
-        return view('laporan.print', compact('laporan', 'judul', 'tipe', 'kelasStr', 'pengaturan', 'activeDepartemen'));
+        return view('laporan.print', compact('laporan', 'judul', 'tipe', 'kelasStr', 'pengaturan', 'activeDepartemen', 'periodeStr'));
     }
 
     public function printSiswa(Request $request)
     {
         $id = $request->id;
         $tipe = $request->tipe ?? 'siswa';
+        $mode = $request->mode ?? 'rentang';
         $bulan = $request->bulan ?? Carbon::now()->format('Y-m');
+        $dari = $request->dari ?? Carbon::now()->startOfMonth()->toDateString();
+        $sampai = $request->sampai ?? Carbon::now()->toDateString();
 
         if ($tipe == 'siswa') {
             $user = Siswa::with('kelas')->findOrFail($id);
@@ -206,18 +254,27 @@ class LaporanController extends Controller
             $user = Guru::findOrFail($id);
         }
 
+        if ($mode === 'bulan') {
+            $startDate = Carbon::parse($bulan . '-01')->startOfDay();
+            $endDate = Carbon::parse($bulan . '-01')->endOfMonth()->endOfDay();
+            $periodeStr = Carbon::parse($bulan . '-01')->locale('id')->isoFormat('MMMM YYYY');
+        } else {
+            $startDate = Carbon::parse($dari)->startOfDay();
+            $endDate = Carbon::parse($sampai)->endOfDay();
+            $periodeStr = Carbon::parse($dari)->locale('id')->isoFormat('D MMMM YYYY') . ' s/d ' . Carbon::parse($sampai)->locale('id')->isoFormat('D MMMM YYYY');
+        }
+
         $presensi = Presensi::where('user_type', $tipe)
             ->where('user_id', $id)
-            ->whereMonth('tanggal', substr($bulan, 5, 2))
-            ->whereYear('tanggal', substr($bulan, 0, 4))
+            ->whereBetween('tanggal', [$startDate->toDateString(), $endDate->toDateString()])
             ->orderBy('tanggal', 'asc')
             ->get();
 
         $judul = "Laporan Presensi Detail";
-        $bulanStr = Carbon::parse($bulan . '-01')->locale('id')->isoFormat('MMMM YYYY');
+        $bulanStr = $periodeStr;
 
         // Hitung Hari Efektif
-        $effectiveDates = $this->getHariEfektifDates($bulan);
+        $effectiveDates = $this->getHariEfektifDatesByRange($startDate, $endDate);
         $totalHariEfektif = count($effectiveDates);
         $denominator = max($totalHariEfektif, 1);
 
@@ -257,7 +314,6 @@ class LaporanController extends Controller
             $user->loadMissing('kelas.departemen.kepalaSekolah');
             $activeDepartemen = $user->kelas?->departemen;
         } else {
-            // Jika guru yang dicetak, cari jika guru tersebut ditugaskan pada departemen tertentu atau departemen pertama
             $activeDepartemen = \App\Models\Departemen::with('kepalaSekolah')->first();
         }
 
@@ -266,15 +322,28 @@ class LaporanController extends Controller
 
     public function export(Request $request)
     {
+        $mode = $request->mode ?? 'rentang';
         $bulan = $request->bulan ?? Carbon::now()->format('Y-m');
+        $dari = $request->dari ?? Carbon::now()->startOfMonth()->toDateString();
+        $sampai = $request->sampai ?? Carbon::now()->toDateString();
         $tipe = $request->tipe ?? 'siswa';
         $kelas_id = $request->kelas_id ?? '';
-
-        $query = Presensi::whereMonth('tanggal', substr($bulan, 5, 2))
-            ->whereYear('tanggal', substr($bulan, 0, 4))
-            ->where('user_type', $tipe);
-
         $departemen_id = $request->departemen_id ?? '';
+
+        if ($mode === 'bulan') {
+            $startDate = Carbon::parse($bulan . '-01')->startOfDay();
+            $endDate = Carbon::parse($bulan . '-01')->endOfMonth()->endOfDay();
+            $periodeStr = Carbon::parse($bulan . '-01')->locale('id')->isoFormat('MMMM YYYY');
+            $filePeriod = $bulan;
+        } else {
+            $startDate = Carbon::parse($dari)->startOfDay();
+            $endDate = Carbon::parse($sampai)->endOfDay();
+            $periodeStr = Carbon::parse($dari)->locale('id')->isoFormat('D MMMM YYYY') . ' s/d ' . Carbon::parse($sampai)->locale('id')->isoFormat('D MMMM YYYY');
+            $filePeriod = "{$dari}_sd_{$sampai}";
+        }
+
+        $query = Presensi::whereBetween('tanggal', [$startDate->toDateString(), $endDate->toDateString()])
+            ->where('user_type', $tipe);
 
         if ($tipe == 'siswa') {
             $siswaQuery = Siswa::with('kelas.departemen')->orderBy('nama_lengkap');
@@ -288,24 +357,28 @@ class LaporanController extends Controller
             }
             $users = $siswaQuery->get();
         } else {
-            $users = Guru::orderBy('nama_lengkap')->get();
+            $guruQuery = Guru::orderBy('nama_lengkap');
+            if ($departemen_id && $departemen_id !== 'all') {
+                $guruQuery->where(function($q) use ($departemen_id) {
+                    $q->where('departemen_id', $departemen_id)->orWhereNull('departemen_id');
+                });
+            }
+            $users = $guruQuery->get();
         }
 
         $allPresensi = $query->get()->groupBy('user_id');
 
-        $allPresensi = $query->get()->groupBy('user_id');
-
-        // Gunakan PhpSpreadsheet untuk menghasilkan file Excel murni (.xlsx) yang rapi, berkolom rapi, dan tidak berantakan
+        // Gunakan PhpSpreadsheet untuk menghasilkan file Excel murni (.xlsx)
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle(substr("Rekap " . ucfirst($tipe), 0, 31));
 
         // Judul Laporan
         $judulLaporan = "REKAPITULASI PRESENSI " . strtoupper($tipe);
-        $periodeStr = "Periode: " . \Carbon\Carbon::parse($bulan . '-01')->locale('id')->isoFormat('MMMM YYYY');
+        $periodeText = "Periode: " . $periodeStr;
 
         $sheet->setCellValue('A1', $judulLaporan);
-        $sheet->setCellValue('A2', $periodeStr);
+        $sheet->setCellValue('A2', $periodeText);
         $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
         $sheet->getStyle('A2')->getFont()->setItalic(true)->setSize(11);
 
@@ -344,7 +417,7 @@ class LaporanController extends Controller
         $sheet->getRowDimension($headerRow)->setRowHeight(26);
 
         // Hitung denominator hari efektif
-        $effectiveDates = $this->getHariEfektifDates($bulan);
+        $effectiveDates = $this->getHariEfektifDatesByRange($startDate, $endDate);
         $totalHariEfektif = count($effectiveDates);
         $denominator = max($totalHariEfektif, 1);
 
@@ -430,7 +503,7 @@ class LaporanController extends Controller
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
-        $fileName = "rekap_presensi_{$tipe}_{$bulan}.xlsx";
+        $fileName = "rekap_presensi_{$tipe}_{$filePeriod}.xlsx";
         $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
 
         return response()->streamDownload(function() use ($writer) {
@@ -439,6 +512,43 @@ class LaporanController extends Controller
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             'Cache-Control' => 'max-age=0',
         ]);
+    }
+
+    /**
+     * Helper menghitung daftar tanggal hari kerja efektif yang sudah berlalu dalam rentang tanggal.
+     * Hari libur sepenuhnya ditentukan oleh menu Hari Libur yang disetel di aplikasi.
+     */
+    protected function getHariEfektifDatesByRange(Carbon $startDate, Carbon $endDate): array
+    {
+        $start = $startDate->copy()->startOfDay();
+        $end = $endDate->copy()->endOfDay();
+
+        // Jika akhir rentang lebih dari hari ini, batasi sampai hari ini untuk hari yang sudah berlalu
+        $today = Carbon::today()->endOfDay();
+        if ($end->isAfter($today)) {
+            $end = $today;
+        }
+
+        if ($start->isAfter($end)) {
+            return [];
+        }
+
+        $hariLiburs = HariLibur::whereBetween('tanggal', [$start->toDateString(), $end->toDateString()])
+            ->pluck('tanggal')
+            ->toArray();
+
+        $effectiveDates = [];
+        $current = $start->copy();
+
+        while ($current->lte($end)) {
+            $tglStr = $current->toDateString();
+            if (!in_array($tglStr, $hariLiburs)) {
+                $effectiveDates[] = $tglStr;
+            }
+            $current->addDay();
+        }
+
+        return $effectiveDates;
     }
 
     /**
@@ -452,31 +562,8 @@ class LaporanController extends Controller
 
         $startOfMonth = Carbon::createFromDate($year, $month, 1)->startOfDay();
         $daysInMonth = $startOfMonth->daysInMonth;
-        $endOfScope = Carbon::createFromDate($year, $month, $daysInMonth)->endOfDay();
+        $endOfMonth = Carbon::createFromDate($year, $month, $daysInMonth)->endOfDay();
 
-        // Jika bulan yang dipilih adalah bulan berjalan, batasi sampai hari ini
-        $today = Carbon::today()->endOfDay();
-        if ($endOfScope->isAfter($today)) {
-            $endOfScope = $today;
-        }
-
-        // Ambil daftar tanggal hari libur yang disetel di aplikasi (Menu Hari Libur)
-        $hariLiburs = HariLibur::whereBetween('tanggal', [$startOfMonth->toDateString(), $endOfScope->toDateString()])
-            ->pluck('tanggal')
-            ->toArray();
-
-        $effectiveDates = [];
-        $current = $startOfMonth->copy();
-
-        while ($current->lte($endOfScope)) {
-            $tglStr = $current->toDateString();
-            // Hanya abaikan jika tanggal tersebut disetel sebagai hari libur di aplikasi
-            if (!in_array($tglStr, $hariLiburs)) {
-                $effectiveDates[] = $tglStr;
-            }
-            $current->addDay();
-        }
-
-        return $effectiveDates;
+        return $this->getHariEfektifDatesByRange($startOfMonth, $endOfMonth);
     }
 }

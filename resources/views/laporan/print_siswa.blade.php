@@ -113,7 +113,7 @@
         <tr>
             <td class="label">Nama Lengkap</td>
             <td>: {{ $user->nama_lengkap }}</td>
-            <td class="label">Bulan Laporan</td>
+            <td class="label">Periode Laporan</td>
             <td>: {{ $bulanStr }}</td>
         </tr>
         <tr>

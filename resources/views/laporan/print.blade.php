@@ -72,7 +72,7 @@
         <button onclick="window.close()" style="padding: 10px 20px; cursor: pointer;">Tutup</button>
     </div>
 
-    @include('components.kop-surat', ['pengaturan' => $pengaturan])
+    @include('components.kop-surat', ['pengaturan' => $pengaturan, 'activeDepartemen' => $activeDepartemen])
 
     <div style="text-align: center; margin: 16px 0 20px 0;">
         <h3 style="font-size: 15px; margin: 0; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">{{ $judul }}</h3>
@@ -80,12 +80,20 @@
 
     <div style="margin-bottom: 20px; text-align: left; font-size: 14px;">
         <table style="width: 100%; border: none;">
+            @if(isset($periodeStr))
             <tr style="border: none;">
-                <td style="border: none; padding: 2px 0; width: 100px;">Kelas</td>
+                <td style="border: none; padding: 2px 0; width: 120px; font-weight: bold;">Periode</td>
+                <td style="border: none; padding: 2px 0;">: {{ $periodeStr }}</td>
+            </tr>
+            @endif
+            @if($tipe == 'siswa')
+            <tr style="border: none;">
+                <td style="border: none; padding: 2px 0; width: 120px; font-weight: bold;">Kelas</td>
                 <td style="border: none; padding: 2px 0;">: {{ $kelasStr }}</td>
             </tr>
+            @endif
             <tr style="border: none;">
-                <td style="border: none; padding: 2px 0;">Dicetak pada</td>
+                <td style="border: none; padding: 2px 0; width: 120px; font-weight: bold;">Dicetak pada</td>
                 <td style="border: none; padding: 2px 0;">: {{ \Carbon\Carbon::now()->locale('id')->isoFormat('D MMMM YYYY, HH:mm') }}</td>
             </tr>
         </table>
