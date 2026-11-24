@@ -95,23 +95,21 @@
                 </button>
 
                 @foreach($hariList as $h)
-                    @if($h !== 'Minggu')
-                        @php
-                            $countHari = isset($jadwalPerHari[$h]) ? $jadwalPerHari[$h]->count() : 0;
-                        @endphp
-                        <button type="button" 
-                                @click="selectedHari = '{{ $h }}'"
-                                :class="selectedHari === '{{ $h }}' 
-                                    ? 'bg-blue-600 text-white shadow-xs font-bold' 
-                                    : 'bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium'"
-                                class="px-2.5 py-1.5 rounded-[6px] text-xs transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer">
-                            <span>{{ $h }}</span>
-                            <span :class="selectedHari === '{{ $h }}' ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'"
-                                  class="text-[10px] px-1.5 py-0.2 rounded-full font-bold">
-                                {{ $countHari }}
-                            </span>
-                        </button>
-                    @endif
+                    @php
+                        $countHari = isset($jadwalPerHari[$h]) ? $jadwalPerHari[$h]->count() : 0;
+                    @endphp
+                    <button type="button" 
+                            @click="selectedHari = '{{ $h }}'"
+                            :class="selectedHari === '{{ $h }}' 
+                                ? 'bg-blue-600 text-white shadow-xs font-bold' 
+                                : 'bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium'"
+                            class="px-2.5 py-1.5 rounded-[6px] text-xs transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer">
+                        <span>{{ $h }}</span>
+                        <span :class="selectedHari === '{{ $h }}' ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'"
+                              class="text-[10px] px-1.5 py-0.2 rounded-full font-bold">
+                            {{ $countHari }}
+                        </span>
+                    </button>
                 @endforeach
             </div>
 
@@ -184,24 +182,23 @@
                         @endphp
 
                         @foreach($hariList as $h)
-                            @if($h !== 'Minggu')
-                                @php
-                                    $jadwalsHariIni = $jadwals->where('hari', $h);
-                                    $slotsHariIni = $jadwalsHariIni->map(function($j) {
-                                        return [
-                                            'jam_mulai' => substr($j->jam_mulai, 0, 5),
-                                            'jam_selesai' => substr($j->jam_selesai, 0, 5),
-                                            'range' => substr($j->jam_mulai, 0, 5) . ' - ' . substr($j->jam_selesai, 0, 5),
-                                        ];
-                                    })->unique('range')->sortBy('jam_mulai')->values();
+                            @php
+                                $jadwalsHariIni = $jadwals->where('hari', $h);
+                                $slotsHariIni = $jadwalsHariIni->map(function($j) {
+                                    return [
+                                        'jam_mulai' => substr($j->jam_mulai, 0, 5),
+                                        'jam_selesai' => substr($j->jam_selesai, 0, 5),
+                                        'range' => substr($j->jam_mulai, 0, 5) . ' - ' . substr($j->jam_selesai, 0, 5),
+                                    ];
+                                })->unique('range')->sortBy('jam_mulai')->values();
 
-                                    if ($slotsHariIni->isEmpty()) {
-                                        $slotsHariIni = collect($defaultSlots);
-                                    }
-                                @endphp
+                                if ($slotsHariIni->isEmpty()) {
+                                    $slotsHariIni = collect($defaultSlots);
+                                }
+                            @endphp
 
-                                @foreach($slotsHariIni as $slot)
-                                <tr x-show="selectedHari === 'Semua' || selectedHari === '{{ $h }}'" class="hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition-colors">
+                            @foreach($slotsHariIni as $slot)
+                            <tr x-show="selectedHari === 'Semua' || selectedHari === '{{ $h }}'" class="hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition-colors">
                                     <!-- Kolom Jam Mulai - Jam Selesai -->
                                     <td class="py-2.5 px-3 text-center border-r border-slate-200 dark:border-slate-700 font-mono text-[11px] font-bold text-slate-700 dark:text-slate-300 bg-slate-50/70 dark:bg-slate-900/40 sticky left-0 z-10 shadow-xs whitespace-nowrap">
                                         <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[5px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-2xs">
