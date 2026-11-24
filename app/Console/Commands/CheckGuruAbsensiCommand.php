@@ -59,7 +59,7 @@ class CheckGuruAbsensiCommand extends Command
         $now = Carbon::today();
         $startDate = $now->copy()->subDays(30);
 
-        // Ambil daftar tanggal efektif 30 hari terakhir (Senin-Sabtu bukan libur)
+        // Ambil daftar tanggal efektif 30 hari terakhir (Hari libur mengacu pada setelan aplikasi)
         $hariLiburs30 = HariLibur::whereBetween('tanggal', [$startDate->toDateString(), $now->toDateString()])
             ->pluck('tanggal')
             ->toArray();
@@ -67,7 +67,7 @@ class CheckGuruAbsensiCommand extends Command
         $effectiveDates30 = [];
         $tempDay = $startDate->copy();
         while ($tempDay->lte($now)) {
-            if ($tempDay->dayOfWeek !== Carbon::SUNDAY && !in_array($tempDay->toDateString(), $hariLiburs30)) {
+            if (!in_array($tempDay->toDateString(), $hariLiburs30)) {
                 $effectiveDates30[] = $tempDay->toDateString();
             }
             $tempDay->addDay();

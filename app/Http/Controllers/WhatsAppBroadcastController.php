@@ -34,7 +34,7 @@ class WhatsAppBroadcastController extends Controller
         $batasHari = (int) ($lembaga->batas_absen_guru_hari ?? 14);
         $startDate = Carbon::today()->subDays(30);
 
-        // Ambil daftar tanggal efektif 30 hari terakhir (Senin-Sabtu bukan libur)
+        // Ambil daftar tanggal efektif 30 hari terakhir (Hari libur mengacu pada setelan aplikasi)
         $hariLiburs30 = HariLibur::whereBetween('tanggal', [$startDate->toDateString(), Carbon::today()->toDateString()])
             ->pluck('tanggal')
             ->toArray();
@@ -42,7 +42,7 @@ class WhatsAppBroadcastController extends Controller
         $effectiveDates30 = [];
         $tempDay = $startDate->copy();
         while ($tempDay->lte(Carbon::today())) {
-            if ($tempDay->dayOfWeek !== Carbon::SUNDAY && !in_array($tempDay->toDateString(), $hariLiburs30)) {
+            if (!in_array($tempDay->toDateString(), $hariLiburs30)) {
                 $effectiveDates30[] = $tempDay->toDateString();
             }
             $tempDay->addDay();
@@ -287,7 +287,7 @@ class WhatsAppBroadcastController extends Controller
 
         $startDate = Carbon::today()->subDays(30);
 
-        // Ambil daftar tanggal efektif 30 hari terakhir (Senin-Sabtu bukan libur)
+        // Ambil daftar tanggal efektif 30 hari terakhir (Hari libur mengacu pada setelan aplikasi)
         $hariLiburs30 = HariLibur::whereBetween('tanggal', [$startDate->toDateString(), Carbon::today()->toDateString()])
             ->pluck('tanggal')
             ->toArray();
@@ -295,7 +295,7 @@ class WhatsAppBroadcastController extends Controller
         $effectiveDates30 = [];
         $tempDay = $startDate->copy();
         while ($tempDay->lte(Carbon::today())) {
-            if ($tempDay->dayOfWeek !== Carbon::SUNDAY && !in_array($tempDay->toDateString(), $hariLiburs30)) {
+            if (!in_array($tempDay->toDateString(), $hariLiburs30)) {
                 $effectiveDates30[] = $tempDay->toDateString();
             }
             $tempDay->addDay();

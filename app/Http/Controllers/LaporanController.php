@@ -433,8 +433,8 @@ class LaporanController extends Controller
     }
 
     /**
-     * Helper menghitung daftar tanggal hari kerja efektif (Senin-Sabtu) yang sudah berlalu dalam satu bulan,
-     * tidak termasuk hari Minggu dan hari libur nasional/sekolah.
+     * Helper menghitung daftar tanggal hari kerja efektif yang sudah berlalu dalam satu bulan.
+     * Hari libur sepenuhnya ditentukan oleh menu Hari Libur yang disetel di aplikasi.
      */
     protected function getHariEfektifDates(string $bulan): array
     {
@@ -451,7 +451,7 @@ class LaporanController extends Controller
             $endOfScope = $today;
         }
 
-        // Ambil daftar tanggal hari libur yang ada di database pada rentang ini
+        // Ambil daftar tanggal hari libur yang disetel di aplikasi (Menu Hari Libur)
         $hariLiburs = HariLibur::whereBetween('tanggal', [$startOfMonth->toDateString(), $endOfScope->toDateString()])
             ->pluck('tanggal')
             ->toArray();
@@ -460,13 +460,10 @@ class LaporanController extends Controller
         $current = $startOfMonth->copy();
 
         while ($current->lte($endOfScope)) {
-            // Abaikan hari Minggu (0)
-            if ($current->dayOfWeek !== Carbon::SUNDAY) {
-                $tglStr = $current->toDateString();
-                // Abaikan jika terdaftar sebagai hari libur
-                if (!in_array($tglStr, $hariLiburs)) {
-                    $effectiveDates[] = $tglStr;
-                }
+            $tglStr = $current->toDateString();
+            // Hanya abaikan jika tanggal tersebut disetel sebagai hari libur di aplikasi
+            if (!in_array($tglStr, $hariLiburs)) {
+                $effectiveDates[] = $tglStr;
             }
             $current->addDay();
         }
