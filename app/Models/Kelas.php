@@ -26,4 +26,14 @@ class Kelas extends Model
     {
         return $this->hasMany(Siswa::class);
     }
+
+    public function departemen()
+    {
+        return $this->belongsTo(Departemen::class, 'departemen_id');
+    }
+
+    public function tahunAjaran()
+    {
+        return $this->belongsTo(TahunAjaran::class, 'tahun_ajaran_id');
+    }
 }

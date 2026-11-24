@@ -20,12 +20,21 @@ class MonitoringKBMController extends Controller
         $tanggal = $request->query('tanggal', Carbon::today()->toDateString());
         $hariPilihan = Carbon::parse($tanggal)->locale('id')->dayName;
 
+        $filterDepartemen = $request->query('departemen_id');
         $filterKelas = $request->query('kelas_id');
         $filterGuru = $request->query('guru_id');
+
+        $departemens = \App\Models\Departemen::orderBy('nama_departemen')->get();
 
         $query = JadwalPelajaran::with(['kelas.siswa', 'mataPelajaran', 'guru'])
             ->where('hari', $hariPilihan)
             ->orderBy('jam_mulai');
+
+        if ($filterDepartemen && $filterDepartemen !== 'all') {
+            $query->whereHas('kelas', function ($q) use ($filterDepartemen) {
+                $q->where('departemen_id', $filterDepartemen);
+            });
+        }
 
         if ($filterKelas) {
             $query->where('kelas_id', $filterKelas);
@@ -82,6 +91,12 @@ class MonitoringKBMController extends Controller
             }
         }
 
+        $kelasQuery = Kelas::orderBy('tingkat')->orderBy('nama_rombel');
+        if ($filterDepartemen && $filterDepartemen !== 'all') {
+            $kelasQuery->where('departemen_id', $filterDepartemen);
+        }
+        $kelasList = $kelasQuery->get();
+
         return view('monitoring-kbm.index', [
             'jadwals' => $jadwals,
             'tanggal' => $tanggal,
@@ -90,7 +105,9 @@ class MonitoringKBMController extends Controller
             'liveCount' => $liveCount,
             'diisiCount' => $diisiCount,
             'belumDiisiCount' => $belumDiisiCount,
-            'kelasList' => Kelas::orderBy('tingkat')->orderBy('nama_rombel')->get(),
+            'departemens' => $departemens,
+            'filterDepartemen' => $filterDepartemen,
+            'kelasList' => $kelasList,
             'guruList' => Guru::orderBy('nama_lengkap')->get(),
             'filterKelas' => $filterKelas,
             'filterGuru' => $filterGuru,

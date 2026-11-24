@@ -112,10 +112,9 @@ class PresensiMapelTest extends TestCase
             'nama_lengkap' => 'Admin Utama',
         ]);
 
-        $response = $this->post('/login', [
+        $response = $this->post('/admin/login', [
             'username' => 'admin',
             'password' => 'admin123',
-            'role' => 'admin',
         ]);
 
         $response->assertRedirect('/dashboard');

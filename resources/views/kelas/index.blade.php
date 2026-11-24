@@ -28,23 +28,43 @@
 }">
     
     <!-- Top Action Bar -->
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div class="relative w-full sm:w-96">
-            <input type="text" x-model="search" placeholder="Cari tingkat atau nama rombel..." class="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-[7px] text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm">
-            <i class="ti ti-search text-slate-400 absolute left-3 top-3 text-base"></i>
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 rounded-[7px] border border-slate-200 shadow-sm">
+        
+        <!-- Filter Departemen Utama -->
+        <div class="flex items-center gap-3 w-full md:w-auto">
+            <div class="flex items-center gap-2">
+                <i class="ti ti-building text-blue-600 text-lg"></i>
+                <span class="text-xs font-bold text-slate-700 uppercase tracking-wider whitespace-nowrap">Departemen:</span>
+            </div>
+            <form action="{{ route('kelas.index') }}" method="GET" class="flex-1 md:w-64">
+                <select name="departemen_id" onchange="this.form.submit()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-[7px] text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer transition-all shadow-xs">
+                    @foreach($departemens as $dep)
+                        <option value="{{ $dep->id }}" {{ $selectedDepartemenId == $dep->id ? 'selected' : '' }}>
+                            {{ $dep->nama_departemen }} ({{ $dep->tingkatan }})
+                        </option>
+                    @endforeach
+                    <option value="all" {{ $selectedDepartemenId === 'all' ? 'selected' : '' }}>-- Semua Departemen --</option>
+                </select>
+            </form>
         </div>
-        <div class="flex items-center gap-2 w-full sm:w-auto">
-            <button type="button" @click="expandAll()" class="px-3.5 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-xs rounded-[7px] transition-all shadow-sm flex items-center gap-1.5">
+
+        <div class="relative w-full md:w-72">
+            <input type="text" x-model="search" placeholder="Cari tingkat atau rombel..." class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-[7px] text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-xs">
+            <i class="ti ti-search text-slate-400 absolute left-3 top-2.5 text-sm"></i>
+        </div>
+
+        <div class="flex items-center gap-2 w-full md:w-auto justify-end">
+            <button type="button" @click="expandAll()" class="px-3 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-xs rounded-[7px] transition-all shadow-xs flex items-center gap-1">
                 <i class="ti ti-arrows-maximize text-xs"></i>
-                Buka Semua
+                Buka
             </button>
-            <button type="button" @click="collapseAll()" class="px-3.5 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-xs rounded-[7px] transition-all shadow-sm flex items-center gap-1.5">
+            <button type="button" @click="collapseAll()" class="px-3 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-xs rounded-[7px] transition-all shadow-xs flex items-center gap-1">
                 <i class="ti ti-arrows-minimize text-xs"></i>
-                Tutup Semua
+                Tutup
             </button>
-            <button onclick="document.getElementById('modal-kelas').classList.remove('hidden')" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-[7px] flex items-center gap-2 transition-all shadow-sm w-full sm:w-auto justify-center">
-                <i class="ti ti-plus text-base"></i>
-                Tambah Kelas / Rombel
+            <button onclick="document.getElementById('modal-kelas').classList.remove('hidden')" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-[7px] flex items-center gap-1.5 transition-all shadow-xs justify-center whitespace-nowrap">
+                <i class="ti ti-plus text-sm"></i>
+                Tambah Kelas
             </button>
         </div>
     </div>
@@ -69,21 +89,21 @@
                 
                 <!-- Accordion Header: Klik untuk buka/tutup sub-kelas -->
                 <div @click="toggleTingkat('{{ addslashes($tingkat) }}')" class="p-4 sm:p-5 bg-slate-50/80 hover:bg-slate-100/70 cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 transition-colors select-none">
-                    <div class="flex items-center gap-3">
-                        <div class="w-11 h-11 rounded-[7px] bg-blue-600 text-white flex items-center justify-center font-bold text-base shadow-sm shrink-0">
-                            {{ $tingkat }}
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="px-3 py-2 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-sm shadow-sm shrink-0 whitespace-nowrap">
+                            {{ $tingkatClean }}
                         </div>
-                        <div>
+                        <div class="min-w-0">
                             <div class="flex items-center gap-2 flex-wrap">
-                                <h3 class="font-bold text-slate-800 text-base sm:text-lg">{{ $tingkatClean }}</h3>
-                                <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                                <h3 class="font-bold text-slate-800 text-base sm:text-lg leading-tight">{{ $tingkatClean }}</h3>
+                                <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 shrink-0">
                                     {{ $totalRombel }} Rombel
                                 </span>
-                                <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
                                     {{ $totalSiswa }} Siswa
                                 </span>
                             </div>
-                            <p class="text-xs text-slate-500 mt-0.5">Daftar sub-kelas (rombel) pada {{ $tingkatClean }}</p>
+                            <p class="text-xs text-slate-500 mt-0.5 truncate">Daftar sub-kelas (rombel) pada {{ $tingkatClean }}</p>
                         </div>
                     </div>
 
@@ -207,6 +227,18 @@
                 <form action="{{ route('kelas.store') }}" method="POST">
                     @csrf
                     <div class="px-6 py-5 space-y-4">
+                        <!-- Pilihan Departemen / Instansi -->
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">Departemen / Instansi Sekolah <span class="text-rose-500">*</span></label>
+                            <select name="departemen_id" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-[7px] text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-semibold">
+                                @foreach($departemens as $dep)
+                                    <option value="{{ $dep->id }}" {{ $selectedDepartemenId == $dep->id ? 'selected' : '' }}>
+                                        {{ $dep->nama_departemen }} ({{ $dep->tingkatan }})
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
                         <div>
                             <label class="block text-sm font-semibold text-slate-700 mb-1">Tingkat Kelas <span class="text-rose-500">*</span></label>
                             <input type="text" name="tingkat" id="input-modal-tingkat" x-model="tingkatValue" placeholder="Misal: X, XI, XII, atau 7, 8, 9, 10" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-[7px] text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-semibold">

@@ -23,27 +23,55 @@
         </div>
 
         <!-- Filter Form -->
-        <form method="GET" action="{{ route('monitoring-kbm.index') }}" class="flex flex-col sm:flex-row flex-wrap gap-2 w-full lg:w-auto">
-            <input type="date" name="tanggal" value="{{ $tanggal }}"
-                   class="w-full sm:w-auto px-3 py-2 bg-white border border-sky-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-sky-400/30 shadow-sm">
-            
-            <select name="kelas_id" class="w-full sm:w-auto px-3 py-2 bg-white border border-sky-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-sky-400/30 shadow-sm">
-                <option value="">Semua Kelas</option>
-                @foreach($kelasList as $k)
-                <option value="{{ $k->id }}" {{ $filterKelas == $k->id ? 'selected' : '' }}>Kelas {{ $k->tingkat }} {{ $k->nama_rombel }}</option>
-                @endforeach
-            </select>
+        <form method="GET" action="{{ route('monitoring-kbm.index') }}" class="w-full lg:w-auto bg-white p-3 rounded-2xl border border-sky-100 shadow-xs">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5 items-center">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Tanggal</label>
+                    <input type="date" name="tanggal" value="{{ $tanggal }}"
+                           class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-xs">
+                </div>
 
-            <select name="guru_id" class="w-full sm:w-auto px-3 py-2 bg-white border border-sky-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-sky-400/30 shadow-sm">
-                <option value="">Semua Guru</option>
-                @foreach($guruList as $g)
-                <option value="{{ $g->id }}" {{ $filterGuru == $g->id ? 'selected' : '' }}>{{ $g->nama_lengkap }}</option>
-                @endforeach
-            </select>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Departemen</label>
+                    <select name="departemen_id" onchange="this.form.submit()"
+                            class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-xs">
+                        <option value="all">-- Semua Departemen --</option>
+                        @foreach($departemens as $dep)
+                            <option value="{{ $dep->id }}" {{ $filterDepartemen == $dep->id ? 'selected' : '' }}>
+                                {{ $dep->nama_departemen }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Kelas / Rombel</label>
+                    <select name="kelas_id" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-xs">
+                        <option value="">Semua Kelas</option>
+                        @foreach($kelasList as $k)
+                        <option value="{{ $k->id }}" {{ $filterKelas == $k->id ? 'selected' : '' }}>
+                            Kelas {{ $k->tingkat }} {{ $k->nama_rombel }}
+                        </option>
+                        @endforeach
+                    </select>
+                </div>
 
-            <button type="submit" class="w-full sm:w-auto px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs sm:text-sm rounded-xl shadow-sm transition-all text-center">
-                Filter
-            </button>
+                <div class="flex items-end gap-2">
+                    <div class="flex-1">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Guru Pengajar</label>
+                        <select name="guru_id" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-xs">
+                            <option value="">Semua Guru</option>
+                            @foreach($guruList as $g)
+                            <option value="{{ $g->id }}" {{ $filterGuru == $g->id ? 'selected' : '' }}>{{ $g->nama_lengkap }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <button type="submit" class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs rounded-xl shadow-xs transition-all h-[36px] flex items-center justify-center">
+                        Filter
+                    </button>
+                </div>
+            </div>
         </form>
     </div>
 

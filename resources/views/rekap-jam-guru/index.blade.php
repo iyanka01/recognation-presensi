@@ -12,7 +12,7 @@
             <p class="text-sm text-slate-500 mt-1">Laporan akumulasi jumlah jam dan tatap muka mengajar guru berdasarkan jurnal pembelajaran.</p>
         </div>
         <div class="flex items-center gap-3">
-            <a href="{{ route('rekap-jam-guru.print', request()->only(['guru_id', 'dari', 'sampai'])) }}" target="_blank"
+            <a href="{{ route('rekap-jam-guru.print', request()->only(['departemen_id', 'guru_id', 'dari', 'sampai'])) }}" target="_blank"
                class="px-5 py-2.5 bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-xl flex items-center gap-2 transition-all shadow-md shadow-sky-200 active:scale-95 text-sm">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
@@ -52,20 +52,29 @@
         </div>
     </div>
 
-    <!-- Filter Rentang Tanggal & Guru -->
+    <!-- Filter Rentang Tanggal, Departemen & Guru -->
     <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-        <form method="GET" action="{{ route('rekap-jam-guru.index') }}" class="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
+        <form method="GET" action="{{ route('rekap-jam-guru.index') }}" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 items-end">
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Departemen</label>
+                <select name="departemen_id" onchange="this.form.submit()" class="w-full px-3.5 py-2.5 bg-slate-50 border border-sky-200 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-sky-400/30">
+                    <option value="all">-- Semua Departemen --</option>
+                    @foreach($departemens as $dep)
+                    <option value="{{ $dep->id }}" {{ $filterDepartemen == $dep->id ? 'selected' : '' }}>{{ $dep->nama_departemen }}</option>
+                    @endforeach
+                </select>
+            </div>
             <div>
                 <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Dari Tanggal</label>
-                <input type="date" name="dari" value="{{ $dari }}" class="w-full px-3.5 py-2.5 bg-slate-50 border border-sky-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-sky-400/30">
+                <input type="date" name="dari" value="{{ $dari }}" class="w-full px-3.5 py-2.5 bg-slate-50 border border-sky-200 rounded-xl text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-sky-400/30">
             </div>
             <div>
                 <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Sampai Tanggal</label>
-                <input type="date" name="sampai" value="{{ $sampai }}" class="w-full px-3.5 py-2.5 bg-slate-50 border border-sky-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-sky-400/30">
+                <input type="date" name="sampai" value="{{ $sampai }}" class="w-full px-3.5 py-2.5 bg-slate-50 border border-sky-200 rounded-xl text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-sky-400/30">
             </div>
             <div>
                 <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Filter Guru</label>
-                <select name="guru_id" class="w-full px-3.5 py-2.5 bg-slate-50 border border-sky-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-sky-400/30">
+                <select name="guru_id" class="w-full px-3.5 py-2.5 bg-slate-50 border border-sky-200 rounded-xl text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-sky-400/30">
                     <option value="">Semua Guru</option>
                     @foreach($gurus as $g)
                     <option value="{{ $g->id }}" {{ $filterGuru == $g->id ? 'selected' : '' }}>{{ $g->nama_lengkap }} ({{ $g->nip ?? 'Tanpa NIP' }})</option>
@@ -73,16 +82,17 @@
                 </select>
             </div>
             <div class="flex gap-2">
-                <button type="submit" class="flex-1 py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl text-sm transition-all shadow-sm">
+                <button type="submit" class="flex-1 py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl text-xs sm:text-sm transition-all shadow-sm">
                     Terapkan Filter
                 </button>
-                @if(request()->hasAny(['guru_id', 'dari', 'sampai']))
-                <a href="{{ route('rekap-jam-guru.index') }}" class="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-sm font-semibold transition-all">
+                @if(request()->hasAny(['departemen_id', 'guru_id', 'dari', 'sampai']))
+                <a href="{{ route('rekap-jam-guru.index') }}" class="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs sm:text-sm font-semibold transition-all">
                     Reset
                 </a>
                 @endif
             </div>
         </form>
+    </div>
     </div>
 
     <!-- Tabel Rekap Data -->
