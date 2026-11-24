@@ -71,16 +71,29 @@
 
     <!-- Container Utama dengan Alpine.js untuk Switch Tab Hari & View Mode -->
     <div x-data="{ 
-            selectedHari: '{{ $filterHari ?: $activeHari }}',
-            viewMode: 'matrix', // 'matrix' atau 'table'
+            selectedHari: '{{ $filterHari ?: 'Semua' }}',
+            viewMode: 'table', // Default 'table' agar pas di layar dan tidak melebar
             searchQuery: ''
          }" class="space-y-4">
 
         <!-- Baris Tab Hari & Switcher Mode Tampilan -->
-        <div class="bg-white dark:bg-slate-800 rounded-[7px] p-2.5 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+        <div class="bg-white dark:bg-slate-800 rounded-[7px] p-2 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
             
-            <!-- Tab Tombol Hari (Senin s/d Sabtu) -->
-            <div class="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
+            <!-- Tab Tombol Hari -->
+            <div class="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+                <button type="button" 
+                        @click="selectedHari = 'Semua'"
+                        :class="selectedHari === 'Semua' 
+                            ? 'bg-blue-600 text-white shadow-xs font-bold' 
+                            : 'bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium'"
+                        class="px-3 py-1.5 rounded-[6px] text-xs transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer">
+                    <span>Semua Hari</span>
+                    <span :class="selectedHari === 'Semua' ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'"
+                          class="text-[10px] px-1.5 py-0.2 rounded-full font-bold">
+                        {{ $jadwals->count() }}
+                    </span>
+                </button>
+
                 @foreach($hariList as $h)
                     @if($h !== 'Minggu')
                         @php
@@ -91,7 +104,7 @@
                                 :class="selectedHari === '{{ $h }}' 
                                     ? 'bg-blue-600 text-white shadow-xs font-bold' 
                                     : 'bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium'"
-                                class="px-3 py-1.5 rounded-[6px] text-xs transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer">
+                                class="px-2.5 py-1.5 rounded-[6px] text-xs transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer">
                             <span>{{ $h }}</span>
                             <span :class="selectedHari === '{{ $h }}' ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'"
                                   class="text-[10px] px-1.5 py-0.2 rounded-full font-bold">
@@ -102,24 +115,22 @@
                 @endforeach
             </div>
 
-            <!-- View Switcher (Grid Matriks vs List Tabel) -->
-            <div class="flex items-center justify-end gap-1.5 shrink-0 border-t md:border-t-0 pt-2 md:pt-0 border-slate-100 dark:border-slate-700">
-                <div class="inline-flex p-1 bg-slate-100 dark:bg-slate-900 rounded-[7px] border border-slate-200/80 dark:border-slate-700">
-                    <button type="button" 
-                            @click="viewMode = 'matrix'"
-                            :class="viewMode === 'matrix' ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-xs font-bold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 font-medium'"
-                            class="px-2.5 py-1 text-xs rounded-[5px] flex items-center gap-1.5 transition-all cursor-pointer"
-                            title="Tampilan Matriks Semua Kelas">
-                        <i class="ti ti-layout-grid text-sm"></i>
-                        <span class="hidden sm:inline">Matriks Semua Kelas</span>
-                    </button>
+            <!-- View Switcher -->
+            <div class="flex items-center justify-end gap-1.5 shrink-0">
+                <div class="inline-flex p-0.5 bg-slate-100 dark:bg-slate-900 rounded-[7px] border border-slate-200 dark:border-slate-700">
                     <button type="button" 
                             @click="viewMode = 'table'"
                             :class="viewMode === 'table' ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-xs font-bold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 font-medium'"
-                            class="px-2.5 py-1 text-xs rounded-[5px] flex items-center gap-1.5 transition-all cursor-pointer"
-                            title="Tampilan Tabel Berkelompok">
+                            class="px-2.5 py-1 text-xs rounded-[5px] flex items-center gap-1 transition-all cursor-pointer">
                         <i class="ti ti-table text-sm"></i>
-                        <span class="hidden sm:inline">Tabel List</span>
+                        <span>Tabel List</span>
+                    </button>
+                    <button type="button" 
+                            @click="viewMode = 'matrix'"
+                            :class="viewMode === 'matrix' ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-xs font-bold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 font-medium'"
+                            class="px-2.5 py-1 text-xs rounded-[5px] flex items-center gap-1 transition-all cursor-pointer">
+                        <i class="ti ti-layout-grid text-sm"></i>
+                        <span>Matriks Grid</span>
                     </button>
                 </div>
             </div>
@@ -284,7 +295,7 @@
                         @php $no = 1; @endphp
                         @forelse($jadwals as $j)
                         <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-700/40 transition-colors"
-                            x-show="selectedHari === '{{ $j->hari }}'">
+                            x-show="selectedHari === 'Semua' || selectedHari === '{{ $j->hari }}'">
                             <!-- No -->
                             <td class="py-2.5 px-3 text-center text-slate-400 text-[11px] font-mono">
                                 {{ $no++ }}
