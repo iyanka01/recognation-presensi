@@ -52,14 +52,7 @@ class LaporanController extends Controller
             }
             $users = $siswaQuery->get();
         } else {
-            $guruQuery = Guru::orderBy('nama_lengkap');
-            if ($departemen_id && $departemen_id !== 'all') {
-                // Jika guru memiliki departemen_id
-                $guruQuery->where(function($q) use ($departemen_id) {
-                    $q->where('departemen_id', $departemen_id)->orWhereNull('departemen_id');
-                });
-            }
-            $users = $guruQuery->get();
+            $users = Guru::orderBy('nama_lengkap')->get();
         }
 
         // Daftar tanggal hari kerja efektif dalam periode terpilih
@@ -92,6 +85,13 @@ class LaporanController extends Controller
             }
             
             $persen = round(($hadir / $denominator) * 100, 1);
+
+            // Ambil log jam masuk dan jam pulang terbaru dalam periode
+            $latestHadir = $userPresensi->whereNotNull('jam_masuk')->sortByDesc('tanggal')->first();
+            $jamMasuk = $latestHadir ? substr($latestHadir->jam_masuk, 0, 5) : '-';
+            
+            $latestPulang = $userPresensi->whereNotNull('jam_pulang')->sortByDesc('tanggal')->first();
+            $jamPulang = $latestPulang ? substr($latestPulang->jam_pulang, 0, 5) : '-';
             
             $rekap = [
                 'user' => $user,
@@ -100,7 +100,9 @@ class LaporanController extends Controller
                 'izin' => $izin,
                 'sakit' => $sakit,
                 'alpa' => $alpa,
-                'persen' => $persen
+                'persen' => $persen,
+                'jam_masuk' => $jamMasuk,
+                'jam_pulang' => $jamPulang,
             ];
             
             $laporan[] = $rekap;
@@ -166,13 +168,7 @@ class LaporanController extends Controller
             }
             $users = $siswaQuery->get();
         } else {
-            $guruQuery = Guru::orderBy('nama_lengkap');
-            if ($departemen_id && $departemen_id !== 'all') {
-                $guruQuery->where(function($q) use ($departemen_id) {
-                    $q->where('departemen_id', $departemen_id)->orWhereNull('departemen_id');
-                });
-            }
-            $users = $guruQuery->get();
+            $users = Guru::orderBy('nama_lengkap')->get();
         }
 
         $allPresensi = $query->get()->groupBy('user_id');
@@ -206,6 +202,12 @@ class LaporanController extends Controller
             }
             
             $persen = round(($hadir / $denominator) * 100, 1);
+
+            $latestHadir = $userPresensi->whereNotNull('jam_masuk')->sortByDesc('tanggal')->first();
+            $jamMasuk = $latestHadir ? substr($latestHadir->jam_masuk, 0, 5) : '-';
+            
+            $latestPulang = $userPresensi->whereNotNull('jam_pulang')->sortByDesc('tanggal')->first();
+            $jamPulang = $latestPulang ? substr($latestPulang->jam_pulang, 0, 5) : '-';
             
             $laporan[] = [
                 'user' => $user,
@@ -214,7 +216,9 @@ class LaporanController extends Controller
                 'izin' => $izin,
                 'sakit' => $sakit,
                 'alpa' => $alpa,
-                'persen' => $persen
+                'persen' => $persen,
+                'jam_masuk' => $jamMasuk,
+                'jam_pulang' => $jamPulang,
             ];
         }
 
@@ -357,13 +361,7 @@ class LaporanController extends Controller
             }
             $users = $siswaQuery->get();
         } else {
-            $guruQuery = Guru::orderBy('nama_lengkap');
-            if ($departemen_id && $departemen_id !== 'all') {
-                $guruQuery->where(function($q) use ($departemen_id) {
-                    $q->where('departemen_id', $departemen_id)->orWhereNull('departemen_id');
-                });
-            }
-            $users = $guruQuery->get();
+            $users = Guru::orderBy('nama_lengkap')->get();
         }
 
         $allPresensi = $query->get()->groupBy('user_id');
@@ -387,7 +385,7 @@ class LaporanController extends Controller
         if ($tipe == 'siswa') {
             $headers[] = 'Kelas / Rombel';
         }
-        $headers = array_merge($headers, ['Hadir', 'Terlambat', 'Izin', 'Sakit', 'Alpa', '% Kehadiran']);
+        $headers = array_merge($headers, ['Jam Masuk', 'Jam Pulang', 'Hadir', 'Terlambat', 'Izin', 'Sakit', 'Alpa', '% Kehadiran']);
 
         $colChar = 'A';
         $headerRow = 4;
@@ -447,6 +445,12 @@ class LaporanController extends Controller
 
             $persen = round(($hadir / $denominator) * 100, 1) . '%';
 
+            $latestHadir = $userPresensi->whereNotNull('jam_masuk')->sortByDesc('tanggal')->first();
+            $jamMasuk = $latestHadir ? substr($latestHadir->jam_masuk, 0, 5) : '-';
+            
+            $latestPulang = $userPresensi->whereNotNull('jam_pulang')->sortByDesc('tanggal')->first();
+            $jamPulang = $latestPulang ? substr($latestPulang->jam_pulang, 0, 5) : '-';
+
             $c = 'A';
             $sheet->setCellValue($c++ . $currRow, $no++);
             $sheet->setCellValue($c++ . $currRow, $user->nama_lengkap);
@@ -460,6 +464,8 @@ class LaporanController extends Controller
                 $sheet->setCellValue($c++ . $currRow, $user->kelas->nama_rombel ?? '-');
             }
 
+            $sheet->setCellValue($c++ . $currRow, $jamMasuk);
+            $sheet->setCellValue($c++ . $currRow, $jamPulang);
             $sheet->setCellValue($c++ . $currRow, $hadir ?: 0);
             $sheet->setCellValue($c++ . $currRow, $terlambat ?: 0);
             $sheet->setCellValue($c++ . $currRow, $izin ?: 0);

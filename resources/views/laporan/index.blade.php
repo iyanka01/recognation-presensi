@@ -43,11 +43,11 @@
                 </label>
             </div>
 
-            <!-- Filter Controls Grid -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 items-end gap-3">
+            <!-- Filter Controls Grid: 1 Baris Sejajar -->
+            <div class="flex flex-wrap items-end gap-3">
                 
                 <!-- 1. Departemen -->
-                <div>
+                <div class="w-full sm:w-48">
                     <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Departemen</label>
                     <select name="departemen_id" onchange="this.form.submit()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-400/30 transition-all">
                         <option value="all">-- Semua Departemen --</option>
@@ -59,8 +59,17 @@
                     </select>
                 </div>
 
-                <!-- 2. Kelas (Langsung sesudah Departemen) -->
-                <div x-show="tipeUser == 'siswa'">
+                <!-- 2. Tipe Pengguna (Dialihkan persis sesudah Departemen) -->
+                <div class="w-full sm:w-36">
+                    <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Tipe Pengguna</label>
+                    <select name="tipe" x-model="tipeUser" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-sky-400/30 transition-all">
+                        <option value="siswa">Siswa</option>
+                        <option value="guru">Guru</option>
+                    </select>
+                </div>
+
+                <!-- 3. Kelas (Tampil jika Siswa) -->
+                <div class="w-full sm:w-44" x-show="tipeUser == 'siswa'">
                     <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Kelas</label>
                     <select name="kelas_id" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-sky-400/30 transition-all">
                         <option value="">Semua Kelas</option>
@@ -70,39 +79,25 @@
                     </select>
                 </div>
 
-                <!-- 3. Tipe Pengguna -->
-                <div>
-                    <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Tipe Pengguna</label>
-                    <select name="tipe" x-model="tipeUser" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-sky-400/30 transition-all">
-                        <option value="siswa">Siswa</option>
-                        <option value="guru">Guru</option>
-                    </select>
+                <!-- 4 & 5. Date Inputs (Rentang Waktu atau Per Bulan) -->
+                <div class="w-full sm:w-40" x-show="mode === 'rentang'">
+                    <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Dari Tanggal</label>
+                    <input type="date" name="dari" value="{{ $dari }}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-sky-400/30 transition-all">
                 </div>
 
-                <!-- 4 & 5. Date Inputs (Rentang Waktu atau Per Bulan) -->
-                <template x-if="mode === 'rentang'">
-                    <div class="contents">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Dari Tanggal</label>
-                            <input type="date" name="dari" value="{{ $dari }}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-sky-400/30 transition-all">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Sampai Tanggal</label>
-                            <input type="date" name="sampai" value="{{ $sampai }}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-sky-400/30 transition-all">
-                        </div>
-                    </div>
-                </template>
+                <div class="w-full sm:w-40" x-show="mode === 'rentang'">
+                    <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Sampai Tanggal</label>
+                    <input type="date" name="sampai" value="{{ $sampai }}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-sky-400/30 transition-all">
+                </div>
 
-                <template x-if="mode === 'bulan'">
-                    <div class="sm:col-span-2">
-                        <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Bulan & Tahun</label>
-                        <input type="month" name="bulan" value="{{ $bulan }}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-sky-400/30 transition-all">
-                    </div>
-                </template>
+                <div class="w-full sm:w-48" x-show="mode === 'bulan'">
+                    <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Bulan & Tahun</label>
+                    <input type="month" name="bulan" value="{{ $bulan }}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-sky-400/30 transition-all">
+                </div>
 
                 <!-- Tombol Submit Filter -->
-                <div class="flex items-center gap-2">
-                    <button type="submit" class="w-full px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs rounded-xl transition-all h-[38px] flex items-center justify-center gap-1.5 shadow-sm">
+                <div class="w-full sm:w-auto">
+                    <button type="submit" class="px-5 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs rounded-xl transition-all h-[38px] flex items-center justify-center gap-1.5 shadow-sm">
                         <i class="ti ti-filter text-sm"></i>
                         <span>Tampilkan</span>
                     </button>
@@ -125,6 +120,8 @@
                         @else
                         <th class="py-2.5 px-3 font-semibold text-slate-600">NIP / NRY</th>
                         @endif
+                        <th class="py-2.5 px-3 font-semibold text-center text-slate-600">JAM MASUK</th>
+                        <th class="py-2.5 px-3 font-semibold text-center text-slate-600">JAM PULANG</th>
                         <th class="py-2.5 px-3 font-semibold text-center text-emerald-700 bg-emerald-50/50">HADIR</th>
                         <th class="py-2.5 px-3 font-semibold text-center text-rose-700 bg-rose-50/50">TERLAMBAT</th>
                         <th class="py-2.5 px-3 font-semibold text-center text-sky-700 bg-sky-50/50">IZIN</th>
@@ -150,6 +147,9 @@
                         @else
                         <td class="py-2.5 px-3 text-slate-600 font-mono text-[11px]">{{ $row['user']->nip ?? '-' }}</td>
                         @endif
+
+                        <td class="py-2.5 px-3 text-center font-mono font-medium text-slate-700">{{ $row['jam_masuk'] ?? '-' }}</td>
+                        <td class="py-2.5 px-3 text-center font-mono font-medium text-slate-700">{{ $row['jam_pulang'] ?? '-' }}</td>
                         
                         <td class="py-2.5 px-3 text-center font-bold text-emerald-700 bg-emerald-50/30">{{ $row['hadir'] ?: '-' }}</td>
                         <td class="py-2.5 px-3 text-center font-bold text-rose-700 bg-rose-50/30">{{ $row['terlambat'] ?: '-' }}</td>
@@ -172,7 +172,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="{{ $tipe == 'siswa' ? 11 : 10 }}" class="py-12 text-center bg-white">
+                        <td colspan="{{ $tipe == 'siswa' ? 13 : 12 }}" class="py-12 text-center bg-white">
                             <div class="flex flex-col items-center justify-center">
                                 <i class="ti ti-database-off text-3xl text-slate-300 mb-2"></i>
                                 <h3 class="text-sm font-bold text-slate-700">Data Tidak Ditemukan</h3>

@@ -102,18 +102,20 @@
     <table>
         <thead>
             <tr>
-                <th width="5%">No</th>
+                <th width="4%">No</th>
                 <th>Nama Lengkap</th>
                 <th>Identitas (NIS/NIP)</th>
                 @if($tipe == 'siswa')
                 <th>Kelas</th>
                 @endif
-                <th width="7%">Hadir</th>
-                <th width="7%">Telat</th>
-                <th width="7%">Izin</th>
-                <th width="7%">Sakit</th>
-                <th width="7%">Alpa</th>
-                <th width="8%">% Hadir</th>
+                <th width="8%">Jam Masuk</th>
+                <th width="8%">Jam Pulang</th>
+                <th width="6%">Hadir</th>
+                <th width="6%">Telat</th>
+                <th width="6%">Izin</th>
+                <th width="6%">Sakit</th>
+                <th width="6%">Alpa</th>
+                <th width="7%">% Hadir</th>
             </tr>
         </thead>
         <tbody>
@@ -125,6 +127,8 @@
                 @if($tipe == 'siswa')
                 <td class="center">{{ $row['user']->kelas->nama_rombel ?? '-' }}</td>
                 @endif
+                <td class="center">{{ $row['jam_masuk'] ?? '-' }}</td>
+                <td class="center">{{ $row['jam_pulang'] ?? '-' }}</td>
                 <td class="center">{{ $row['hadir'] ?: '-' }}</td>
                 <td class="center">{{ $row['terlambat'] ?: '-' }}</td>
                 <td class="center">{{ $row['izin'] ?: '-' }}</td>
@@ -134,7 +138,7 @@
             </tr>
             @empty
             <tr>
-                <td colspan="{{ $tipe == 'siswa' ? 10 : 9 }}" class="center">Tidak ada data untuk ditampilkan.</td>
+                <td colspan="{{ $tipe == 'siswa' ? 12 : 11 }}" class="center">Tidak ada data untuk ditampilkan.</td>
             </tr>
             @endforelse
         </tbody>
