@@ -5,20 +5,20 @@
 @section('content')
 <div class="space-y-6">
 
-    <!-- Header & Filter Bar -->
-    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+    <!-- Header & Action Bar di bawah teks -->
+    <div class="space-y-3">
         <div>
             <h1 class="text-xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">Jadwal Pelajaran</h1>
             <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Kelola alokasi mata pelajaran per rombel kelas, guru pengajar, dan jam KBM.</p>
         </div>
 
-        <div class="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
-            <!-- Filter Form -->
-            <form method="GET" action="{{ route('jadwal.index') }}" class="flex flex-wrap items-center gap-2">
+        <!-- Filter Form & Action Buttons (Berada persis di bawah teks, ringkas & rapi) -->
+        <div class="flex flex-wrap items-center gap-2">
+            <form method="GET" action="{{ route('jadwal.index') }}" class="inline-flex flex-wrap items-center gap-2">
                 <!-- Dropdown Departemen -->
-                <div class="flex items-center gap-1.5">
-                    <label class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Unit:</label>
-                    <select name="departemen_id" onchange="this.form.submit()" class="px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[7px] text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-sm cursor-pointer">
+                <div class="inline-flex items-center gap-1.5">
+                    <label class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">UNIT:</label>
+                    <select name="departemen_id" onchange="this.form.submit()" class="px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[7px] text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-xs cursor-pointer">
                         @foreach($departemens as $dep)
                             <option value="{{ $dep->id }}" {{ $filterDepartemen == $dep->id ? 'selected' : '' }}>
                                 {{ $dep->nama_departemen }}
@@ -28,8 +28,8 @@
                 </div>
 
                 <!-- Dropdown Filter Kelas -->
-                <div class="flex items-center gap-1.5">
-                    <select name="kelas_id" onchange="this.form.submit()" class="px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[7px] text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-sm cursor-pointer">
+                <div class="inline-flex items-center">
+                    <select name="kelas_id" onchange="this.form.submit()" class="px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[7px] text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-xs cursor-pointer">
                         <option value="">🏫 Semua Kelas</option>
                         @foreach($kelasList as $k)
                             @php
@@ -48,7 +48,7 @@
             </form>
 
             <!-- Tambah Jadwal Button -->
-            <button onclick="openModal('modal-tambah')" class="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-[7px] flex items-center justify-center gap-1.5 transition-all shadow-sm shrink-0 cursor-pointer">
+            <button onclick="openModal('modal-tambah')" class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-[7px] inline-flex items-center gap-1.5 transition-all shadow-xs cursor-pointer">
                 <i class="ti ti-plus text-sm"></i>
                 <span>Tambah Jadwal</span>
             </button>
