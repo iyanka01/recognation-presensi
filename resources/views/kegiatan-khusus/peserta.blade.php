@@ -16,7 +16,7 @@
             </div>
             <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 ml-10">
                 Kode: <strong class="text-slate-700 dark:text-slate-200">{{ $kegiatan->kode_kegiatan }}</strong> &bull;
-                Tanggal: <strong class="text-slate-700 dark:text-slate-200">{{ $kegiatan->tanggal->isoFormat('D MMMM Y') }}</strong> &bull;
+                Pelaksanaan: <strong class="text-slate-700 dark:text-slate-200">{{ $kegiatan->tipe_kegiatan === 'rutin' ? ('Rutin: ' . $kegiatan->hari_label) : ($kegiatan->tanggal ? $kegiatan->tanggal->isoFormat('D MMMM Y') : '-') }}</strong> &bull;
                 Waktu: <strong class="text-slate-700 dark:text-slate-200">{{ $kegiatan->jam_range }} WIB</strong>
             </p>
         </div>
@@ -27,7 +27,7 @@
                 <i class="ti ti-qrcode text-base"></i>
                 <span>Buka Scanner</span>
             </a>
-            <a href="{{ route('laporan-kegiatan.index', ['kegiatan_id' => $kegiatan->id]) }}"
+            <a href="{{ route('laporan-kegiatan.index', ['kegiatan_id' => $kegiatan->id, 'tanggal' => $tanggalFilter]) }}"
                class="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-[7px] flex items-center gap-1.5 shadow-sm transition-all">
                 <i class="ti ti-report text-base"></i>
                 <span>Lihat Rekap Laporan</span>
@@ -37,11 +37,22 @@
 
     <!-- Table Card -->
     <div class="bg-white dark:bg-slate-800 rounded-[7px] border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-        <div class="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+        <div class="p-4 border-b border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <h3 class="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
                 <i class="ti ti-users text-blue-600 text-base"></i>
                 Daftar Kehadiran Peserta ({{ $presensis->total() }} Data)
             </h3>
+
+            @if($kegiatan->tipe_kegiatan === 'rutin')
+            <form method="GET" action="{{ route('kegiatan-khusus.peserta', $kegiatan->id) }}" class="flex items-center gap-2">
+                <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap">Filter Tanggal:</label>
+                <input type="date" name="tanggal" value="{{ $tanggalFilter }}" onchange="this.form.submit()"
+                       class="px-2.5 py-1 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[7px] text-slate-800 dark:text-slate-200 focus:outline-none">
+                @if($tanggalFilter)
+                    <a href="{{ route('kegiatan-khusus.peserta', $kegiatan->id) }}" class="text-[11px] text-rose-500 hover:underline">Reset</a>
+                @endif
+            </form>
+            @endif
         </div>
 
         <div class="overflow-x-auto">

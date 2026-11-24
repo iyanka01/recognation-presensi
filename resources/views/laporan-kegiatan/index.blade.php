@@ -16,14 +16,14 @@
         @if($selectedKegiatan)
         <div class="flex items-center gap-2 w-full lg:w-auto">
             <!-- Unduh Excel (Native .xlsx) -->
-            <a href="{{ route('laporan-kegiatan.export-excel', ['kegiatan_id' => $selectedKegiatan->id]) }}"
+            <a href="{{ route('laporan-kegiatan.export-excel', ['kegiatan_id' => $selectedKegiatan->id, 'tanggal' => $tanggalFilter]) }}"
                class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-[7px] flex items-center justify-center gap-1.5 shadow-sm transition-all flex-1 sm:flex-none">
                 <i class="ti ti-file-spreadsheet text-base"></i>
                 <span>Unduh Excel</span>
             </a>
 
             <!-- Cetak / PDF -->
-            <a href="{{ route('laporan-kegiatan.print', ['kegiatan_id' => $selectedKegiatan->id]) }}" target="_blank"
+            <a href="{{ route('laporan-kegiatan.print', ['kegiatan_id' => $selectedKegiatan->id, 'tanggal' => $tanggalFilter]) }}" target="_blank"
                class="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs rounded-[7px] flex items-center justify-center gap-1.5 shadow-sm transition-all flex-1 sm:flex-none">
                 <i class="ti ti-printer text-base"></i>
                 <span>Cetak / PDF</span>
@@ -34,8 +34,8 @@
 
     <!-- Dropdown Selector Bar -->
     <div class="bg-white dark:bg-slate-800 p-4 rounded-[7px] border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
-        <form method="GET" action="{{ route('laporan-kegiatan.index') }}" class="flex items-center gap-3 w-full">
-            <div class="flex items-center gap-2 flex-1">
+        <form method="GET" action="{{ route('laporan-kegiatan.index') }}" class="flex flex-col sm:flex-row items-center gap-3 w-full">
+            <div class="flex items-center gap-2 flex-1 w-full">
                 <label class="text-xs font-bold text-slate-700 dark:text-slate-200 whitespace-nowrap">
                     <i class="ti ti-calendar-event text-blue-600 text-sm"></i>
                     Pilih Kegiatan:
@@ -44,16 +44,27 @@
                         class="flex-1 px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[7px] text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
                     @forelse($kegiatanList as $k)
                         @php
-                            $tglFormat = \Carbon\Carbon::parse($k->tanggal)->locale('id')->translatedFormat('d F Y');
+                            $ketWaktu = $k->tipe_kegiatan === 'rutin' ? ('Rutin: ' . $k->hari_label) : (\Carbon\Carbon::parse($k->tanggal)->locale('id')->translatedFormat('d F Y'));
                         @endphp
                         <option value="{{ $k->id }}" {{ $selectedKegiatanId == $k->id ? 'selected' : '' }}>
-                            [{{ $k->kode_kegiatan }}] {{ $k->nama_kegiatan }} &mdash; {{ $tglFormat }} ({{ $k->jam_range }} WIB)
+                            [{{ $k->kode_kegiatan }}] {{ $k->nama_kegiatan }} &mdash; {{ $ketWaktu }} ({{ $k->jam_range }} WIB)
                         </option>
                     @empty
                         <option value="">Belum ada agenda kegiatan khusus</option>
                     @endforelse
                 </select>
             </div>
+
+            @if($selectedKegiatan && $selectedKegiatan->tipe_kegiatan === 'rutin')
+            <div class="flex items-center gap-2 w-full sm:w-auto">
+                <label class="text-xs font-bold text-slate-700 dark:text-slate-200 whitespace-nowrap">
+                    <i class="ti ti-calendar text-emerald-600 text-sm"></i>
+                    Pilih Tanggal:
+                </label>
+                <input type="date" name="tanggal" value="{{ $tanggalFilter }}" onchange="this.form.submit()"
+                       class="px-3 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[7px] text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none">
+            </div>
+            @endif
         </form>
     </div>
 

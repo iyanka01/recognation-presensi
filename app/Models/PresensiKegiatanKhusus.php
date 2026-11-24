@@ -13,6 +13,7 @@ class PresensiKegiatanKhusus extends Model
     protected $guarded = [];
 
     protected $casts = [
+        'tanggal_presensi' => 'date',
         'jam_masuk' => 'datetime',
         'jam_pulang' => 'datetime',
     ];

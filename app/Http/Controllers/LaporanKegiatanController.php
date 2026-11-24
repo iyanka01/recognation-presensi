@@ -56,12 +56,17 @@ class LaporanKegiatanController extends Controller
     {
         Carbon::setLocale('id');
 
-        $kegiatanList = KegiatanKhusus::orderBy('tanggal', 'desc')->get();
+        $kegiatanList = KegiatanKhusus::orderByRaw("CASE WHEN tipe_kegiatan = 'rutin' THEN 0 ELSE 1 END")
+            ->orderBy('tanggal', 'desc')
+            ->get();
         $selectedKegiatanId = $request->kegiatan_id ?? ($kegiatanList->first()->id ?? null);
 
         $selectedKegiatan = null;
         $sasaranText = '-';
         $pesertaList = collect();
+        $tanggalFilter = $request->tanggal;
+        $daftarTanggal = collect();
+
         $rekap = [
             'total' => 0,
             'hadir' => 0,
@@ -78,9 +83,26 @@ class LaporanKegiatanController extends Controller
             if ($selectedKegiatan) {
                 $sasaranText = $this->getSasaranText($selectedKegiatan);
 
-                // Ambil semua presensi kegiatan ini
-                $allPresensi = PresensiKegiatanKhusus::where('kegiatan_khusus_id', $selectedKegiatan->id)
-                    ->get()
+                // Ambil daftar tanggal yang sudah ada presensinya untuk kegiatan ini
+                $daftarTanggal = PresensiKegiatanKhusus::where('kegiatan_khusus_id', $selectedKegiatan->id)
+                    ->whereNotNull('tanggal_presensi')
+                    ->select('tanggal_presensi')
+                    ->distinct()
+                    ->orderBy('tanggal_presensi', 'desc')
+                    ->pluck('tanggal_presensi');
+
+                // Jika kegiatan rutin dan tanggal belum dipilih, default ke tanggal presensi terbaru atau hari ini
+                if ($selectedKegiatan->tipe_kegiatan === 'rutin' && !$tanggalFilter) {
+                    $tanggalFilter = $daftarTanggal->first() ?? Carbon::today()->toDateString();
+                }
+
+                // Ambil presensi kegiatan ini
+                $presensiQuery = PresensiKegiatanKhusus::where('kegiatan_khusus_id', $selectedKegiatan->id);
+                if ($selectedKegiatan->tipe_kegiatan === 'rutin' && $tanggalFilter) {
+                    $presensiQuery->where('tanggal_presensi', $tanggalFilter);
+                }
+
+                $allPresensi = $presensiQuery->get()
                     ->keyBy(function ($item) {
                         return $item->user_type . '_' . $item->user_id;
                     });
@@ -161,7 +183,7 @@ class LaporanKegiatanController extends Controller
             }
         }
 
-        return view('laporan-kegiatan.index', compact('kegiatanList', 'selectedKegiatan', 'selectedKegiatanId', 'sasaranText', 'pesertaList', 'rekap'));
+        return view('laporan-kegiatan.index', compact('kegiatanList', 'selectedKegiatan', 'selectedKegiatanId', 'sasaranText', 'pesertaList', 'rekap', 'tanggalFilter', 'daftarTanggal'));
     }
 
     /**
@@ -172,13 +194,18 @@ class LaporanKegiatanController extends Controller
         Carbon::setLocale('id');
 
         $kegiatanId = $request->kegiatan_id;
+        $tanggalFilter = $request->tanggal;
         $kegiatan = KegiatanKhusus::findOrFail($kegiatanId);
         $pengaturan = PengaturanLembaga::first();
         $sasaranText = $this->getSasaranText($kegiatan);
 
+        $presensiQuery = PresensiKegiatanKhusus::where('kegiatan_khusus_id', $kegiatan->id);
+        if ($kegiatan->tipe_kegiatan === 'rutin' && $tanggalFilter) {
+            $presensiQuery->where('tanggal_presensi', $tanggalFilter);
+        }
+
         // Data Peserta
-        $allPresensi = PresensiKegiatanKhusus::where('kegiatan_khusus_id', $kegiatan->id)
-            ->get()
+        $allPresensi = $presensiQuery->get()
             ->keyBy(function ($item) {
                 return $item->user_type . '_' . $item->user_id;
             });
@@ -232,8 +259,9 @@ class LaporanKegiatanController extends Controller
         }
         $rekap['total'] = $pesertaList->count();
 
-        // Format tanggal bahasa Indonesia (misal: "Rabu, 18 November 2026")
-        $tanggalIndo = Carbon::parse($kegiatan->tanggal)->locale('id')->translatedFormat('l, d F Y');
+        // Format tanggal bahasa Indonesia
+        $tglPakai = ($kegiatan->tipe_kegiatan === 'rutin' && $tanggalFilter) ? $tanggalFilter : ($kegiatan->tanggal ?? now());
+        $tanggalIndo = Carbon::parse($tglPakai)->locale('id')->translatedFormat('l, d F Y');
 
         return view('laporan-kegiatan.print', compact('kegiatan', 'pengaturan', 'sasaranText', 'pesertaList', 'rekap', 'tanggalIndo'));
     }
@@ -246,11 +274,16 @@ class LaporanKegiatanController extends Controller
         Carbon::setLocale('id');
 
         $kegiatanId = $request->kegiatan_id;
+        $tanggalFilter = $request->tanggal;
         $kegiatan = KegiatanKhusus::findOrFail($kegiatanId);
         $sasaranText = $this->getSasaranText($kegiatan);
 
-        $allPresensi = PresensiKegiatanKhusus::where('kegiatan_khusus_id', $kegiatan->id)
-            ->get()
+        $presensiQuery = PresensiKegiatanKhusus::where('kegiatan_khusus_id', $kegiatan->id);
+        if ($kegiatan->tipe_kegiatan === 'rutin' && $tanggalFilter) {
+            $presensiQuery->where('tanggal_presensi', $tanggalFilter);
+        }
+
+        $allPresensi = $presensiQuery->get()
             ->keyBy(function ($item) {
                 return $item->user_type . '_' . $item->user_id;
             });
@@ -278,7 +311,8 @@ class LaporanKegiatanController extends Controller
         }
 
         // Tanggal Indonesia
-        $tanggalIndo = Carbon::parse($kegiatan->tanggal)->locale('id')->translatedFormat('l, d F Y');
+        $tglPakai = ($kegiatan->tipe_kegiatan === 'rutin' && $tanggalFilter) ? $tanggalFilter : ($kegiatan->tanggal ?? now());
+        $tanggalIndo = Carbon::parse($tglPakai)->locale('id')->translatedFormat('l, d F Y');
 
         // Buat Dokumen Excel Native
         $spreadsheet = new Spreadsheet();

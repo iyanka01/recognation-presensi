@@ -55,7 +55,7 @@
                         <th class="py-3.5 px-4 w-12 text-center">No</th>
                         <th class="py-3.5 px-4">Kode</th>
                         <th class="py-3.5 px-4">Nama Kegiatan</th>
-                        <th class="py-3.5 px-4">Tanggal</th>
+                        <th class="py-3.5 px-4">Hari / Tanggal</th>
                         <th class="py-3.5 px-4">Jam Mulai</th>
                         <th class="py-3.5 px-4">Jam Selesai</th>
                         <th class="py-3.5 px-4">Mode Absen</th>
@@ -81,7 +81,14 @@
                         <!-- Nama Kegiatan -->
                         <td class="py-3.5 px-4 font-semibold text-slate-800 dark:text-slate-100">
                             <div class="flex flex-col">
-                                <span class="text-xs font-bold">{{ $k->nama_kegiatan }}</span>
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <span class="text-xs font-bold">{{ $k->nama_kegiatan }}</span>
+                                    @if($k->tipe_kegiatan === 'rutin')
+                                        <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200/80">
+                                            Rutin
+                                        </span>
+                                    @endif
+                                </div>
                                 <span class="text-[10px] text-slate-400 font-normal mt-0.5">
                                     Sasaran: {{ $k->sasaran_peserta }}
                                     @if($k->keterangan) &bull; {{ \Illuminate\Support\Str::limit($k->keterangan, 35) }} @endif
@@ -89,9 +96,16 @@
                             </div>
                         </td>
 
-                        <!-- Tanggal -->
+                        <!-- Tanggal / Hari -->
                         <td class="py-3.5 px-4 font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">
-                            {{ $k->tanggal ? $k->tanggal->isoFormat('D MMM Y') : '-' }}
+                            @if($k->tipe_kegiatan === 'rutin')
+                                <div class="flex items-center gap-1.5 text-xs text-blue-700 dark:text-blue-300 font-semibold">
+                                    <i class="ti ti-repeat text-sm"></i>
+                                    <span>{{ $k->hari_label }}</span>
+                                </div>
+                            @else
+                                {{ $k->tanggal ? $k->tanggal->isoFormat('D MMM Y') : '-' }}
+                            @endif
                         </td>
 
                         <!-- Jam Mulai -->
@@ -210,8 +224,15 @@
 
                         <div class="grid grid-cols-3 gap-3">
                             <div>
+                                <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Tipe Kegiatan <span class="text-rose-500">*</span></label>
+                                <select name="tipe_kegiatan" id="tambah_tipe" onchange="toggleTipeKegiatan('tambah')" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[7px] text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none">
+                                    <option value="sekali">Sekali Saja (Insidental)</option>
+                                    <option value="rutin">Rutin (Pilih Hari)</option>
+                                </select>
+                            </div>
+                            <div id="tambah_tanggal_wrapper">
                                 <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Tanggal <span class="text-rose-500">*</span></label>
-                                <input type="date" name="tanggal" value="{{ date('Y-m-d') }}" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[7px] text-xs font-medium text-slate-800 dark:text-slate-200 focus:outline-none">
+                                <input type="date" id="tambah_tanggal_input" name="tanggal" value="{{ date('Y-m-d') }}" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[7px] text-xs font-medium text-slate-800 dark:text-slate-200 focus:outline-none">
                             </div>
                             <div>
                                 <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Jam Mulai <span class="text-rose-500">*</span></label>
@@ -220,6 +241,23 @@
                             <div>
                                 <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Jam Selesai <span class="text-rose-500">*</span></label>
                                 <input type="time" name="jam_selesai" value="12:00" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[7px] text-xs font-medium text-slate-800 dark:text-slate-200 focus:outline-none">
+                            </div>
+                        </div>
+
+                        <!-- Pilihan Hari Rutin (Checkboxes) -->
+                        <div id="tambah_hari_wrapper" class="hidden p-3 rounded-[7px] bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/80 dark:border-blue-800/40">
+                            <label class="block text-xs font-bold text-blue-900 dark:text-blue-300 mb-2">
+                                <i class="ti ti-calendar-repeat text-blue-600 mr-1"></i>
+                                Pilih Hari Pelaksanaan Rutin:
+                            </label>
+                            <div class="grid grid-cols-4 sm:grid-cols-7 gap-2">
+                                @php($listHari = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'])
+                                @foreach($listHari as $hari)
+                                    <label class="flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-300 font-medium cursor-pointer">
+                                        <input type="checkbox" name="hari[]" value="{{ $hari }}" class="tambah-hari-cb rounded text-blue-600 focus:ring-blue-500">
+                                        <span>{{ $hari }}</span>
+                                    </label>
+                                @endforeach
                             </div>
                         </div>
 
@@ -316,8 +354,15 @@
 
                         <div class="grid grid-cols-3 gap-3">
                             <div>
+                                <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Tipe Kegiatan <span class="text-rose-500">*</span></label>
+                                <select name="tipe_kegiatan" id="edit_tipe" onchange="toggleTipeKegiatan('edit')" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[7px] text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none">
+                                    <option value="sekali">Sekali Saja (Insidental)</option>
+                                    <option value="rutin">Rutin (Pilih Hari)</option>
+                                </select>
+                            </div>
+                            <div id="edit_tanggal_wrapper">
                                 <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Tanggal</label>
-                                <input type="date" id="edit_tanggal" name="tanggal" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[7px] text-xs font-medium text-slate-800 dark:text-slate-200 focus:outline-none">
+                                <input type="date" id="edit_tanggal" name="tanggal" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[7px] text-xs font-medium text-slate-800 dark:text-slate-200 focus:outline-none">
                             </div>
                             <div>
                                 <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Jam Mulai</label>
@@ -326,6 +371,22 @@
                             <div>
                                 <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Jam Selesai</label>
                                 <input type="time" id="edit_selesai" name="jam_selesai" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[7px] text-xs font-medium text-slate-800 dark:text-slate-200 focus:outline-none">
+                            </div>
+                        </div>
+
+                        <!-- Pilihan Hari Rutin (Checkboxes Edit) -->
+                        <div id="edit_hari_wrapper" class="hidden p-3 rounded-[7px] bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/80 dark:border-blue-800/40">
+                            <label class="block text-xs font-bold text-blue-900 dark:text-blue-300 mb-2">
+                                <i class="ti ti-calendar-repeat text-blue-600 mr-1"></i>
+                                Pilih Hari Pelaksanaan Rutin:
+                            </label>
+                            <div class="grid grid-cols-4 sm:grid-cols-7 gap-2">
+                                @foreach($listHari as $hari)
+                                    <label class="flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-300 font-medium cursor-pointer">
+                                        <input type="checkbox" name="hari[]" value="{{ $hari }}" class="edit-hari-cb rounded text-blue-600 focus:ring-blue-500">
+                                        <span>{{ $hari }}</span>
+                                    </label>
+                                @endforeach
                             </div>
                         </div>
 
@@ -405,6 +466,25 @@
             document.getElementById(id).classList.add('hidden');
         }
 
+        function toggleTipeKegiatan(prefix) {
+            const tipe = document.getElementById(prefix + '_tipe').value;
+            const hariWrap = document.getElementById(prefix + '_hari_wrapper');
+            const tglWrap = document.getElementById(prefix + '_tanggal_wrapper');
+            const tglInput = prefix === 'tambah' 
+                ? document.getElementById('tambah_tanggal_input') 
+                : document.getElementById('edit_tanggal');
+
+            if (tipe === 'rutin') {
+                hariWrap.classList.remove('hidden');
+                tglWrap.classList.add('hidden');
+                if (tglInput) tglInput.required = false;
+            } else {
+                hariWrap.classList.add('hidden');
+                tglWrap.classList.remove('hidden');
+                if (tglInput) tglInput.required = true;
+            }
+        }
+
         function toggleKelasSelect(prefix) {
             const val = document.getElementById(prefix + '_sasaran').value;
             const wrap = document.getElementById(prefix + '_kelas_wrapper');
@@ -421,6 +501,7 @@
 
             document.getElementById('edit_kode').value = data.kode_kegiatan || '';
             document.getElementById('edit_nama').value = data.nama_kegiatan || '';
+            document.getElementById('edit_tipe').value = data.tipe_kegiatan || 'sekali';
             document.getElementById('edit_tanggal').value = data.tanggal ? data.tanggal.substring(0, 10) : '';
             document.getElementById('edit_mulai').value = data.jam_mulai ? data.jam_mulai.substring(0, 5) : '';
             document.getElementById('edit_selesai').value = data.jam_selesai ? data.jam_selesai.substring(0, 5) : '';
@@ -430,7 +511,14 @@
             document.getElementById('edit_keterangan').value = data.keterangan || '';
             document.getElementById('edit_notifikasi').checked = Boolean(data.kirim_notifikasi !== false && data.kirim_notifikasi !== 0);
 
+            toggleTipeKegiatan('edit');
             toggleKelasSelect('edit');
+
+            // Reset dan set checked hari
+            const selectedHari = data.hari || [];
+            document.querySelectorAll('.edit-hari-cb').forEach(cb => {
+                cb.checked = selectedHari.includes(cb.value);
+            });
 
             // Reset dan set checked kelas
             const selectedClasses = data.kelas_ids || [];

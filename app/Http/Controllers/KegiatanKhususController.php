@@ -47,16 +47,29 @@ class KegiatanKhususController extends Controller
     /**
      * Simpan Kegiatan Baru
      */
+    /**
+     * Simpan Kegiatan Baru
+     */
     public function store(Request $request)
     {
         $request->validate([
             'nama_kegiatan' => 'required|string|max:255',
-            'tanggal' => 'required|date',
+            'tipe_kegiatan' => 'required|in:sekali,rutin',
+            'tanggal' => 'nullable|date',
+            'hari' => 'nullable|array',
             'jam_mulai' => 'required',
             'jam_selesai' => 'required',
             'mode_absen' => 'required|string',
             'sasaran_peserta' => 'required|string',
         ]);
+
+        if ($request->tipe_kegiatan === 'sekali' && !$request->tanggal) {
+            return back()->withErrors(['tanggal' => 'Tanggal wajib diisi untuk kegiatan sekali saja.'])->withInput();
+        }
+
+        if ($request->tipe_kegiatan === 'rutin' && empty($request->hari)) {
+            return back()->withErrors(['hari' => 'Pilih minimal satu hari untuk kegiatan rutin.'])->withInput();
+        }
 
         $kode = $request->kode_kegiatan;
         if (!$kode) {
@@ -67,7 +80,9 @@ class KegiatanKhususController extends Controller
         KegiatanKhusus::create([
             'kode_kegiatan' => $kode,
             'nama_kegiatan' => $request->nama_kegiatan,
-            'tanggal' => $request->tanggal,
+            'tipe_kegiatan' => $request->tipe_kegiatan,
+            'hari' => $request->tipe_kegiatan === 'rutin' ? $request->hari : null,
+            'tanggal' => $request->tipe_kegiatan === 'sekali' ? $request->tanggal : null,
             'jam_mulai' => $request->jam_mulai,
             'jam_selesai' => $request->jam_selesai,
             'mode_absen' => $request->mode_absen ?? 'Datang Saja',
@@ -90,17 +105,29 @@ class KegiatanKhususController extends Controller
 
         $request->validate([
             'nama_kegiatan' => 'required|string|max:255',
-            'tanggal' => 'required|date',
+            'tipe_kegiatan' => 'required|in:sekali,rutin',
+            'tanggal' => 'nullable|date',
+            'hari' => 'nullable|array',
             'jam_mulai' => 'required',
             'jam_selesai' => 'required',
             'mode_absen' => 'required|string',
             'sasaran_peserta' => 'required|string',
         ]);
 
+        if ($request->tipe_kegiatan === 'sekali' && !$request->tanggal) {
+            return back()->withErrors(['tanggal' => 'Tanggal wajib diisi untuk kegiatan sekali saja.'])->withInput();
+        }
+
+        if ($request->tipe_kegiatan === 'rutin' && empty($request->hari)) {
+            return back()->withErrors(['hari' => 'Pilih minimal satu hari untuk kegiatan rutin.'])->withInput();
+        }
+
         $kegiatan->update([
             'kode_kegiatan' => $request->kode_kegiatan ?: $kegiatan->kode_kegiatan,
             'nama_kegiatan' => $request->nama_kegiatan,
-            'tanggal' => $request->tanggal,
+            'tipe_kegiatan' => $request->tipe_kegiatan,
+            'hari' => $request->tipe_kegiatan === 'rutin' ? $request->hari : null,
+            'tanggal' => $request->tipe_kegiatan === 'sekali' ? $request->tanggal : null,
             'jam_mulai' => $request->jam_mulai,
             'jam_selesai' => $request->jam_selesai,
             'mode_absen' => $request->mode_absen,
@@ -132,12 +159,18 @@ class KegiatanKhususController extends Controller
     {
         $kegiatan = KegiatanKhusus::findOrFail($id);
         $pengaturan = PengaturanLembaga::first();
+        $today = Carbon::today()->toDateString();
 
-        $totalHadir = PresensiKegiatanKhusus::where('kegiatan_khusus_id', $id)
+        $presensiQuery = PresensiKegiatanKhusus::where('kegiatan_khusus_id', $id);
+        if ($kegiatan->tipe_kegiatan === 'rutin') {
+            $presensiQuery->where('tanggal_presensi', $today);
+        }
+
+        $totalHadir = (clone $presensiQuery)
             ->whereIn('status', ['Hadir', 'Terlambat'])
             ->count();
 
-        $recentLogs = PresensiKegiatanKhusus::where('kegiatan_khusus_id', $id)
+        $recentLogs = (clone $presensiQuery)
             ->orderBy('updated_at', 'desc')
             ->take(10)
             ->get();
@@ -172,6 +205,27 @@ class KegiatanKhususController extends Controller
 
         $userType = $user instanceof Guru ? 'guru' : 'siswa';
         $now = Carbon::now();
+        $today = $now->toDateString();
+
+        // Validasi Hari untuk Kegiatan Rutin
+        if ($kegiatan->tipe_kegiatan === 'rutin' && !empty($kegiatan->hari)) {
+            $hariMap = [
+                0 => 'Minggu',
+                1 => 'Senin',
+                2 => 'Selasa',
+                3 => 'Rabu',
+                4 => 'Kamis',
+                5 => 'Jumat',
+                6 => 'Sabtu',
+            ];
+            $hariIni = $hariMap[$now->dayOfWeek] ?? '';
+            if (!in_array($hariIni, $kegiatan->hari)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Kegiatan ini tidak dijadwalkan untuk hari {$hariIni}."
+                ], 403);
+            }
+        }
 
         // Validasi Sasaran Peserta
         if ($kegiatan->sasaran_peserta === 'Khusus Guru' && $userType !== 'guru') {
@@ -198,10 +252,11 @@ class KegiatanKhususController extends Controller
             }
         }
 
-        // Cek log presensi yang sudah ada
+        // Cek log presensi yang sudah ada hari ini
         $presensi = PresensiKegiatanKhusus::where('kegiatan_khusus_id', $kegiatan->id)
             ->where('user_type', $userType)
             ->where('user_id', $user->id)
+            ->where('tanggal_presensi', $today)
             ->first();
 
         $jamMulai = Carbon::parse($kegiatan->jam_mulai);
@@ -229,6 +284,7 @@ class KegiatanKhususController extends Controller
                 'kegiatan_khusus_id' => $kegiatan->id,
                 'user_type' => $userType,
                 'user_id' => $user->id,
+                'tanggal_presensi' => $today,
                 'jam_masuk' => $now,
                 'status' => $status,
                 'metode' => 'QR Scan',
@@ -261,6 +317,7 @@ class KegiatanKhususController extends Controller
                 'kegiatan_khusus_id' => $kegiatan->id,
                 'user_type' => $userType,
                 'user_id' => $user->id,
+                'tanggal_presensi' => $today,
                 'jam_masuk' => $now,
                 'status' => $status,
                 'metode' => 'QR Scan',
@@ -387,14 +444,28 @@ class KegiatanKhususController extends Controller
     /**
      * Tampilan Detail Kehadiran Peserta Per Kegiatan
      */
-    public function peserta($id)
+    public function peserta(Request $request, $id)
     {
         $kegiatan = KegiatanKhusus::with('presensi')->findOrFail($id);
+        $tanggalFilter = $request->tanggal;
 
-        $presensis = PresensiKegiatanKhusus::where('kegiatan_khusus_id', $id)
-            ->orderBy('jam_masuk', 'desc')
-            ->paginate(20);
+        $query = PresensiKegiatanKhusus::where('kegiatan_khusus_id', $id);
 
-        return view('kegiatan-khusus.peserta', compact('kegiatan', 'presensis'));
+        if ($tanggalFilter) {
+            $query->where('tanggal_presensi', $tanggalFilter);
+        }
+
+        $presensis = $query->orderBy('jam_masuk', 'desc')
+            ->paginate(20)
+            ->withQueryString();
+
+        $daftarTanggal = PresensiKegiatanKhusus::where('kegiatan_khusus_id', $id)
+            ->whereNotNull('tanggal_presensi')
+            ->select('tanggal_presensi')
+            ->distinct()
+            ->orderBy('tanggal_presensi', 'desc')
+            ->pluck('tanggal_presensi');
+
+        return view('kegiatan-khusus.peserta', compact('kegiatan', 'presensis', 'tanggalFilter', 'daftarTanggal'));
     }
 }

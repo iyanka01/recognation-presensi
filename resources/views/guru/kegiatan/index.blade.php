@@ -72,12 +72,16 @@
             <!-- Detail List: Tanggal, Waktu & Sasaran Kelas Riil -->
             <div class="bg-slate-50/80 rounded-2xl p-3 border border-slate-100 space-y-2">
                 
-                {{-- Tanggal --}}
+                {{-- Tanggal / Hari --}}
                 <div class="flex items-center gap-2.5 text-xs text-slate-700 font-medium">
                     <div class="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                     </div>
-                    <span>{{ $k->tanggal->isoFormat('dddd, D MMMM Y') }}</span>
+                    @if($k->tipe_kegiatan === 'rutin')
+                        <span class="font-bold text-emerald-800">Rutin: {{ $k->hari_label }}</span>
+                    @else
+                        <span>{{ $k->tanggal ? $k->tanggal->isoFormat('dddd, D MMMM Y') : '-' }}</span>
+                    @endif
                 </div>
 
                 {{-- Jam Pelaksanaan --}}

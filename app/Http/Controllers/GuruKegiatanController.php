@@ -16,17 +16,20 @@ class GuruKegiatanController extends Controller
     {
         Carbon::setLocale('id');
 
-        // Ambil kegiatan khusus yang sasarannya untuk Siswa (bukan 'Khusus Guru')
-        // Menampilkan kegiatan aktif / yang berlangsung / akan datang (termasuk hari ini)
+        $today = Carbon::today()->toDateString();
+
         $kegiatans = KegiatanKhusus::where('sasaran_peserta', '!=', 'Khusus Guru')
+            ->orderByRaw("CASE WHEN tipe_kegiatan = 'rutin' THEN 0 ELSE 1 END")
             ->orderBy('tanggal', 'desc')
             ->orderBy('jam_mulai', 'asc')
             ->get();
 
         foreach ($kegiatans as $k) {
-            $k->total_hadir = PresensiKegiatanKhusus::where('kegiatan_khusus_id', $k->id)
-                ->whereIn('status', ['Hadir', 'Terlambat'])
-                ->count();
+            $q = PresensiKegiatanKhusus::where('kegiatan_khusus_id', $k->id);
+            if ($k->tipe_kegiatan === 'rutin') {
+                $q->where('tanggal_presensi', $today);
+            }
+            $k->total_hadir = $q->whereIn('status', ['Hadir', 'Terlambat'])->count();
         }
 
         return view('guru.kegiatan.index', compact('kegiatans'));

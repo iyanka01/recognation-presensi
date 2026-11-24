@@ -15,8 +15,23 @@ class KegiatanKhusus extends Model
     protected $casts = [
         'tanggal' => 'date',
         'kelas_ids' => 'array',
+        'hari' => 'array',
         'kirim_notifikasi' => 'boolean',
     ];
+
+    public function getHariLabelAttribute()
+    {
+        if ($this->tipe_kegiatan === 'rutin') {
+            if (!empty($this->hari) && is_array($this->hari)) {
+                if (count($this->hari) === 7) {
+                    return 'Setiap Hari';
+                }
+                return implode(', ', $this->hari);
+            }
+            return 'Rutin';
+        }
+        return $this->tanggal ? $this->tanggal->isoFormat('D MMM Y') : '-';
+    }
 
     public function presensi()
     {
