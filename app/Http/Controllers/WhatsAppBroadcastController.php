@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Guru;
+use App\Models\HariLibur;
 use App\Models\Kelas;
 use App\Models\PengaturanLembaga;
 use App\Models\Presensi;
@@ -33,22 +34,44 @@ class WhatsAppBroadcastController extends Controller
         $batasHari = (int) ($lembaga->batas_absen_guru_hari ?? 14);
         $startDate = Carbon::today()->subDays(30);
 
-        // Hitung akumulasi alpa 30 hari terakhir untuk setiap guru
-        $alpaGuruStats = Presensi::where('user_type', 'guru')
-            ->where('status', 'Alpa')
-            ->where('tanggal', '>=', $startDate)
-            ->selectRaw('user_id, COUNT(*) as total_alpa')
-            ->groupBy('user_id')
-            ->pluck('total_alpa', 'user_id')
+        // Ambil daftar tanggal efektif 30 hari terakhir (Senin-Sabtu bukan libur)
+        $hariLiburs30 = HariLibur::whereBetween('tanggal', [$startDate->toDateString(), Carbon::today()->toDateString()])
+            ->pluck('tanggal')
             ->toArray();
+
+        $effectiveDates30 = [];
+        $tempDay = $startDate->copy();
+        while ($tempDay->lte(Carbon::today())) {
+            if ($tempDay->dayOfWeek !== Carbon::SUNDAY && !in_array($tempDay->toDateString(), $hariLiburs30)) {
+                $effectiveDates30[] = $tempDay->toDateString();
+            }
+            $tempDay->addDay();
+        }
+
+        // Ambil seluruh presensi guru 30 hari terakhir
+        $guruPresensis = Presensi::where('user_type', 'guru')
+            ->where('tanggal', '>=', $startDate->toDateString())
+            ->get()
+            ->groupBy('user_id');
 
         $latestPeringatan = \App\Models\PeringatanGuru::latest()
             ->get()
             ->groupBy('guru_id')
             ->map(fn($items) => $items->first());
 
-        $monitoringGurus = $gurus->map(function ($g) use ($alpaGuruStats, $latestPeringatan, $batasHari) {
-            $alpa = $alpaGuruStats[$g->id] ?? 0;
+        $monitoringGurus = $gurus->map(function ($g) use ($guruPresensis, $effectiveDates30, $latestPeringatan, $batasHari) {
+            $userPres = $guruPresensis->get($g->id, collect());
+            $recordedDates = $userPres->pluck('tanggal')->map(fn($t) => is_string($t) ? substr($t, 0, 10) : Carbon::parse($t)->toDateString())->toArray();
+
+            // Hitung hari kerja efektif yang tidak dihadiri guru
+            $alpa = 0;
+            foreach ($effectiveDates30 as $effDate) {
+                if (!in_array($effDate, $recordedDates)) {
+                    $alpa++;
+                }
+            }
+            $alpa += $userPres->where('status', 'Alpa')->count();
+
             $peringatan = $latestPeringatan->get($g->id);
 
             return (object) [
@@ -263,11 +286,35 @@ class WhatsAppBroadcastController extends Controller
         }
 
         $startDate = Carbon::today()->subDays(30);
-        $alpaCount = Presensi::where('user_type', 'guru')
+
+        // Ambil daftar tanggal efektif 30 hari terakhir (Senin-Sabtu bukan libur)
+        $hariLiburs30 = HariLibur::whereBetween('tanggal', [$startDate->toDateString(), Carbon::today()->toDateString()])
+            ->pluck('tanggal')
+            ->toArray();
+
+        $effectiveDates30 = [];
+        $tempDay = $startDate->copy();
+        while ($tempDay->lte(Carbon::today())) {
+            if ($tempDay->dayOfWeek !== Carbon::SUNDAY && !in_array($tempDay->toDateString(), $hariLiburs30)) {
+                $effectiveDates30[] = $tempDay->toDateString();
+            }
+            $tempDay->addDay();
+        }
+
+        $guruPresensi = Presensi::where('user_type', 'guru')
             ->where('user_id', $guru->id)
-            ->where('status', 'Alpa')
-            ->where('tanggal', '>=', $startDate)
-            ->count();
+            ->where('tanggal', '>=', $startDate->toDateString())
+            ->get();
+
+        $recordedDates = $guruPresensi->pluck('tanggal')->map(fn($t) => is_string($t) ? substr($t, 0, 10) : Carbon::parse($t)->toDateString())->toArray();
+
+        $alpaCount = 0;
+        foreach ($effectiveDates30 as $effDate) {
+            if (!in_array($effDate, $recordedDates)) {
+                $alpaCount++;
+            }
+        }
+        $alpaCount += $guruPresensi->where('status', 'Alpa')->count();
 
         $defaultTemplate = "Halo Bapak/Ibu {nama_guru},\n\nKami menginformasikan dari Bagian Kepegawaian & Kurikulum {nama_yayasan}.\n\nBerdasarkan data presensi sistem, tercatat Bapak/Ibu belum melakukan presensi kehadiran selama {jumlah_hari} hari terakhir.\n\nJika terdapat kendala teknis pada aplikasi, perubahan jadwal, atau kondisi izin/sakit, mohon segera mengonfirmasikannya kepada pihak kurikulum atau Kepala Sekolah.\n\nTerima kasih atas perhatian dan kerjasamanya.\nSistem Presensi {nama_sekolah}";
         $template = $lembaga->template_peringatan_guru ?: $defaultTemplate;

@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Guru;
+use App\Models\HariLibur;
 use App\Models\PengaturanLembaga;
 use App\Models\PeringatanGuru;
 use App\Models\Presensi;
@@ -56,15 +57,42 @@ class CheckGuruAbsensiCommand extends Command
         $this->info("Memeriksa absensi {$gurus->count()} guru aktif (Ambang batas: {$batasHari} hari)...");
 
         $now = Carbon::today();
+        $startDate = $now->copy()->subDays(30);
+
+        // Ambil daftar tanggal efektif 30 hari terakhir (Senin-Sabtu bukan libur)
+        $hariLiburs30 = HariLibur::whereBetween('tanggal', [$startDate->toDateString(), $now->toDateString()])
+            ->pluck('tanggal')
+            ->toArray();
+
+        $effectiveDates30 = [];
+        $tempDay = $startDate->copy();
+        while ($tempDay->lte($now)) {
+            if ($tempDay->dayOfWeek !== Carbon::SUNDAY && !in_array($tempDay->toDateString(), $hariLiburs30)) {
+                $effectiveDates30[] = $tempDay->toDateString();
+            }
+            $tempDay->addDay();
+        }
+
+        // Ambil seluruh presensi guru aktif dalam 30 hari terakhir
+        $guruPresensis = Presensi::where('user_type', 'guru')
+            ->where('tanggal', '>=', $startDate->toDateString())
+            ->get()
+            ->groupBy('user_id');
+
         $sentCount = 0;
 
         foreach ($gurus as $guru) {
-            // Hitung akumulasi alpa dalam 30 hari terakhir atau tidak hadir
-            $alpaCount = Presensi::where('user_type', 'guru')
-                ->where('user_id', $guru->id)
-                ->where('status', 'Alpa')
-                ->where('tanggal', '>=', $now->copy()->subDays(30))
-                ->count();
+            $userPres = $guruPresensis->get($guru->id, collect());
+            $recordedDates = $userPres->pluck('tanggal')->map(fn($t) => is_string($t) ? substr($t, 0, 10) : Carbon::parse($t)->toDateString())->toArray();
+
+            // Hitung hari kerja efektif yang tidak dihadiri guru (Alpa)
+            $alpaCount = 0;
+            foreach ($effectiveDates30 as $effDate) {
+                if (!in_array($effDate, $recordedDates)) {
+                    $alpaCount++;
+                }
+            }
+            $alpaCount += $userPres->where('status', 'Alpa')->count();
 
             // Jika alpa melebihi atau sama dengan ambang batas
             if ($alpaCount >= $batasHari) {
