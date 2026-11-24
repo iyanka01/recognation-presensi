@@ -19,7 +19,11 @@ class GuruController extends Controller
 
     public function create()
     {
-        return view('guru.create');
+        $jabatans = \App\Models\Jabatan::orderBy('kategori', 'asc')
+            ->orderBy('urutan', 'asc')
+            ->orderBy('nama_jabatan', 'asc')
+            ->get();
+        return view('guru.create', compact('jabatans'));
     }
 
     public function store(Request $request)
@@ -57,7 +61,11 @@ class GuruController extends Controller
 
     public function edit(Guru $guru)
     {
-        return view('guru.edit', compact('guru'));
+        $jabatans = \App\Models\Jabatan::orderBy('kategori', 'asc')
+            ->orderBy('urutan', 'asc')
+            ->orderBy('nama_jabatan', 'asc')
+            ->get();
+        return view('guru.edit', compact('guru', 'jabatans'));
     }
 
     public function update(Request $request, Guru $guru)

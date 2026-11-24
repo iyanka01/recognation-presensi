@@ -43,8 +43,27 @@
                     <input type="text" name="nip" value="{{ old('nip', $guru->nip) }}" class="w-full px-4 py-2.5 bg-slate-50 border border-sky-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-400/30 focus:border-sky-400 transition-all">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Jabatan <span class="text-rose-500">*</span></label>
-                    <input type="text" name="jabatan" value="{{ old('jabatan', $guru->jabatan) }}" required class="w-full px-4 py-2.5 bg-slate-50 border border-sky-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-400/30 focus:border-sky-400 transition-all">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Jabatan Pegawai <span class="text-rose-500">*</span></label>
+                    <select name="jabatan" required class="w-full px-4 py-2.5 bg-slate-50 border border-sky-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-400/30 focus:border-sky-400 transition-all font-medium">
+                        <option value="">-- Pilih Jabatan --</option>
+                        <optgroup label="Pendidik (Guru)">
+                            @foreach($jabatans->where('kategori', 'guru') as $j)
+                                <option value="{{ $j->nama_jabatan }}" {{ old('jabatan', $guru->jabatan) == $j->nama_jabatan ? 'selected' : '' }}>
+                                    {{ $j->nama_jabatan }}
+                                </option>
+                            @endforeach
+                        </optgroup>
+                        <optgroup label="Tenaga Kependidikan (Staff)">
+                            @foreach($jabatans->where('kategori', 'staff') as $j)
+                                <option value="{{ $j->nama_jabatan }}" {{ old('jabatan', $guru->jabatan) == $j->nama_jabatan ? 'selected' : '' }}>
+                                    {{ $j->nama_jabatan }}
+                                </option>
+                            @endforeach
+                        </optgroup>
+                        @if($guru->jabatan && !$jabatans->contains('nama_jabatan', $guru->jabatan))
+                            <option value="{{ $guru->jabatan }}" selected>{{ $guru->jabatan }} (Kustom)</option>
+                        @endif
+                    </select>
                 </div>
 
                 <div class="md:col-span-2">

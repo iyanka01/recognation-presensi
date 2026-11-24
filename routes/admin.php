@@ -50,6 +50,9 @@ Route::middleware('auth:web')->group(function () {
     // Master Tahun Ajaran
     Route::resource('tahun-ajaran', \App\Http\Controllers\TahunAjaranController::class)->except(['create', 'show']);
 
+    // Master Jabatan Pegawai (Guru / Staff)
+    Route::resource('jabatan', \App\Http\Controllers\JabatanController::class)->except(['create', 'show']);
+
     // Master Kelas
     Route::resource('kelas', KelasController::class)->parameters(['kelas' => 'kelas'])->except(['create', 'show']);
     

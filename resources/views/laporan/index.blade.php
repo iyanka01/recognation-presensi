@@ -60,11 +60,12 @@
                 </div>
 
                 <!-- 2. Tipe Pengguna -->
-                <div class="w-full sm:w-36">
+                <div class="w-full sm:w-44">
                     <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Tipe Pengguna</label>
                     <select name="tipe" x-model="tipeUser" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-sky-400/30 transition-all">
                         <option value="siswa">Siswa</option>
-                        <option value="guru">Guru</option>
+                        <option value="guru">Guru (Pendidik)</option>
+                        <option value="staff">Staff (Tenaga Kependidikan)</option>
                     </select>
                 </div>
 
@@ -75,6 +76,21 @@
                         <option value="">Semua Kelas</option>
                         @foreach($kelasList as $k)
                             <option value="{{ $k->id }}" {{ $kelas_id == $k->id ? 'selected' : '' }}>{{ $k->nama_rombel }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <!-- 3b. Jabatan (Tampil jika Guru atau Staff) -->
+                <div class="w-full sm:w-48" x-show="tipeUser == 'guru' || tipeUser == 'staff'">
+                    <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Jabatan</label>
+                    <select name="jabatan" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-sky-400/30 transition-all">
+                        <option value="">-- Semua Jabatan --</option>
+                        @foreach($allJabatans as $jb)
+                            <option value="{{ $jb->nama_jabatan }}" 
+                                    x-show="tipeUser === '{{ $jb->kategori }}'" 
+                                    {{ ($jabatan_filter ?? '') == $jb->nama_jabatan ? 'selected' : '' }}>
+                                {{ $jb->nama_jabatan }}
+                            </option>
                         @endforeach
                     </select>
                 </div>
@@ -156,7 +172,7 @@
                         <td class="py-2.5 px-3 text-center text-slate-400 font-medium border-r border-slate-100">{{ $idx + 1 }}</td>
                         <td class="py-2.5 px-3 font-bold text-slate-800 border-r border-slate-100">
                             {{ $row['user']->nama_lengkap }}
-                            @if($tipe == 'guru' && isset($row['user']->jabatan))
+                            @if(($tipe == 'guru' || $tipe == 'staff') && isset($row['user']->jabatan))
                             <div class="text-[10px] text-slate-400 font-normal leading-tight">{{ $row['user']->jabatan }}</div>
                             @endif
                         </td>

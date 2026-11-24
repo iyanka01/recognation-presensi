@@ -18,11 +18,13 @@ class LaporanController extends Controller
         $bulan = $request->bulan ?? Carbon::now()->format('Y-m');
         $dari = $request->dari ?? Carbon::now()->startOfMonth()->toDateString();
         $sampai = $request->sampai ?? Carbon::now()->toDateString();
-        $tipe = $request->tipe ?? 'siswa';
+        $tipe = $request->tipe ?? 'siswa'; // 'siswa', 'guru', 'staff'
         $kelas_id = $request->kelas_id ?? '';
         $departemen_id = $request->departemen_id ?? '';
+        $jabatan_filter = $request->jabatan ?? '';
 
         $departemens = \App\Models\Departemen::where('status', 'Aktif')->orderBy('nama_departemen')->get();
+        $allJabatans = \App\Models\Jabatan::orderBy('urutan', 'asc')->orderBy('nama_jabatan', 'asc')->get();
 
         // Tentukan batas tanggal berdasarkan mode
         if ($mode === 'bulan') {
@@ -33,8 +35,11 @@ class LaporanController extends Controller
             $endDate = Carbon::parse($sampai)->endOfDay();
         }
 
+        // Tipe database presensi: siswa atau guru (guru & staff tersimpan sebagai user_type 'guru')
+        $presensiUserType = $tipe === 'siswa' ? 'siswa' : 'guru';
+
         $query = Presensi::whereBetween('tanggal', [$startDate->toDateString(), $endDate->toDateString()])
-            ->where('user_type', $tipe);
+            ->where('user_type', $presensiUserType);
 
         $laporan = [];
 
@@ -52,7 +57,37 @@ class LaporanController extends Controller
             }
             $users = $siswaQuery->get();
         } else {
-            $users = Guru::orderBy('nama_lengkap')->get();
+            $guruQuery = Guru::orderBy('nama_lengkap');
+
+            // Ambil daftar nama jabatan kategori guru atau staff dari tabel jabatans
+            $guruJabatans = $allJabatans->where('kategori', 'guru')->pluck('nama_jabatan')->toArray();
+            $staffJabatans = $allJabatans->where('kategori', 'staff')->pluck('nama_jabatan')->toArray();
+
+            if ($tipe === 'guru') {
+                if ($jabatan_filter) {
+                    $guruQuery->where('jabatan', $jabatan_filter);
+                } else {
+                    $guruQuery->where(function($q) use ($guruJabatans, $staffJabatans) {
+                        $q->whereIn('jabatan', $guruJabatans)
+                          ->orWhere(function($sub) use ($staffJabatans) {
+                              $sub->whereNotIn('jabatan', $staffJabatans)->where('jabatan', 'LIKE', '%guru%');
+                          })
+                          ->orWhereNull('jabatan');
+                    });
+                }
+            } elseif ($tipe === 'staff') {
+                if ($jabatan_filter) {
+                    $guruQuery->where('jabatan', $jabatan_filter);
+                } else {
+                    $guruQuery->where(function($q) use ($staffJabatans, $guruJabatans) {
+                        $q->whereIn('jabatan', $staffJabatans)
+                          ->orWhere(function($sub) use ($guruJabatans) {
+                              $sub->whereNotIn('jabatan', $guruJabatans)->where('jabatan', 'NOT LIKE', '%guru%');
+                          });
+                    });
+                }
+            }
+            $users = $guruQuery->get();
         }
 
         // Seluruh tanggal dalam rentang periode (untuk kolom tanggal matriks)
@@ -82,7 +117,7 @@ class LaporanController extends Controller
             $izin = $userPresensi->where('status', 'Izin')->count();
             $sakit = $userPresensi->where('status', 'Sakit')->count();
 
-            if ($tipe === 'guru') {
+            if ($tipe === 'guru' || $tipe === 'staff') {
                 $recordedDates = $userPresensi->pluck('tanggal')->map(fn($t) => is_string($t) ? substr($t, 0, 10) : Carbon::parse($t)->toDateString())->toArray();
                 $alpa = 0;
                 foreach ($effectiveDates as $effDate) {
@@ -105,7 +140,7 @@ class LaporanController extends Controller
                 
                 $dailyAttendance[$d['date']] = [
                     'presensi' => $p,
-                    'status' => $p ? $p->status : ($isLibur ? 'Libur' : ($d['is_past'] && $tipe === 'guru' ? 'Alpa' : null)),
+                    'status' => $p ? $p->status : ($isLibur ? 'Libur' : ($d['is_past'] && ($tipe === 'guru' || $tipe === 'staff') ? 'Alpa' : null)),
                     'jam_masuk' => $p && $p->jam_masuk ? substr($p->jam_masuk, 0, 5) : null,
                     'jam_pulang' => $p && $p->jam_pulang ? substr($p->jam_pulang, 0, 5) : null,
                     'is_libur' => $isLibur,
@@ -134,7 +169,7 @@ class LaporanController extends Controller
         $kelasList = $kelasQuery->get();
 
         return view('laporan.index', compact(
-            'laporan', 'kelasList', 'bulan', 'dari', 'sampai', 'mode', 'tipe', 'kelas_id', 'departemens', 'departemen_id', 'totalHariEfektif', 'periodDates'
+            'laporan', 'kelasList', 'bulan', 'dari', 'sampai', 'mode', 'tipe', 'kelas_id', 'departemens', 'departemen_id', 'totalHariEfektif', 'periodDates', 'allJabatans', 'jabatan_filter'
         ));
     }
 
@@ -147,6 +182,7 @@ class LaporanController extends Controller
         $tipe = $request->tipe ?? 'siswa';
         $kelas_id = $request->kelas_id ?? '';
         $departemen_id = $request->departemen_id ?? '';
+        $jabatan_filter = $request->jabatan ?? '';
 
         if ($mode === 'bulan') {
             $startDate = Carbon::parse($bulan . '-01')->startOfDay();
@@ -158,20 +194,12 @@ class LaporanController extends Controller
             $periodeStr = Carbon::parse($dari)->locale('id')->isoFormat('D MMMM YYYY') . ' s/d ' . Carbon::parse($sampai)->locale('id')->isoFormat('D MMMM YYYY');
         }
 
-        if ($mode === 'bulan') {
-            $startDate = Carbon::parse($bulan . '-01')->startOfDay();
-            $endDate = Carbon::parse($bulan . '-01')->endOfMonth()->endOfDay();
-            $periodeStr = Carbon::parse($bulan . '-01')->locale('id')->isoFormat('MMMM YYYY');
-        } else {
-            $startDate = Carbon::parse($dari)->startOfDay();
-            $endDate = Carbon::parse($sampai)->endOfDay();
-            $periodeStr = Carbon::parse($dari)->locale('id')->isoFormat('D MMMM YYYY') . ' s/d ' . Carbon::parse($sampai)->locale('id')->isoFormat('D MMMM YYYY');
-        }
+        $presensiUserType = $tipe === 'siswa' ? 'siswa' : 'guru';
 
         $query = Presensi::whereBetween('tanggal', [$startDate->toDateString(), $endDate->toDateString()])
-            ->where('user_type', $tipe);
+            ->where('user_type', $presensiUserType);
 
-        $departemen_id = $request->departemen_id ?? '';
+        $allJabatans = \App\Models\Jabatan::orderBy('urutan', 'asc')->orderBy('nama_jabatan', 'asc')->get();
 
         if ($tipe == 'siswa') {
             $siswaQuery = Siswa::with('kelas.departemen')->orderBy('nama_lengkap');
@@ -187,7 +215,36 @@ class LaporanController extends Controller
             }
             $users = $siswaQuery->get();
         } else {
-            $users = Guru::orderBy('nama_lengkap')->get();
+            $guruQuery = Guru::orderBy('nama_lengkap');
+
+            $guruJabatans = $allJabatans->where('kategori', 'guru')->pluck('nama_jabatan')->toArray();
+            $staffJabatans = $allJabatans->where('kategori', 'staff')->pluck('nama_jabatan')->toArray();
+
+            if ($tipe === 'guru') {
+                if ($jabatan_filter) {
+                    $guruQuery->where('jabatan', $jabatan_filter);
+                } else {
+                    $guruQuery->where(function($q) use ($guruJabatans, $staffJabatans) {
+                        $q->whereIn('jabatan', $guruJabatans)
+                          ->orWhere(function($sub) use ($staffJabatans) {
+                              $sub->whereNotIn('jabatan', $staffJabatans)->where('jabatan', 'LIKE', '%guru%');
+                          })
+                          ->orWhereNull('jabatan');
+                    });
+                }
+            } elseif ($tipe === 'staff') {
+                if ($jabatan_filter) {
+                    $guruQuery->where('jabatan', $jabatan_filter);
+                } else {
+                    $guruQuery->where(function($q) use ($staffJabatans, $guruJabatans) {
+                        $q->whereIn('jabatan', $staffJabatans)
+                          ->orWhere(function($sub) use ($guruJabatans) {
+                              $sub->whereNotIn('jabatan', $guruJabatans)->where('jabatan', 'NOT LIKE', '%guru%');
+                          });
+                    });
+                }
+            }
+            $users = $guruQuery->get();
         }
 
         $allPresensi = $query->get()->groupBy('user_id');
@@ -215,7 +272,7 @@ class LaporanController extends Controller
             $izin = $userPresensi->where('status', 'Izin')->count();
             $sakit = $userPresensi->where('status', 'Sakit')->count();
 
-            if ($tipe === 'guru') {
+            if ($tipe === 'guru' || $tipe === 'staff') {
                 $recordedDates = $userPresensi->pluck('tanggal')->map(fn($t) => is_string($t) ? substr($t, 0, 10) : Carbon::parse($t)->toDateString())->toArray();
                 $alpa = 0;
                 foreach ($effectiveDates as $effDate) {
@@ -275,7 +332,7 @@ class LaporanController extends Controller
         $judul = "Laporan Presensi " . ucfirst($tipe) . " - " . $periodeStr;
         $pengaturan = \App\Models\PengaturanLembaga::first();
 
-        return view('laporan.print', compact('laporan', 'judul', 'tipe', 'kelasStr', 'pengaturan', 'activeDepartemen', 'periodeStr', 'periodDates'));
+        return view('laporan.print', compact('laporan', 'judul', 'tipe', 'kelasStr', 'pengaturan', 'activeDepartemen', 'periodeStr', 'periodDates', 'jabatan_filter'));
     }
 
     public function printSiswa(Request $request)
@@ -368,6 +425,7 @@ class LaporanController extends Controller
         $tipe = $request->tipe ?? 'siswa';
         $kelas_id = $request->kelas_id ?? '';
         $departemen_id = $request->departemen_id ?? '';
+        $jabatan_filter = $request->jabatan ?? '';
 
         if ($mode === 'bulan') {
             $startDate = Carbon::parse($bulan . '-01')->startOfDay();
@@ -381,8 +439,12 @@ class LaporanController extends Controller
             $filePeriod = "{$dari}_sd_{$sampai}";
         }
 
+        $presensiUserType = $tipe === 'siswa' ? 'siswa' : 'guru';
+
         $query = Presensi::whereBetween('tanggal', [$startDate->toDateString(), $endDate->toDateString()])
-            ->where('user_type', $tipe);
+            ->where('user_type', $presensiUserType);
+
+        $allJabatans = \App\Models\Jabatan::orderBy('urutan', 'asc')->orderBy('nama_jabatan', 'asc')->get();
 
         if ($tipe == 'siswa') {
             $siswaQuery = Siswa::with('kelas.departemen')->orderBy('nama_lengkap');
@@ -396,7 +458,36 @@ class LaporanController extends Controller
             }
             $users = $siswaQuery->get();
         } else {
-            $users = Guru::orderBy('nama_lengkap')->get();
+            $guruQuery = Guru::orderBy('nama_lengkap');
+
+            $guruJabatans = $allJabatans->where('kategori', 'guru')->pluck('nama_jabatan')->toArray();
+            $staffJabatans = $allJabatans->where('kategori', 'staff')->pluck('nama_jabatan')->toArray();
+
+            if ($tipe === 'guru') {
+                if ($jabatan_filter) {
+                    $guruQuery->where('jabatan', $jabatan_filter);
+                } else {
+                    $guruQuery->where(function($q) use ($guruJabatans, $staffJabatans) {
+                        $q->whereIn('jabatan', $guruJabatans)
+                          ->orWhere(function($sub) use ($staffJabatans) {
+                              $sub->whereNotIn('jabatan', $staffJabatans)->where('jabatan', 'LIKE', '%guru%');
+                          })
+                          ->orWhereNull('jabatan');
+                    });
+                }
+            } elseif ($tipe === 'staff') {
+                if ($jabatan_filter) {
+                    $guruQuery->where('jabatan', $jabatan_filter);
+                } else {
+                    $guruQuery->where(function($q) use ($staffJabatans, $guruJabatans) {
+                        $q->whereIn('jabatan', $staffJabatans)
+                          ->orWhere(function($sub) use ($guruJabatans) {
+                              $sub->whereNotIn('jabatan', $guruJabatans)->where('jabatan', 'NOT LIKE', '%guru%');
+                          });
+                    });
+                }
+            }
+            $users = $guruQuery->get();
         }
 
         $allPresensi = $query->get()->groupBy('user_id');

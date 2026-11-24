@@ -4,6 +4,7 @@
         'siswa.*', 
         'kelas.*', 
         'guru.*', 
+        'jabatan.*',
         'mapel.*', 
         'jadwal.*', 
         'cetak-kartu.*', 
@@ -55,6 +56,13 @@
            class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-[7px] text-xs {{ request()->routeIs('guru.*') ? 'nav-active' : '' }}">
             <i class="ti ti-user-check text-base shrink-0"></i>
             <span class="font-medium">Data Guru</span>
+        </a>
+
+        {{-- Data Jabatan --}}
+        <a href="{{ route('jabatan.index') }}"
+           class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-[7px] text-xs {{ request()->routeIs('jabatan.*') ? 'nav-active' : '' }}">
+            <i class="ti ti-briefcase text-base shrink-0"></i>
+            <span class="font-medium">Data Jabatan</span>
         </a>
 
         {{-- Mata Pelajaran --}}

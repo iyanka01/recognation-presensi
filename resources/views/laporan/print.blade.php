@@ -92,6 +92,12 @@
                 <td style="border: none; padding: 2px 0;">: {{ $kelasStr }}</td>
             </tr>
             @endif
+            @if(($tipe == 'guru' || $tipe == 'staff') && !empty($jabatan_filter))
+            <tr style="border: none;">
+                <td style="border: none; padding: 2px 0; width: 120px; font-weight: bold;">Jabatan</td>
+                <td style="border: none; padding: 2px 0;">: {{ $jabatan_filter }}</td>
+            </tr>
+            @endif
             <tr style="border: none;">
                 <td style="border: none; padding: 2px 0; width: 120px; font-weight: bold;">Dicetak pada</td>
                 <td style="border: none; padding: 2px 0;">: {{ \Carbon\Carbon::now()->locale('id')->isoFormat('D MMMM YYYY, HH:mm') }}</td>
@@ -148,7 +154,12 @@
             @forelse($laporan as $idx => $row)
             <tr>
                 <td class="center">{{ $idx + 1 }}</td>
-                <td>{{ $row['user']->nama_lengkap }}</td>
+                <td>
+                    {{ $row['user']->nama_lengkap }}
+                    @if(($tipe == 'guru' || $tipe == 'staff') && !empty($row['user']->jabatan))
+                    <div style="font-size: 10px; color: #555;">{{ $row['user']->jabatan }}</div>
+                    @endif
+                </td>
                 <td class="center">{{ $tipe == 'siswa' ? $row['user']->nis : $row['user']->nip }}</td>
                 @if($tipe == 'siswa')
                 <td class="center">{{ $row['user']->kelas->nama_rombel ?? '-' }}</td>
