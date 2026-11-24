@@ -31,17 +31,7 @@ class PengaturanJamController extends Controller
             ['id' => 'guru', 'nama' => 'Semua Guru (Umum)', 'tipe' => 'guru']
         ];
 
-        $targetKelas = [];
-        foreach ($kelases as $k) {
-            $namaDep = $k->departemen ? (' (' . $k->departemen->nama_departemen . ')') : '';
-            $targetKelas[] = [
-                'id' => $k->id,
-                'nama' => 'Kelas ' . $k->nama_rombel . $namaDep,
-                'tipe' => 'kelas'
-            ];
-        }
-
-        $allTargets = array_merge($targetDepartemen, $targetGuru, $targetKelas);
+        $allTargets = array_merge($targetDepartemen, $targetGuru);
 
         $hariList = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
 
@@ -77,9 +67,7 @@ class PengaturanJamController extends Controller
             'allTargets', 
             'targetDepartemen', 
             'targetGuru', 
-            'targetKelas', 
             'departemens', 
-            'kelases', 
             'hariList', 
             'matrix'
         ));

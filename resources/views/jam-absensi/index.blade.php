@@ -16,8 +16,6 @@
     jam_pulang: '14:00',
     showCopyDep: false,
     copyDepartemens: [],
-    showCopy: false,
-    copyClasses: [],
 
     // Modal Edit State
     modalEdit: false,
@@ -110,14 +108,6 @@
                             <option value="{{ $t['id'] }}">{{ $t['nama'] }}</option>
                         @endforeach
                     </optgroup>
-
-                    @if(count($targetKelas) > 0)
-                    <optgroup label="🏫 PER ROMBEL KELAS">
-                        @foreach($targetKelas as $t)
-                            <option value="{{ $t['id'] }}">{{ $t['nama'] }}</option>
-                        @endforeach
-                    </optgroup>
-                    @endif
                 </select>
             </div>
         </div>
@@ -259,11 +249,6 @@
                                     <optgroup label="👨‍🏫 GURU / TENDIK">
                                         <option value="guru">Semua Guru (Umum)</option>
                                     </optgroup>
-                                    <optgroup label="🏫 PER ROMBEL KELAS">
-                                        @foreach($kelases as $k)
-                                            <option value="{{ $k->id }}">Kelas {{ $k->nama_rombel }} {{ $k->departemen ? '('.$k->departemen->nama_departemen.')' : '' }}</option>
-                                        @endforeach
-                                    </optgroup>
                                 </select>
                             </div>
                             <div>
@@ -291,7 +276,7 @@
                             </div>
                         </div>
 
-                        <!-- 1. Opsi Salin Jadwal ke Departemen Lain (Jika Target adalah Departemen) -->
+                        <!-- Opsi Salin Jadwal ke Departemen Lain (Jika Target adalah Departemen) -->
                         <div class="bg-blue-50/60 dark:bg-blue-950/30 p-3.5 rounded-[7px] border border-blue-200 dark:border-blue-800" x-show="target_id.startsWith('dep_')">
                             <label class="flex items-center gap-2 cursor-pointer">
                                 <input type="checkbox" x-model="showCopyDep" class="rounded text-blue-600 focus:ring-blue-500">
@@ -308,25 +293,6 @@
                                     <label class="flex items-center gap-2 cursor-pointer bg-white dark:bg-slate-800 px-2.5 py-1.5 rounded-[5px] border border-slate-200 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-300" x-show="target_id !== 'dep_{{ $d->id }}'">
                                         <input type="checkbox" name="copy_to_departemens[]" value="{{ $d->id }}" class="rounded text-blue-600" x-model="copyDepartemens">
                                         <span>{{ $d->nama_departemen }}</span>
-                                    </label>
-                                    @endforeach
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- 2. Opsi Salin Jadwal ke Kelas Lain (Jika Target adalah Rombel Kelas) -->
-                        <div class="bg-slate-50 dark:bg-slate-900/50 p-3.5 rounded-[7px] border border-slate-200 dark:border-slate-700" x-show="!target_id.startsWith('dep_') && target_id !== 'guru'">
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" x-model="showCopy" class="rounded text-blue-600 focus:ring-blue-500">
-                                <span class="text-xs font-medium text-slate-700 dark:text-slate-300">Salin jam ini ke kelas lainnya?</span>
-                            </label>
-                            
-                            <div x-show="showCopy" x-transition class="space-y-2 mt-3 pt-3 border-t border-slate-200 dark:border-slate-700 max-h-40 overflow-y-auto">
-                                <div class="grid grid-cols-2 gap-2">
-                                    @foreach($kelases as $k)
-                                    <label class="flex items-center gap-2 cursor-pointer bg-white dark:bg-slate-800 px-2.5 py-1.5 rounded-[5px] border border-slate-200 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-300" x-show="target_id !== '{{ $k->id }}'">
-                                        <input type="checkbox" name="copy_to_classes[]" value="{{ $k->id }}" class="rounded text-blue-600" x-model="copyClasses">
-                                        <span>Kelas {{ $k->nama_rombel }}</span>
                                     </label>
                                     @endforeach
                                 </div>
