@@ -266,7 +266,6 @@
                                     @endforeach
                                 </tr>
                                 @endforeach
-                            @endif
                         @endforeach
                     </tbody>
                 </table>
