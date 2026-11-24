@@ -128,8 +128,10 @@
                         <th class="py-2.5 px-3 w-10 text-center">
                             <input type="checkbox" @click="toggleAll()" :checked="selectAll" class="w-3.5 h-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
                         </th>
-                        <th class="py-2.5 px-3 font-semibold text-slate-600">USER</th>
-                        <th class="py-2.5 px-3 font-semibold text-slate-600">ROLE / KELAS</th>
+                        <th class="py-2.5 px-3 font-semibold text-slate-600">NAMA SISWA</th>
+                        <th class="py-2.5 px-3 font-semibold text-slate-600">NIS / NISN</th>
+                        <th class="py-2.5 px-3 font-semibold text-slate-600 text-center">L/P</th>
+                        <th class="py-2.5 px-3 font-semibold text-slate-600">ROMBEL / KELAS</th>
                         <th class="py-2.5 px-3 font-semibold text-slate-600">STATUS</th>
                         <th class="py-2.5 px-3 font-semibold text-slate-600">JOINED</th>
                         <th class="py-2.5 px-3 font-semibold text-slate-600 text-right">ACTIONS</th>
@@ -158,28 +160,31 @@
                                 </div>
                                 <div class="min-w-0">
                                     <div class="font-bold text-slate-800 text-xs leading-tight truncate">{{ $s->nama_lengkap }}</div>
-                                    <div class="text-[11px] text-slate-400 font-mono mt-0.5 truncate">
-                                        NIS: {{ $s->nis ?? '-' }} • NISN: {{ $s->nisn ?? '-' }}
-                                    </div>
                                 </div>
                             </div>
                         </td>
-                        <td class="py-2.5 px-3">
-                            <div class="flex items-center gap-1.5">
-                                @if($s->kelas)
-                                    <button type="button" @click="selectTingkat('{{ addslashes($s->kelas->tingkat) }}'); selectRombel('{{ $s->kelas_id }}')" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors" title="Filter rombel ini">
-                                        <i class="ti ti-school text-[11px]"></i>
-                                        <span>{{ $s->kelas->tingkat }} • {{ $s->kelas->nama_rombel }}</span>
-                                    </button>
-                                @else
-                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-500">
-                                        Tanpa Kelas
-                                    </span>
-                                @endif
-                                <span class="inline-flex items-center justify-center w-4 h-4 rounded-full text-[9px] font-bold {{ $s->jenis_kelamin == 'L' ? 'bg-indigo-50 text-indigo-600' : 'bg-pink-50 text-pink-600' }}" title="{{ $s->jenis_kelamin == 'L' ? 'Laki-laki' : 'Perempuan' }}">
-                                    {{ $s->jenis_kelamin }}
-                                </span>
+                        <td class="py-2.5 px-3 whitespace-nowrap">
+                            <div class="flex flex-col text-[11px] font-mono leading-tight">
+                                <span class="font-bold text-slate-700">NIS: {{ $s->nis ?? '-' }}</span>
+                                <span class="text-slate-400">NISN: {{ $s->nisn ?? '-' }}</span>
                             </div>
+                        </td>
+                        <td class="py-2.5 px-3 text-center whitespace-nowrap">
+                            <span class="inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold {{ $s->jenis_kelamin == 'L' ? 'bg-indigo-50 text-indigo-600' : 'bg-pink-50 text-pink-600' }}" title="{{ $s->jenis_kelamin == 'L' ? 'Laki-laki' : 'Perempuan' }}">
+                                {{ $s->jenis_kelamin }}
+                            </span>
+                        </td>
+                        <td class="py-2.5 px-3">
+                            @if($s->kelas)
+                                <button type="button" @click="selectTingkat('{{ addslashes($s->kelas->tingkat) }}'); selectRombel('{{ $s->kelas_id }}')" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors" title="Filter rombel ini">
+                                    <i class="ti ti-school text-[11px]"></i>
+                                    <span>{{ $s->kelas->tingkat }} • {{ $s->kelas->nama_rombel }}</span>
+                                </button>
+                            @else
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-500">
+                                    Tanpa Kelas
+                                </span>
+                            @endif
                         </td>
                         <td class="py-2.5 px-3 whitespace-nowrap">
                             @if($s->status == 'Aktif')
@@ -219,7 +224,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="6" class="p-8 text-center text-slate-400">
+                        <td colspan="8" class="p-8 text-center text-slate-400">
                             <i class="ti ti-users-minus text-3xl mb-1 block"></i>
                             Belum ada data siswa.
                         </td>

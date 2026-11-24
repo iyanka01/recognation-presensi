@@ -52,7 +52,9 @@
                         <th class="py-2.5 px-3 w-10 text-center">
                             <input type="checkbox" @click="toggleAll()" :checked="selectAll" class="w-3.5 h-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
                         </th>
-                        <th class="py-2.5 px-3 font-semibold text-slate-600">USER</th>
+                        <th class="py-2.5 px-3 font-semibold text-slate-600">NAMA GURU</th>
+                        <th class="py-2.5 px-3 font-semibold text-slate-600">NRY / NIP</th>
+                        <th class="py-2.5 px-3 font-semibold text-slate-600 text-center">L/P</th>
                         <th class="py-2.5 px-3 font-semibold text-slate-600">ROLE / JABATAN</th>
                         <th class="py-2.5 px-3 font-semibold text-slate-600">STATUS</th>
                         <th class="py-2.5 px-3 font-semibold text-slate-600">JOINED</th>
@@ -89,22 +91,24 @@
                                 </div>
                                 <div class="min-w-0">
                                     <div class="font-bold text-slate-800 text-xs leading-tight truncate">{{ $g->nama_lengkap }}</div>
-                                    <div class="text-[11px] text-slate-400 font-mono mt-0.5 truncate">
-                                        NIP: {{ $g->nip ?? '-' }}
-                                    </div>
                                 </div>
                             </div>
                         </td>
+                        <td class="py-2.5 px-3 whitespace-nowrap">
+                            <span class="font-mono text-[11px] font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-[5px] border border-slate-200">
+                                {{ $g->nip ?? '-' }}
+                            </span>
+                        </td>
+                        <td class="py-2.5 px-3 text-center whitespace-nowrap">
+                            <span class="inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold {{ $g->jenis_kelamin == 'L' ? 'bg-indigo-50 text-indigo-600' : 'bg-pink-50 text-pink-600' }}" title="{{ $g->jenis_kelamin == 'L' ? 'Laki-laki' : 'Perempuan' }}">
+                                {{ $g->jenis_kelamin }}
+                            </span>
+                        </td>
                         <td class="py-2.5 px-3">
-                            <div class="flex items-center gap-1.5">
-                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                                    <i class="ti ti-briefcase text-[11px]"></i>
-                                    <span>{{ $g->jabatan ?? 'Guru Pengajar' }}</span>
-                                </span>
-                                <span class="inline-flex items-center justify-center w-4 h-4 rounded-full text-[9px] font-bold {{ $g->jenis_kelamin == 'L' ? 'bg-indigo-50 text-indigo-600' : 'bg-pink-50 text-pink-600' }}" title="{{ $g->jenis_kelamin == 'L' ? 'Laki-laki' : 'Perempuan' }}">
-                                    {{ $g->jenis_kelamin }}
-                                </span>
-                            </div>
+                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                                <i class="ti ti-briefcase text-[11px]"></i>
+                                <span>{{ $g->jabatan ?? 'Guru Pengajar' }}</span>
+                            </span>
                         </td>
                         <td class="py-2.5 px-3 whitespace-nowrap">
                             <div class="flex flex-col gap-0.5">
@@ -164,7 +168,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="6" class="p-8 text-center text-slate-400">
+                        <td colspan="8" class="p-8 text-center text-slate-400">
                             <i class="ti ti-users-minus text-3xl mb-1 block"></i>
                             Belum ada data guru.
                         </td>
