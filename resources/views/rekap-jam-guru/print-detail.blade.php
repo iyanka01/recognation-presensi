@@ -96,7 +96,7 @@
     </div>
 
     <!-- Kop Surat Lembaga Standar -->
-    @include('components.kop-surat', ['pengaturan' => $pengaturan])
+    @include('components.kop-surat', ['pengaturan' => $pengaturan, 'activeDepartemen' => $selectedDepartemen])
 
     <div style="text-align: center; margin: 16px 0 20px 0;">
         <h3 style="font-size: 15px; margin: 0; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">RINCIAN JURNAL & JAM MENGAJAR GURU</h3>

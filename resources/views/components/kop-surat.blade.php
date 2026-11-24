@@ -43,12 +43,13 @@
 </style>
 
 <div class="kop-container">
-    {{-- Logo Kiri --}}
-    <div>
-        @if(isset($pengaturan) && $pengaturan && $pengaturan->logo)
-            <img src="{{ Storage::url($pengaturan->logo) }}" alt="Logo" class="kop-logo">
-        @elseif(isset($lembaga) && $lembaga && $lembaga->logo)
-            <img src="{{ Storage::url($lembaga->logo) }}" alt="Logo" class="kop-logo">
+    {{-- Logo Kiri (Logo Yayasan / Dinas dari Profil Lembaga) --}}
+    <div style="width: 80px; text-align: left; shrink-0;">
+        @php
+            $cfg = $pengaturan ?? $lembaga ?? null;
+        @endphp
+        @if($cfg && $cfg->logo)
+            <img src="{{ Storage::url($cfg->logo) }}" alt="Logo Yayasan / Dinas" class="kop-logo">
         @else
             <div class="kop-logo" style="border: 1px dashed #cbd5e1; border-radius: 8px;"></div>
         @endif
@@ -57,23 +58,28 @@
     {{-- Text Kop Surat --}}
     <div class="kop-text">
         @php
-            $cfg = $pengaturan ?? $lembaga ?? null;
+            $namaUnitSekolah = isset($activeDepartemen) && $activeDepartemen ? $activeDepartemen->nama_departemen : ($cfg->nama_lembaga ?? 'SMK LENTERA');
         @endphp
         @if($cfg && $cfg->nama_yayasan)
             <h2>{{ $cfg->nama_yayasan }}</h2>
         @else
-            <h2>KEMENTERIAN AGAMA REPUBLIK INDONESIA</h2>
-            <h2>KANTOR KEMENTERIAN AGAMA KABUPATEN / KOTA</h2>
+            <h2>YAYASAN PENDIDIKAN</h2>
         @endif
 
-        <h1>{{ $cfg->nama_lembaga ?? 'MTsN 1 MAYANTARA' }}</h1>
+        <h1>{{ $namaUnitSekolah }}</h1>
 
         <p>
-            {{ $cfg->alamat ?? 'Jl. Pendidikan No. 01, Wonogiri' }}
+            @if(isset($activeDepartemen) && $activeDepartemen && $activeDepartemen->alamat)
+                {{ $activeDepartemen->alamat }}
+            @else
+                {{ $cfg->alamat ?? 'Jl. Pendidikan No. 01' }}
+            @endif
             @if($cfg && $cfg->tempat)
                 — {{ $cfg->tempat }}
             @endif
-            @if($cfg && $cfg->no_telp)
+            @if(isset($activeDepartemen) && $activeDepartemen && $activeDepartemen->no_telp)
+                • Telp: {{ $activeDepartemen->no_telp }}
+            @elseif($cfg && $cfg->no_telp)
                 • Telp: {{ $cfg->no_telp }}
             @endif
             @if($cfg && $cfg->website)
@@ -82,12 +88,13 @@
         </p>
     </div>
 
-    {{-- Logo Kanan (Mirror) --}}
-    <div>
-        @if(isset($pengaturan) && $pengaturan && $pengaturan->logo)
-            <img src="{{ Storage::url($pengaturan->logo) }}" alt="Logo" class="kop-logo">
-        @elseif(isset($lembaga) && $lembaga && $lembaga->logo)
-            <img src="{{ Storage::url($lembaga->logo) }}" alt="Logo" class="kop-logo">
+    {{-- Logo Kanan (Logo Khusus Unit Sekolah sesuai Departemen) --}}
+    <div style="width: 80px; text-align: right; shrink-0;">
+        @if(isset($activeDepartemen) && $activeDepartemen && $activeDepartemen->logo)
+            <img src="{{ Storage::url($activeDepartemen->logo) }}" alt="Logo Departemen" class="kop-logo">
+        @elseif($cfg && $cfg->logo)
+            {{-- Jika departemen belum upload logo khusus, tampilkan logo lembaga sebagai penyeimbang --}}
+            <img src="{{ Storage::url($cfg->logo) }}" alt="Logo" class="kop-logo">
         @else
             <div class="kop-logo" style="border: 1px dashed #cbd5e1; border-radius: 8px;"></div>
         @endif

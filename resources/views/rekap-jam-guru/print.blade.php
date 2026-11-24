@@ -125,16 +125,11 @@
         </button>
     </div>
 
-    <!-- Kop Surat Lembaga -->
-    <div class="header">
-        @if($pengaturan && $pengaturan->logo)
-            <img src="{{ Storage::url($pengaturan->logo) }}" alt="Logo">
-        @endif
-        <h1>LAPORAN REKAPITULASI JUMLAH JAM MENGAJAR GURU</h1>
-        <h2>{{ $pengaturan->nama_lembaga ?? 'SISTEM PRESENSI & JURNAL KBM' }}</h2>
-        @if($pengaturan && $pengaturan->alamat)
-            <p>{{ $pengaturan->alamat }}@if($pengaturan->tempat) — {{ $pengaturan->tempat }}@endif</p>
-        @endif
+    <!-- Kop Surat Lembaga 2 Logo -->
+    @include('components.kop-surat', ['pengaturan' => $pengaturan, 'activeDepartemen' => $selectedDepartemen])
+
+    <div style="text-align: center; margin: 16px 0 20px 0;">
+        <h3 style="font-size: 15px; margin: 0; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">LAPORAN REKAPITULASI JUMLAH JAM MENGAJAR GURU</h3>
     </div>
 
     <!-- Informasi Dokumen -->
