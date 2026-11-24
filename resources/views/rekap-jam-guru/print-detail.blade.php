@@ -170,10 +170,19 @@
     <div style="width: 100%; margin-top: 36px; clear: both;">
         <div style="float: left; text-align: center; width: 220px; font-size: 12px;">
             <p style="margin: 0;">Mengetahui,</p>
-            <p style="margin: 4px 0 0 0; font-weight: bold;">Kepala Lembaga / Sekolah,</p>
+            @php
+                $kepalaNama = ($selectedDepartemen && $selectedDepartemen->kepalaSekolah) 
+                    ? $selectedDepartemen->kepalaSekolah->nama_lengkap 
+                    : ($pengaturan->nama_kepala ?? '....................................');
+                $kepalaNip = ($selectedDepartemen && $selectedDepartemen->kepalaSekolah) 
+                    ? ($selectedDepartemen->kepalaSekolah->nip ?? '-') 
+                    : ($pengaturan->nip ?? '-');
+                $jabatan = $selectedDepartemen ? 'Kepala ' . $selectedDepartemen->nama_departemen : 'Kepala Lembaga / Sekolah';
+            @endphp
+            <p style="margin: 4px 0 0 0; font-weight: bold;">{{ $jabatan }},</p>
             <div class="signature-space"></div>
-            <p style="margin: 0; font-weight: bold; text-decoration: underline;">{{ $pengaturan->nama_kepala ?? '....................................' }}</p>
-            <p style="margin: 2px 0 0 0; font-size: 11px;">NIP: {{ $pengaturan->nip ?? '' }}</p>
+            <p style="margin: 0; font-weight: bold; text-decoration: underline;">{{ $kepalaNama }}</p>
+            <p style="margin: 2px 0 0 0; font-size: 11px;">NIP: {{ $kepalaNip }}</p>
         </div>
 
         <div class="signature-box">

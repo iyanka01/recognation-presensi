@@ -139,6 +139,13 @@
 
     <!-- Informasi Dokumen -->
     <table class="meta-table">
+        @if($selectedDepartemen)
+        <tr>
+            <td style="width: 140px; font-weight: bold;">Departemen / Unit</td>
+            <td style="width: 10px;">:</td>
+            <td colspan="2"><strong>{{ $selectedDepartemen->nama_departemen }}</strong> (Tingkat {{ $selectedDepartemen->tingkatan }})</td>
+        </tr>
+        @endif
         <tr>
             <td style="width: 140px; font-weight: bold;">Periode Rekap</td>
             <td style="width: 10px;">:</td>
@@ -205,10 +212,19 @@
     <div style="width: 100%; margin-top: 30px; clear: both;">
         <div class="signature-box">
             <p style="margin: 0;">{{ $pengaturan->tempat ?? $pengaturan->kabupaten ?? 'Tempat' }}, {{ \Carbon\Carbon::now()->translatedFormat('d F Y') }}</p>
-            <p style="margin: 4px 0 0 0; font-weight: bold;">Kepala Lembaga / Sekolah,</p>
+            @php
+                $kepalaNama = ($selectedDepartemen && $selectedDepartemen->kepalaSekolah) 
+                    ? $selectedDepartemen->kepalaSekolah->nama_lengkap 
+                    : ($pengaturan->nama_kepala ?? '....................................');
+                $kepalaNip = ($selectedDepartemen && $selectedDepartemen->kepalaSekolah) 
+                    ? ($selectedDepartemen->kepalaSekolah->nip ?? '-') 
+                    : ($pengaturan->nip ?? '-');
+                $jabatan = $selectedDepartemen ? 'Kepala ' . $selectedDepartemen->nama_departemen : 'Kepala Lembaga / Sekolah';
+            @endphp
+            <p style="margin: 4px 0 0 0; font-weight: bold;">{{ $jabatan }},</p>
             <div class="signature-space"></div>
-            <p style="margin: 0; font-weight: bold; text-decoration: underline;">{{ $pengaturan->nama_kepala ?? '....................................' }}</p>
-            <p style="margin: 2px 0 0 0; font-size: 11px;">NIP: {{ $pengaturan->nip ?? '' }}</p>
+            <p style="margin: 0; font-weight: bold; text-decoration: underline;">{{ $kepalaNama }}</p>
+            <p style="margin: 2px 0 0 0; font-size: 11px;">NIP: {{ $kepalaNip }}</p>
         </div>
     </div>
 </body>

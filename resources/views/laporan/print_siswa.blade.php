@@ -103,7 +103,7 @@
         <button onclick="window.close()" style="padding: 10px 20px; cursor: pointer;">Tutup</button>
     </div>
 
-    @include('components.kop-surat', ['pengaturan' => $pengaturan])
+    @include('components.kop-surat', ['pengaturan' => $pengaturan, 'activeDepartemen' => $activeDepartemen])
 
     <div style="text-align: center; margin: 16px 0 20px 0;">
         <h3 style="font-size: 15px; margin: 0; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">{{ $judul }}</h3>
@@ -196,10 +196,19 @@
     <div class="footer">
         <div class="signature">
             <p style="margin: 0;">{{ $pengaturan->tempat ?? $pengaturan->kabupaten ?? 'Tempat' }}, {{ \Carbon\Carbon::now()->translatedFormat('d F Y') }}</p>
-            <p style="margin: 4px 0 0 0; font-weight: bold;">Kepala Lembaga / Sekolah,</p>
+            @php
+                $kepalaNama = ($activeDepartemen && $activeDepartemen->kepalaSekolah) 
+                    ? $activeDepartemen->kepalaSekolah->nama_lengkap 
+                    : ($pengaturan->nama_kepala ?? '....................................');
+                $kepalaNip = ($activeDepartemen && $activeDepartemen->kepalaSekolah) 
+                    ? ($activeDepartemen->kepalaSekolah->nip ?? '-') 
+                    : ($pengaturan->nip ?? '-');
+                $jabatan = $activeDepartemen ? 'Kepala ' . $activeDepartemen->nama_departemen : 'Kepala Lembaga / Sekolah';
+            @endphp
+            <p style="margin: 4px 0 0 0; font-weight: bold;">{{ $jabatan }},</p>
             <div class="signature-space"></div>
-            <p style="margin: 0; font-weight: bold; text-decoration: underline;">{{ $pengaturan->nama_kepala ?? '....................................' }}</p>
-            <p style="margin: 2px 0 0 0; font-size: 11px;">NIP: {{ $pengaturan->nip ?? '' }}</p>
+            <p style="margin: 0; font-weight: bold; text-decoration: underline;">{{ $kepalaNama }}</p>
+            <p style="margin: 2px 0 0 0; font-size: 11px;">NIP: {{ $kepalaNip }}</p>
         </div>
     </div>
 

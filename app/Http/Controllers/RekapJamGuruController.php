@@ -41,6 +41,9 @@ class RekapJamGuruController extends Controller
         $totalJam = $jurnals->sum('jumlah_jam');
         $totalPertemuan = $jurnals->count();
 
+        $firstJadwal = $jurnals->first()?->jadwal ?? JadwalPelajaran::with('kelas.departemen.kepalaSekolah')->where('guru_id', $guru_id)->first();
+        $selectedDepartemen = $firstJadwal?->kelas?->departemen ?? \App\Models\Departemen::with('kepalaSekolah')->first();
+
         return view('rekap-jam-guru.print-detail', [
             'guru' => $guru,
             'jurnals' => $jurnals,
@@ -49,6 +52,7 @@ class RekapJamGuruController extends Controller
             'dari' => $dari,
             'sampai' => $sampai,
             'pengaturan' => PengaturanLembaga::first(),
+            'selectedDepartemen' => $selectedDepartemen,
         ]);
     }
 
@@ -57,6 +61,9 @@ class RekapJamGuruController extends Controller
         $dari = $request->query('dari', Carbon::now()->startOfMonth()->toDateString());
         $sampai = $request->query('sampai', Carbon::today()->toDateString());
         $guruId = $request->query('guru_id');
+        $departemenId = $request->query('departemen_id');
+
+        $departemens = \App\Models\Departemen::orderBy('nama_departemen')->get();
 
         $guruQuery = Guru::query()->orderBy('nama_lengkap');
         if ($guruId) {
@@ -64,10 +71,16 @@ class RekapJamGuruController extends Controller
         }
         $gurus = $guruQuery->get();
 
-        // Ambil semua jurnal mengajar dalam rentang tanggal
-        $jurnals = JurnalMengajar::with(['jadwal.mataPelajaran', 'jadwal.kelas'])
-            ->whereBetween('tanggal', [$dari, $sampai])
-            ->get();
+        // Ambil semua jurnal mengajar dalam rentang tanggal, filter departemen jika dipilih
+        $jurnalQuery = JurnalMengajar::with(['jadwal.mataPelajaran', 'jadwal.kelas'])
+            ->whereBetween('tanggal', [$dari, $sampai]);
+
+        if ($departemenId && $departemenId !== 'all') {
+            $jurnalQuery->whereHas('jadwal.kelas', function ($q) use ($departemenId) {
+                $q->where('departemen_id', $departemenId);
+            });
+        }
+        $jurnals = $jurnalQuery->get();
 
         $rekap = collect();
 
@@ -78,7 +91,18 @@ class RekapJamGuruController extends Controller
             });
 
             // Jadwal aktif mingguan guru
-            $jadwals = JadwalPelajaran::where('guru_id', $g->id)->with(['mataPelajaran', 'kelas'])->get();
+            $jadwalQuery = JadwalPelajaran::where('guru_id', $g->id)->with(['mataPelajaran', 'kelas']);
+            if ($departemenId && $departemenId !== 'all') {
+                $jadwalQuery->whereHas('kelas', function ($q) use ($departemenId) {
+                    $q->where('departemen_id', $departemenId);
+                });
+            }
+            $jadwals = $jadwalQuery->get();
+
+            // Jika filter departemen dipilih dan guru tidak punya jadwal/jurnal di departemen tsb, lewati
+            if ($departemenId && $departemenId !== 'all' && $guruJurnals->isEmpty() && $jadwals->isEmpty()) {
+                continue;
+            }
 
             // Rincian per mapel yang diajar
             $mapelSummary = [];
@@ -107,9 +131,14 @@ class RekapJamGuruController extends Controller
             ]);
         }
 
+        $selectedDepartemen = ($departemenId && $departemenId !== 'all') ? \App\Models\Departemen::with('kepalaSekolah')->find($departemenId) : null;
+
         return [
             'rekap' => $rekap,
             'gurus' => Guru::orderBy('nama_lengkap')->get(),
+            'departemens' => $departemens,
+            'filterDepartemen' => $departemenId,
+            'selectedDepartemen' => $selectedDepartemen,
             'dari' => $dari,
             'sampai' => $sampai,
             'filterGuru' => $guruId,

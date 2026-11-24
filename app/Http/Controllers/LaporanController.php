@@ -251,8 +251,17 @@ class LaporanController extends Controller
         ];
 
         $pengaturan = \App\Models\PengaturanLembaga::first();
+        $activeDepartemen = null;
 
-        return view('laporan.print_siswa', compact('user', 'tipe', 'bulanStr', 'presensi', 'rekap', 'judul', 'pengaturan'));
+        if ($tipe === 'siswa') {
+            $user->loadMissing('kelas.departemen.kepalaSekolah');
+            $activeDepartemen = $user->kelas?->departemen;
+        } else {
+            // Jika guru yang dicetak, cari jika guru tersebut ditugaskan pada departemen tertentu atau departemen pertama
+            $activeDepartemen = \App\Models\Departemen::with('kepalaSekolah')->first();
+        }
+
+        return view('laporan.print_siswa', compact('user', 'tipe', 'bulanStr', 'presensi', 'rekap', 'judul', 'pengaturan', 'activeDepartemen'));
     }
 
     public function export(Request $request)
