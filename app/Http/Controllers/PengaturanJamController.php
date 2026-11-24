@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\PengaturanJam;
+use App\Models\Departemen;
 use App\Models\Kelas;
 use Illuminate\Support\Facades\DB;
 
@@ -11,14 +12,32 @@ class PengaturanJamController extends Controller
 {
     public function index()
     {
-        $pengaturan = PengaturanJam::with('kelas')->orderBy('tipe')->orderBy('hari')->get();
+        $pengaturan = PengaturanJam::with(['kelas', 'departemen'])->orderBy('tipe')->orderBy('hari')->get();
         
-        $kelases = Kelas::orderBy('tingkat')->orderBy('nama_rombel')->get();
+        $departemens = Departemen::where('status', 'Aktif')->orderBy('nama_departemen')->get();
+        $kelases = Kelas::with('departemen')->orderBy('tingkat')->orderBy('nama_rombel')->get();
         
         $allTargets = [];
-        $allTargets[] = ['id' => 'guru', 'nama' => 'Semua Guru', 'tipe' => 'guru'];
+        $allTargets[] = ['id' => 'guru', 'nama' => 'Semua Guru (Umum)', 'tipe' => 'guru'];
+
+        // Tambah target Departemen
+        foreach ($departemens as $d) {
+            $allTargets[] = [
+                'id' => 'dep_' . $d->id,
+                'departemen_id' => $d->id,
+                'nama' => 'Departemen: ' . $d->nama_departemen,
+                'tipe' => 'departemen'
+            ];
+        }
+
+        // Tambah target Kelas Rombel
         foreach ($kelases as $k) {
-            $allTargets[] = ['id' => $k->id, 'nama' => 'Kelas ' . $k->nama_rombel, 'tipe' => 'kelas'];
+            $namaDep = $k->departemen ? (' (' . $k->departemen->nama_departemen . ')') : '';
+            $allTargets[] = [
+                'id' => $k->id,
+                'nama' => 'Kelas ' . $k->nama_rombel . $namaDep,
+                'tipe' => 'kelas'
+            ];
         }
 
         $hariList = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
@@ -27,7 +46,14 @@ class PengaturanJamController extends Controller
         $activeTargetIds = [];
 
         foreach ($pengaturan as $p) {
-            $key = $p->tipe === 'guru' ? 'guru' : $p->kelas_id;
+            if ($p->tipe === 'guru') {
+                $key = 'guru';
+            } elseif ($p->tipe === 'departemen') {
+                $key = 'dep_' . $p->departemen_id;
+            } else {
+                $key = $p->kelas_id;
+            }
+
             $activeTargetIds[$key] = true;
             
             if (!isset($matrix[$key])) {
@@ -43,35 +69,50 @@ class PengaturanJamController extends Controller
             return isset($activeTargetIds[$t['id']]);
         });
 
-        return view('jam-absensi.index', compact('activeTargets', 'allTargets', 'kelases', 'hariList', 'matrix'));
+        return view('jam-absensi.index', compact('activeTargets', 'allTargets', 'departemens', 'kelases', 'hariList', 'matrix'));
     }
 
     public function store(Request $request)
     {
         $request->validate([
-            'target_id' => 'required', // 'guru' or uuid of kelas
+            'target_id' => 'required', // 'guru', 'dep_UUID', or UUID of kelas
             'hari' => 'required|string',
             'jam_mulai' => 'required|date_format:H:i',
             'jam_terlambat' => 'required|date_format:H:i',
             'jam_pulang' => 'required|date_format:H:i',
         ]);
 
+        $targetId = $request->target_id;
         $targetsToUpdate = [];
-        $tipeUtama = $request->target_id === 'guru' ? 'guru' : 'kelas';
-        $kelasIdUtama = $request->target_id === 'guru' ? null : $request->target_id;
 
-        $targetsToUpdate[] = [
-            'tipe' => $tipeUtama,
-            'kelas_id' => $kelasIdUtama
-        ];
+        if ($targetId === 'guru') {
+            $targetsToUpdate[] = [
+                'tipe' => 'guru',
+                'departemen_id' => null,
+                'kelas_id' => null
+            ];
+        } elseif (str_starts_with($targetId, 'dep_')) {
+            $depId = substr($targetId, 4);
+            $targetsToUpdate[] = [
+                'tipe' => 'departemen',
+                'departemen_id' => $depId,
+                'kelas_id' => null
+            ];
+        } else {
+            $targetsToUpdate[] = [
+                'tipe' => 'kelas',
+                'departemen_id' => null,
+                'kelas_id' => $targetId
+            ];
+        }
 
         // Handle copying to other classes
         if ($request->has('copy_to_classes') && is_array($request->copy_to_classes)) {
             foreach ($request->copy_to_classes as $classId) {
-                // Prevent duplicate if the user accidentally checked the primary target
-                if ($classId !== $kelasIdUtama) {
+                if ($classId !== $targetId) {
                     $targetsToUpdate[] = [
                         'tipe' => 'kelas',
+                        'departemen_id' => null,
                         'kelas_id' => $classId
                     ];
                 }
@@ -84,6 +125,7 @@ class PengaturanJamController extends Controller
                 PengaturanJam::updateOrCreate(
                     [
                         'tipe' => $target['tipe'],
+                        'departemen_id' => $target['departemen_id'],
                         'kelas_id' => $target['kelas_id'],
                         'hari' => $request->hari,
                     ],
@@ -100,5 +142,33 @@ class PengaturanJamController extends Controller
             DB::rollback();
             return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
+    }
+
+    public function update(Request $request, $id)
+    {
+        $jam = PengaturanJam::findOrFail($id);
+
+        $request->validate([
+            'jam_mulai' => 'required|date_format:H:i',
+            'jam_terlambat' => 'required|date_format:H:i',
+            'jam_pulang' => 'required|date_format:H:i',
+        ]);
+
+        $jam->update([
+            'jam_mulai' => $request->jam_mulai,
+            'jam_terlambat' => $request->jam_terlambat,
+            'jam_pulang' => $request->jam_pulang,
+        ]);
+
+        return redirect()->route('jam-absensi.index')->with('success', "Jam absensi hari {$jam->hari} berhasil diperbarui!");
+    }
+
+    public function destroy($id)
+    {
+        $jam = PengaturanJam::findOrFail($id);
+        $hari = $jam->hari;
+        $jam->delete();
+
+        return redirect()->route('jam-absensi.index')->with('success', "Jadwal jam absensi hari {$hari} berhasil dihapus (dijadikan libur)!");
     }
 }

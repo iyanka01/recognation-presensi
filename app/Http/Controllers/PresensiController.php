@@ -103,17 +103,43 @@ class PresensiController extends Controller
             ]);
         }
 
-        // Ambil Pengaturan Jam
+        // Ambil Pengaturan Jam (Hirarki: Kelas -> Departemen -> Guru / Umum)
         $hariIni = \Carbon\Carbon::now()->locale('id')->dayName; // "Senin", "Selasa" dst.
-        
-        $tipeTarget = $userTypeModel === 'guru' ? 'guru' : 'kelas';
-        $kelasId = $userTypeModel === 'siswa' ? $user->kelas_id : null;
-        
-        $pengaturan = \App\Models\PengaturanJam::where('tipe', $tipeTarget)
-            ->where('hari', $hariIni)
-            ->when($tipeTarget === 'kelas', function($q) use ($kelasId) {
-                return $q->where('kelas_id', $kelasId);
-            })->first();
+        $departemenId = null;
+
+        if ($userTypeModel === 'siswa') {
+            $kelas = $user->kelas;
+            $departemenId = $kelas?->departemen_id;
+
+            // 1. Cek aturan khusus kelas siswa
+            $pengaturan = \App\Models\PengaturanJam::where('tipe', 'kelas')
+                ->where('kelas_id', $user->kelas_id)
+                ->where('hari', $hariIni)
+                ->first();
+
+            // 2. Jika tidak ada, cek aturan per Departemen siswa
+            if (!$pengaturan && $departemenId) {
+                $pengaturan = \App\Models\PengaturanJam::where('tipe', 'departemen')
+                    ->where('departemen_id', $departemenId)
+                    ->where('hari', $hariIni)
+                    ->first();
+            }
+        } else {
+            // Guru: cek per departemen jika ada, fallback ke guru umum
+            $departemenId = $user->departemen_id ?? null;
+            if ($departemenId) {
+                $pengaturan = \App\Models\PengaturanJam::where('tipe', 'departemen')
+                    ->where('departemen_id', $departemenId)
+                    ->where('hari', $hariIni)
+                    ->first();
+            }
+
+            if (empty($pengaturan)) {
+                $pengaturan = \App\Models\PengaturanJam::where('tipe', 'guru')
+                    ->where('hari', $hariIni)
+                    ->first() ?: \App\Models\PengaturanJam::where('tipe', 'guru')->first();
+            }
+        }
 
         if (!$pengaturan) {
             return response()->json([

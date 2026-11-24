@@ -16,4 +16,9 @@ class PengaturanJam extends Model
     {
         return $this->belongsTo(Kelas::class);
     }
+
+    public function departemen()
+    {
+        return $this->belongsTo(Departemen::class, 'departemen_id');
+    }
 }

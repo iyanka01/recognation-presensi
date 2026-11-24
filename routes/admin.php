@@ -72,6 +72,8 @@ Route::middleware('auth:web')->group(function () {
     // Pengaturan Jam Absensi
     Route::get('jam-absensi', [PengaturanJamController::class, 'index'])->name('jam-absensi.index');
     Route::post('jam-absensi', [PengaturanJamController::class, 'store'])->name('jam-absensi.store');
+    Route::put('jam-absensi/{id}', [PengaturanJamController::class, 'update'])->name('jam-absensi.update');
+    Route::delete('jam-absensi/{id}', [PengaturanJamController::class, 'destroy'])->name('jam-absensi.destroy');
     
     // Hari Libur
     Route::get('hari-libur', [HariLiburController::class, 'index'])->name('hari-libur.index');
