@@ -42,23 +42,24 @@ class GuruPasswordController extends Controller
 
         // Verifikasi password saat ini
         $isCurrentValid = false;
-        if (!empty($guru->password) && Hash::check($request->current_password, $guru->password)) {
-            $isCurrentValid = true;
-        } elseif (empty($guru->password) && $request->current_password === GuruController::PASSWORD_DEFAULT) {
-            $isCurrentValid = true;
-        } elseif ($request->current_password === GuruController::PASSWORD_DEFAULT && Hash::check(GuruController::PASSWORD_DEFAULT, $guru->password)) {
-            $isCurrentValid = true;
+        try {
+            $isCurrentValid = !empty($guru->password) && Hash::check($request->current_password, $guru->password);
+        } catch (\Throwable $e) {
+            $isCurrentValid = false;
         }
 
         if (!$isCurrentValid) {
+            \App\Services\Security\SecurityLogService::log('password.update.failed', 'guru', $guru->id, $guru->username ?: $guru->nip, ['reason' => 'invalid_current_password']);
             return back()->withErrors([
-                'current_password' => 'Password saat ini yang Anda masukkan salah. Jika belum pernah diubah, password awal adalah guru123.',
+                'current_password' => 'Password saat ini yang Anda masukkan salah.',
             ]);
         }
 
         // Simpan password baru langsung ke database
         $guru->password = Hash::make($request->password);
         $guru->save();
+
+        \App\Services\Security\SecurityLogService::log('password.update.success', 'guru', $guru->id, $guru->username ?: $guru->nip);
 
         return redirect()->route('dashboard')->with('success', 'Password berhasil diperbarui! Silakan gunakan password baru ini untuk login berikutnya.');
     }

@@ -77,16 +77,23 @@ class SiswaPasswordController extends Controller
         $siswa = Siswa::findOrFail(Auth::guard('siswa')->user()->id);
 
         // Verifikasi password saat ini
-        $currentValid = Hash::check($request->current_password, $siswa->password)
-            || ($request->current_password === 'siswa123' && ($siswa->password === 'siswa123' || empty($siswa->password)));
+        $currentValid = false;
+        try {
+            $currentValid = !empty($siswa->password) && Hash::check($request->current_password, $siswa->password);
+        } catch (\Throwable $e) {
+            $currentValid = false;
+        }
 
         if (!$currentValid) {
+            \App\Services\Security\SecurityLogService::log('password.update.failed', 'siswa', $siswa->id, $siswa->nis ?: $siswa->nisn, ['reason' => 'invalid_current_password']);
             return back()->withErrors(['current_password' => 'Kata sandi saat ini tidak sesuai.'])->onlyInput('current_password');
         }
 
         $siswa->password = Hash::make($request->password);
         $siswa->is_password_changed = true;
         $siswa->save();
+
+        \App\Services\Security\SecurityLogService::log('password.update.success', 'siswa', $siswa->id, $siswa->nis ?: $siswa->nisn);
 
         return redirect()->route('siswa.dashboard')->with('success', 'Kata sandi berhasil diperbarui! Silakan gunakan kata sandi baru ini untuk login berikutnya.');
     }

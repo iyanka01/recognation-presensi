@@ -13,7 +13,8 @@ class UpdateDepartemenRequest extends FormRequest
 
     public function rules(): array
     {
-        $id = $this->route('id') ?? $this->route('departemen');
+        $departemen = $this->route('departemen') ?? $this->route('departeman') ?? $this->route('id');
+        $id = is_object($departemen) ? $departemen->id : $departemen;
 
         return [
             'kode_departemen'    => ['required', 'string', 'max:50', 'unique:departemen,kode_departemen,' . $id],

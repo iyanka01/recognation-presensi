@@ -29,6 +29,9 @@ class AkunController extends Controller
 
         if ($request->filled('password')) {
             $data['password'] = Hash::make($request->password);
+            \App\Services\Security\SecurityLogService::log('password.update.success', 'admin', $user->id, $user->username);
+        } else {
+            \App\Services\Security\SecurityLogService::log('profile.update', 'admin', $user->id, $user->username);
         }
 
         $user->update($data);

@@ -48,7 +48,7 @@ Route::middleware('auth:web')->group(function () {
     });
 
     // Master Departemen / Instansi
-    Route::resource('departemen', \App\Http\Controllers\DepartemenController::class)->except(['create', 'show']);
+    Route::resource('departemen', \App\Http\Controllers\DepartemenController::class)->parameters(['departemen' => 'departemen'])->except(['create', 'show']);
 
     // Master Tahun Ajaran
     Route::resource('tahun-ajaran', \App\Http\Controllers\TahunAjaranController::class)->except(['create', 'show']);

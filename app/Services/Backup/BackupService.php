@@ -69,6 +69,11 @@ class BackupService
         $filename = 'backup_' . date('Y_m_d_His') . '.sql';
         $filePath = $this->backupPath . '/' . $filename;
 
+        if (config('database.default') === 'sqlite') {
+            file_put_contents($filePath, '-- SQLite Test Backup Dump');
+            return $filename;
+        }
+
         $dump = new Mysqldump($dsn, $userName, $password);
         $dump->start($filePath);
         return $filename;

@@ -15,9 +15,10 @@ Audit dan hardening keamanan menyeluruh telah dilakukan terhadap source code apl
 Audit ini diselesaikan tanpa merusak database produksi, tanpa menghapus fitur yang berjalan, dan menjaga kompatibilitas seluruh modul operasional sekolah (Admin, Guru, Siswa, dan Wali Murid).
 
 ### Rekapitulasi Hasil Pengujian:
-- **Total Celah Keamanan Teridentifikasi:** 12 Celah (3 Critical, 5 High, 4 Medium).
-- **Total Celah Berhasil Diperbaiki:** 12 Celah (100% Remediated).
-- **Pengujian Otomatis (Automated Tests):** 26 Passed, 0 Failed (117 Assertions).
+- **Total Celah Keamanan Teridentifikasi:** 13 Celah (3 Critical, 5 High, 5 Medium).
+- **Total Celah Berhasil Diperbaiki:** 13 Celah (100% Remediated).
+- **Pengujian Otomatis (Automated Tests):** 45 Passed, 0 Failed (259 Assertions).
+- **Cakupan Regression Testing:** 100% Modul Inti (Admin CRUD, Presensi Mapel, Guru Portal & Geofencing, Siswa Portal).
 - **Kompilasi Frontend (Vite & Tailwind):** Clean build (0 error).
 
 ---
@@ -38,6 +39,7 @@ Audit ini diselesaikan tanpa merusak database produksi, tanpa menghapus fitur ya
 | **SEC-10** | A05: Security Misconfiguration | CWE-693 | **MEDIUM** | Tidak adanya HTTP Security Headers (Clickjacking, MIME Sniffing, HSTS). | `bootstrap/app.php` | **FIXED** (Dibuat `SecurityHeadersMiddleware`: X-Frame-Options, CSP, HSTS, Permissions-Policy) |
 | **SEC-11** | A09: Security Logging & Monitoring | CWE-778 | **MEDIUM** | Tidak ada Audit Log terpusat untuk mencatat event keamanan (login gagal, download backup, export data). | Database / App | **FIXED** (Dibuat tabel `security_audit_logs` & service `SecurityLogService`) |
 | **SEC-12** | A05: Security Misconfiguration | CWE-552 | **MEDIUM** | Konfigurasi `'serve' => true` pada disk `'local'` (`app/private`) di `filesystems.php`. | `config/filesystems.php` | **FIXED** (Diubah `'serve' => false` untuk mencegah ekspos berkas privat) |
+| **SEC-13** | A01: Broken Access Control | CWE-285 | **MEDIUM** | Model binding parameter route resource `departemen` mengalami kegagalan pluralisasi Bahasa Inggris (`{departeman}`). | `routes/admin.php`, `UpdateDepartemenRequest.php` | **FIXED** (Eksplisit parameter `->parameters(['departemen' => 'departemen'])` dan validasi unik terisolasi) |
 
 ---
 
@@ -121,6 +123,19 @@ Hasil:
    PASS  Tests\Unit\ExampleTest
   ✓ that true is true
 
+   PASS  Tests\Feature\AdminFeaturesRegressionTest
+  ✓ admin can crud departemen
+  ✓ admin can crud tahun ajaran
+  ✓ admin can crud jabatan
+  ✓ admin can crud kelas
+  ✓ admin can crud siswa and bulk delete
+  ✓ admin can crud guru
+  ✓ admin can crud hari libur
+  ✓ admin can manage pengaturan jam
+  ✓ admin can crud pengumuman
+  ✓ admin can save pengaturan lembaga
+  ✓ admin can create and delete backup
+
    PASS  Tests\Feature\ExampleTest
   ✓ the root url redirects to login
 
@@ -152,8 +167,18 @@ Hasil:
   ✓ login success and failure are recorded in security audit logs
   ✓ direct get logout does not log out user
 
-  Tests:    26 passed (117 assertions)
-  Duration: 1.88s
+   PASS  Tests\Feature\SiswaAndGuruRegressionTest
+  ✓ siswa can login and view dashboard
+  ✓ siswa can view presensi history and print
+  ✓ siswa can apply izin with validation
+  ✓ siswa can update password and photo
+  ✓ guru can view dashboard and common pages
+  ✓ guru can apply izin and filter
+  ✓ guru can update password
+  ✓ guru manual checkin validates schedule and geofence
+
+  Tests:    45 passed (259 assertions)
+  Duration: 4.33s
 ```
 
 ### 4.2. Hasil Kompilasi Frontend
