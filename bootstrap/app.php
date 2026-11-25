@@ -21,14 +21,12 @@ return Application::configure(basePath: dirname(__DIR__))
         // Trust all proxies for Cloudflare & Railway SSL termination
         $middleware->trustProxies(at: '*');
 
-        // Kecualikan login dan logout dari validasi CSRF agar tidak pernah error 419
+        // Security Headers OWASP ASVS
+        $middleware->append(\App\Http\Middleware\SecurityHeadersMiddleware::class);
+
+        // Lindungi seluruh endpoint autentikasi dari CSRF, kecualikan hanya route API stateless
         $middleware->validateCsrfTokens(except: [
-            'login',
-            'logout',
-            'admin/login',
-            'admin/logout',
-            'siswa/login',
-            'siswa/logout',
+            'api/*',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

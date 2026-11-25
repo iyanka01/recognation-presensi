@@ -51,7 +51,14 @@ class AuthController extends Controller
                   ->orWhere('nip', $usernameInput);
             })->first();
 
-            if ($guru && Hash::check($passwordInput, $guru->password)) {
+            $isPasswordValid = false;
+            try {
+                $isPasswordValid = !empty($guru?->password) && Hash::check($passwordInput, $guru->password);
+            } catch (\Throwable $e) {
+                $isPasswordValid = false;
+            }
+
+            if ($guru && $isPasswordValid) {
                 if (strtolower($guru->status) !== 'aktif') {
                     return [
                         'success' => false,
@@ -61,6 +68,7 @@ class AuthController extends Controller
 
                 Auth::guard('guru')->login($guru, $remember);
                 $request->session()->regenerate();
+                \App\Services\Security\SecurityLogService::log('auth.login.success', 'guru', $guru->id, $guru->username ?: $guru->nip, ['guard' => 'guru']);
                 return ['success' => true];
             }
             return null;
@@ -73,17 +81,18 @@ class AuthController extends Controller
                 ->first();
 
             if ($siswa) {
-                if (!Hash::check($passwordInput, $siswa->password)) {
-                    // Fallback jika password masih default siswa123
-                    if ($passwordInput === 'siswa123' && ($siswa->password === 'siswa123' || empty($siswa->password))) {
-                        $siswa->password = Hash::make('siswa123');
-                        $siswa->save();
-                    } else {
-                        return null;
-                    }
+                $isPasswordValid = false;
+                try {
+                    $isPasswordValid = !empty($siswa->password) && Hash::check($passwordInput, $siswa->password);
+                } catch (\Throwable $e) {
+                    $isPasswordValid = false;
+                }
+                if (!$isPasswordValid) {
+                    return null;
                 }
                 Auth::guard('siswa')->login($siswa, $remember);
                 $request->session()->regenerate();
+                \App\Services\Security\SecurityLogService::log('auth.login.success', 'siswa', $siswa->id, $siswa->nis ?: $siswa->nisn, ['guard' => 'siswa']);
                 return ['success' => true];
             }
             return null;
@@ -92,6 +101,7 @@ class AuthController extends Controller
         // Cek jika akun yang dimasukkan adalah akun administrator
         $cekAdmin = \App\Models\AdminUser::where('username', $usernameInput)->first();
         if ($cekAdmin && Hash::check($passwordInput, $cekAdmin->password)) {
+            \App\Services\Security\SecurityLogService::log('auth.login.failed', 'admin', $cekAdmin->id, $usernameInput, ['guard' => 'web', 'reason' => 'admin_used_guru_form']);
             return back()->withErrors([
                 'username' => 'Akun Administrator tidak dapat login di halaman ini. Silakan login melalui Panel Administrator di /admin/login.',
             ])->onlyInput('username');
@@ -102,6 +112,7 @@ class AuthController extends Controller
             if ($res && $res['success']) {
                 return redirect()->route('siswa.dashboard');
             }
+            \App\Services\Security\SecurityLogService::log('auth.login.failed', 'siswa', null, $usernameInput, ['role' => 'siswa', 'reason' => 'invalid_credentials']);
             return back()->withErrors([
                 'username' => 'NIS/NISN atau kata sandi siswa tidak sesuai.',
             ])->onlyInput('username');
@@ -111,6 +122,7 @@ class AuthController extends Controller
             if ($res && $res['success']) {
                 return redirect()->intended(route('dashboard'));
             } elseif ($res && isset($res['error'])) {
+                \App\Services\Security\SecurityLogService::log('auth.login.failed', 'guru', null, $usernameInput, ['role' => 'guru', 'reason' => 'account_inactive']);
                 return back()->withErrors(['username' => $res['error']])->onlyInput('username');
             }
 
@@ -121,6 +133,8 @@ class AuthController extends Controller
             }
         }
 
+        \App\Services\Security\SecurityLogService::log('auth.login.failed', 'unknown', null, $usernameInput, ['role_preference' => $rolePreference, 'reason' => 'invalid_credentials']);
+
         return back()->withErrors([
             'username' => 'NIP/NIS atau kata sandi yang Anda masukkan salah.',
         ])->onlyInput('username');
@@ -128,6 +142,18 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
+        $guru = Auth::guard('guru')->user();
+        $admin = Auth::guard('web')->user();
+        $siswa = Auth::guard('siswa')->user();
+
+        if ($guru) {
+            \App\Services\Security\SecurityLogService::log('auth.logout', 'guru', $guru->id, $guru->username ?: $guru->nip, ['guard' => 'guru']);
+        } elseif ($admin) {
+            \App\Services\Security\SecurityLogService::log('auth.logout', 'admin', $admin->id, $admin->username, ['guard' => 'web']);
+        } elseif ($siswa) {
+            \App\Services\Security\SecurityLogService::log('auth.logout', 'siswa', $siswa->id, $siswa->nis ?: $siswa->nisn, ['guard' => 'siswa']);
+        }
+
         Auth::guard('web')->logout();
         Auth::guard('guru')->logout();
         Auth::guard('siswa')->logout();

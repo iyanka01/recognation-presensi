@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Mapel\StoreMapelRequest;
+use App\Http\Requests\Mapel\UpdateMapelRequest;
 use App\Models\MataPelajaran;
 use Illuminate\Http\Request;
 
@@ -13,28 +15,17 @@ class MapelController extends Controller
         return view('mapel.index', compact('mapels'));
     }
 
-    public function store(Request $request)
+    public function store(StoreMapelRequest $request)
     {
-        $validated = $request->validate([
-            'kode_mapel' => 'required|string|max:20|unique:mata_pelajaran,kode_mapel',
-            'nama_mapel' => 'required|string|max:100',
-        ]);
-
-        MataPelajaran::create($validated);
+        MataPelajaran::create($request->validated());
 
         return redirect()->route('mapel.index')->with('success', 'Mata pelajaran berhasil ditambahkan!');
     }
 
-    public function update(Request $request, $id)
+    public function update(UpdateMapelRequest $request, $id)
     {
         $mapel = MataPelajaran::findOrFail($id);
-
-        $validated = $request->validate([
-            'kode_mapel' => 'required|string|max:20|unique:mata_pelajaran,kode_mapel,' . $mapel->id,
-            'nama_mapel' => 'required|string|max:100',
-        ]);
-
-        $mapel->update($validated);
+        $mapel->update($request->validated());
 
         return redirect()->route('mapel.index')->with('success', 'Mata pelajaran berhasil diperbarui!');
     }

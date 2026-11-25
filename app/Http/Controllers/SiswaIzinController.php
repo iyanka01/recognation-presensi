@@ -2,14 +2,23 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Izin\StoreSiswaIzinRequest;
 use App\Models\PengaturanLembaga;
 use App\Models\Presensi;
+use App\Services\Izin\IzinService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class SiswaIzinController extends Controller
 {
+    protected IzinService $izinService;
+
+    public function __construct(IzinService $izinService)
+    {
+        $this->izinService = $izinService;
+    }
+
     /**
      * Halaman Pengajuan Izin / Sakit oleh Wali Murid
      */
@@ -33,74 +42,29 @@ class SiswaIzinController extends Controller
     /**
      * Simpan Pengajuan Izin / Sakit Baru
      */
-    public function store(Request $request)
+    public function store(StoreSiswaIzinRequest $request)
     {
         $siswa = Auth::guard('siswa')->user();
+        $validated = $request->validated();
 
-        $request->validate([
-            'status'          => 'required|in:Izin,Sakit',
-            'tanggal_mulai'   => 'required|date',
-            'tanggal_selesai' => 'required|date|after_or_equal:tanggal_mulai',
-            'keterangan'      => 'required|string|max:500',
-            'bukti'           => 'nullable|image|mimes:jpeg,png,jpg|max:3072',
-        ], [
-            'status.required'          => 'Jenis perizinan wajib dipilih.',
-            'tanggal_mulai.required'   => 'Tanggal mulai izin wajib diisi.',
-            'tanggal_selesai.required' => 'Tanggal selesai izin wajib diisi.',
-            'keterangan.required'      => 'Alasan izin wajib dijelaskan.',
-            'bukti.image'              => 'Bukti surat harus berupa file gambar (JPG/PNG).',
-            'bukti.max'                => 'Ukuran foto bukti surat maksimal 3MB.',
-        ]);
-
-        $mulai   = Carbon::parse($request->tanggal_mulai);
-        $selesai = Carbon::parse($request->tanggal_selesai);
-        $diff    = $mulai->diffInDays($selesai);
-
-        if ($diff > 30) {
+        $mulai = Carbon::parse($validated['tanggal_mulai']);
+        $selesai = Carbon::parse($validated['tanggal_selesai']);
+        if ($mulai->diffInDays($selesai) > 30) {
             return back()->with('error', 'Rentang izin maksimal adalah 30 hari.');
         }
 
-        $keteranganLengkap = $request->keterangan;
+        $created = $this->izinService->recordIzinMultiDays(
+            'siswa',
+            $siswa->id,
+            $validated['tanggal_mulai'],
+            $validated['tanggal_selesai'],
+            $validated['status'],
+            $validated['keterangan'],
+            $request->file('bukti'),
+            'pending',
+            null
+        );
 
-        // Upload bukti jika ada
-        $buktiPath = null;
-        if ($request->hasFile('bukti')) {
-            $buktiPath = $request->file('bukti')->store('bukti_izin', 'public');
-        }
-
-        $created = 0;
-        for ($i = 0; $i <= $diff; $i++) {
-            $tgl = $mulai->copy()->addDays($i)->toDateString();
-
-            // Cek apakah sudah ada presensi pada tanggal tersebut
-            $existing = Presensi::where('user_type', 'siswa')
-                ->where('user_id', $siswa->id)
-                ->whereDate('tanggal', $tgl)
-                ->first();
-
-            if ($existing) {
-                $existing->update([
-                    'status' => $request->status,
-                    'keterangan' => $keteranganLengkap,
-                    'bukti' => $buktiPath ?: $existing->bukti,
-                    'status_approval' => 'pending',
-                    'catatan_approval' => null,
-                ]);
-            } else {
-                Presensi::create([
-                    'user_type' => 'siswa',
-                    'user_id'   => $siswa->id,
-                    'tanggal'   => $tgl,
-                    'status'    => $request->status,
-                    'keterangan' => $keteranganLengkap,
-                    'bukti' => $buktiPath,
-                    'status_approval' => 'pending',
-                    'catatan_approval' => null,
-                ]);
-            }
-            $created++;
-        }
-
-        return redirect()->route('siswa.izin')->with('success', "Pengajuan {$request->status} untuk {$created} hari berhasil disimpan.");
+        return redirect()->route('siswa.izin')->with('success', "Pengajuan {$validated['status']} untuk {$created} hari berhasil disimpan.");
     }
 }

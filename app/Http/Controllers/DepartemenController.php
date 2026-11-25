@@ -2,13 +2,22 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Departemen\StoreDepartemenRequest;
+use App\Http\Requests\Departemen\UpdateDepartemenRequest;
 use App\Models\Departemen;
 use App\Models\Guru;
+use App\Services\Departemen\DepartemenService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 
 class DepartemenController extends Controller
 {
+    protected DepartemenService $departemenService;
+
+    public function __construct(DepartemenService $departemenService)
+    {
+        $this->departemenService = $departemenService;
+    }
+
     public function index()
     {
         $departemens = Departemen::with('kepalaSekolah')
@@ -21,71 +30,30 @@ class DepartemenController extends Controller
         return view('departemen.index', compact('departemens', 'gurus'));
     }
 
-    public function store(Request $request)
+    public function store(StoreDepartemenRequest $request)
     {
-        $validated = $request->validate([
-            'kode_departemen'    => ['required', 'string', 'max:50', 'unique:departemen,kode_departemen'],
-            'nama_departemen'    => ['required', 'string', 'max:255'],
-            'tingkatan'          => ['required', 'string', 'max:100'],
-            'kepala_sekolah_id'  => ['nullable', 'exists:guru,id'],
-            'status'             => ['required', 'in:Aktif,Tidak Aktif'],
-            'logo'               => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
-            'alamat'             => ['nullable', 'string'],
-            'no_telp'            => ['nullable', 'string', 'max:50'],
-            'keterangan'         => ['nullable', 'string'],
-        ]);
-
-        if ($request->hasFile('logo')) {
-            $validated['logo'] = $request->file('logo')->store('departemen', 'public');
-        }
-
-        Departemen::create($validated);
+        $this->departemenService->store($request->validated(), $request->file('logo'));
 
         return redirect()->route('departemen.index')->with('success', 'Departemen baru berhasil ditambahkan!');
     }
 
-    public function update(Request $request, $id)
+    public function update(UpdateDepartemenRequest $request, $id)
     {
         $departemen = Departemen::findOrFail($id);
-
-        $validated = $request->validate([
-            'kode_departemen'    => ['required', 'string', 'max:50', 'unique:departemen,kode_departemen,' . $departemen->id],
-            'nama_departemen'    => ['required', 'string', 'max:255'],
-            'tingkatan'          => ['required', 'string', 'max:100'],
-            'kepala_sekolah_id'  => ['nullable', 'exists:guru,id'],
-            'status'             => ['required', 'in:Aktif,Tidak Aktif'],
-            'logo'               => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
-            'alamat'             => ['nullable', 'string'],
-            'no_telp'            => ['nullable', 'string', 'max:50'],
-            'keterangan'         => ['nullable', 'string'],
-        ]);
-
-        if ($request->hasFile('logo')) {
-            if ($departemen->logo) {
-                Storage::disk('public')->delete($departemen->logo);
-            }
-            $validated['logo'] = $request->file('logo')->store('departemen', 'public');
-        }
-
-        $departemen->update($validated);
+        $this->departemenService->update($departemen, $request->validated(), $request->file('logo'));
 
         return redirect()->route('departemen.index')->with('success', 'Data Departemen berhasil diperbarui!');
     }
 
     public function destroy($id)
     {
-        $departemen = Departemen::withCount('kelas')->findOrFail($id);
+        $departemen = Departemen::findOrFail($id);
+        $result = $this->departemenService->delete($departemen);
 
-        if ($departemen->kelas_count > 0) {
-            return redirect()->route('departemen.index')->with('error', 'Departemen tidak dapat dihapus karena masih memiliki data kelas!');
+        if (!$result['success']) {
+            return redirect()->route('departemen.index')->with('error', $result['message']);
         }
 
-        if ($departemen->logo) {
-            Storage::disk('public')->delete($departemen->logo);
-        }
-
-        $departemen->delete();
-
-        return redirect()->route('departemen.index')->with('success', 'Departemen berhasil dihapus!');
+        return redirect()->route('departemen.index')->with('success', $result['message']);
     }
 }

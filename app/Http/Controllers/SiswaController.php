@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Siswa\StoreSiswaRequest;
+use App\Http\Requests\Siswa\UpdateSiswaRequest;
 use App\Models\Siswa;
 use App\Models\Kelas;
 use Illuminate\Http\Request;
@@ -82,21 +84,9 @@ class SiswaController extends Controller
         return view('siswa.create', compact('kelasList'));
     }
 
-    public function store(Request $request)
+    public function store(StoreSiswaRequest $request)
     {
-        $validated = $request->validate([
-            'nis' => 'required|string|unique:siswa,nis',
-            'nisn' => 'nullable|string|unique:siswa,nisn',
-            'nama_lengkap' => 'required|string',
-            'jenis_kelamin' => 'required|in:L,P',
-            'agama' => 'required|string',
-            'tempat_lahir' => 'required|string',
-            'tanggal_lahir' => 'required|date',
-            'kelas_id' => 'required|exists:kelas,id',
-            'no_hp_wali' => 'nullable|string',
-            'telegram_chat_id' => 'nullable|string',
-            'foto_siswa' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-        ]);
+        $validated = $request->validated();
 
         if ($request->hasFile('foto_siswa')) {
             $fotoPath = $request->file('foto_siswa')->store('foto_siswa', 'public');
@@ -117,22 +107,9 @@ class SiswaController extends Controller
         return view('siswa.edit', compact('siswa', 'kelasList'));
     }
 
-    public function update(Request $request, Siswa $siswa)
+    public function update(UpdateSiswaRequest $request, Siswa $siswa)
     {
-        $validated = $request->validate([
-            'nis' => 'required|string|unique:siswa,nis,' . $siswa->id,
-            'nisn' => 'nullable|string|unique:siswa,nisn,' . $siswa->id,
-            'nama_lengkap' => 'required|string',
-            'jenis_kelamin' => 'required|in:L,P',
-            'agama' => 'required|string',
-            'tempat_lahir' => 'required|string',
-            'tanggal_lahir' => 'required|date',
-            'kelas_id' => 'required|exists:kelas,id',
-            'no_hp_wali' => 'nullable|string',
-            'telegram_chat_id' => 'nullable|string',
-            'foto_siswa' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'status' => 'required|in:Aktif,Lulus,Pindah,Dikeluarkan',
-        ]);
+        $validated = $request->validated();
 
         if ($request->hasFile('foto_siswa')) {
             // Delete old photo if it exists

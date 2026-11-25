@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'migration' => [
+        'token' => env('MIGRATION_API_TOKEN'),
+        'verify_ssl' => env('MIGRATION_VERIFY_SSL', true),
+    ],
+
 ];

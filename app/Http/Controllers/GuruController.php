@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Guru\StoreGuruRequest;
+use App\Http\Requests\Guru\UpdateGuruRequest;
 use App\Models\Guru;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -26,21 +28,9 @@ class GuruController extends Controller
         return view('guru.create', compact('jabatans'));
     }
 
-    public function store(Request $request)
+    public function store(StoreGuruRequest $request)
     {
-        $validated = $request->validate([
-            'nip' => 'nullable|string|unique:guru,nip',
-            'nama_lengkap' => 'required|string',
-            'jenis_kelamin' => 'required|in:L,P',
-            'agama' => 'required|string',
-            'tempat_lahir' => 'required|string',
-            'tanggal_lahir' => 'required|date',
-            'jabatan' => 'required|string',
-            'no_hp' => 'nullable|string',
-            'telegram_chat_id' => 'nullable|string',
-            'foto_guru' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'password' => 'nullable|string|min:6',
-        ]);
+        $validated = $request->validated();
 
         if ($request->hasFile('foto_guru')) {
             $fotoPath = $request->file('foto_guru')->store('foto_guru', 'public');
@@ -68,22 +58,9 @@ class GuruController extends Controller
         return view('guru.edit', compact('guru', 'jabatans'));
     }
 
-    public function update(Request $request, Guru $guru)
+    public function update(UpdateGuruRequest $request, Guru $guru)
     {
-        $validated = $request->validate([
-            'nip' => 'nullable|string|unique:guru,nip,' . $guru->id,
-            'nama_lengkap' => 'required|string',
-            'jenis_kelamin' => 'required|in:L,P',
-            'agama' => 'required|string',
-            'tempat_lahir' => 'required|string',
-            'tanggal_lahir' => 'required|date',
-            'jabatan' => 'required|string',
-            'no_hp' => 'nullable|string',
-            'telegram_chat_id' => 'nullable|string',
-            'foto_guru' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'status' => 'required|in:Aktif,Nonaktif,Pensiun,Pindah',
-            'password' => 'nullable|string|min:6|confirmed',
-        ]);
+        $validated = $request->validated();
 
         if ($request->hasFile('foto_guru')) {
             if ($guru->foto_guru) {

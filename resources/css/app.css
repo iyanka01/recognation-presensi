@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import "./layouts/admin.css";
+@import "./components/alert.css";
 
 @custom-variant dark (&:where(.dark, .dark *));
 

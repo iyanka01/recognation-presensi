@@ -23,69 +23,6 @@
     
     <!-- QR Code Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <style>
-        /* === Custom Scrollbar === */
-        .scrollbar-hide::-webkit-scrollbar { display: none; }
-        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-
-        /* === Base Font & Colors === */
-        body {
-            font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
-            background-color: #f4f6f9;
-        }
-
-        /* === Sidebar Style (TailwindAdmin Inspired) === */
-        .sidebar-bg {
-            background-color: #ffffff;
-            border-right: 1px solid #e2e8f0;
-        }
-
-        /* === Active Nav Item === */
-        .nav-active {
-            background-color: #eff6ff !important;
-            color: #2563eb !important;
-            font-weight: 600;
-        }
-        .nav-item {
-            color: #475569;
-            transition: all 0.2s ease;
-        }
-        .nav-item:hover {
-            background-color: #f8fafc;
-            color: #1e293b;
-        }
-
-        /* === Topbar === */
-        .topbar-clean {
-            background-color: #ffffff;
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-        /* === Page Content Area === */
-        .main-content {
-            background-color: #f4f6f9;
-        }
-
-        /* === Section labels === */
-        .nav-section-label {
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-            color: #94a3b8;
-            text-transform: uppercase;
-        }
-
-        /* === Topbar breadcrumb page title === */
-        .page-title-chip {
-            display: inline-flex; align-items: center; gap: 6px;
-            background-color: #eff6ff;
-            border: 1px solid #dbeafe;
-            border-radius: 7px;
-            padding: 4px 12px;
-            font-size: 13px; font-weight: 600;
-            color: #1d4ed8;
-        }
-    </style>
     <!-- Theme Initializer (Prevent FOUC) -->
     <script>
         if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {

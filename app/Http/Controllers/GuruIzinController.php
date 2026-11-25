@@ -2,16 +2,24 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Izin\StoreGuruIzinRequest;
 use App\Models\PengaturanLembaga;
 use App\Models\Presensi;
+use App\Services\Izin\IzinService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 
 class GuruIzinController extends Controller
 {
     const KATEGORI = ['Izin', 'Sakit', 'Dinas Luar', 'Cuti', 'Dispensasi'];
+
+    protected IzinService $izinService;
+
+    public function __construct(IzinService $izinService)
+    {
+        $this->izinService = $izinService;
+    }
 
     public function index(Request $request)
     {
@@ -31,7 +39,6 @@ class GuruIzinController extends Controller
 
         $riwayat = $query->get();
 
-        // Statistik bulan ini per kategori
         $statBulanIni = [
             'Izin' => Presensi::where('user_type', 'guru')->where('user_id', $guru->id)->where('status', 'Izin')->whereBetween('tanggal', [$startOfMonth, $endOfMonth])->count(),
             'Sakit' => Presensi::where('user_type', 'guru')->where('user_id', $guru->id)->where('status', 'Sakit')->whereBetween('tanggal', [$startOfMonth, $endOfMonth])->count(),
@@ -51,64 +58,29 @@ class GuruIzinController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(StoreGuruIzinRequest $request)
     {
         $guru = Auth::guard('guru')->user();
+        $validated = $request->validated();
 
-        $request->validate([
-            'status' => 'required|in:' . implode(',', self::KATEGORI),
-            'tanggal_mulai' => 'required|date',
-            'tanggal_selesai' => 'required|date|after_or_equal:tanggal_mulai',
-            'keterangan' => 'required|string|max:500',
-            'bukti' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120', // max 5MB
-        ]);
-
-        $mulai = Carbon::parse($request->tanggal_mulai);
-        $selesai = Carbon::parse($request->tanggal_selesai);
-        $diff = $mulai->diffInDays($selesai);
-
-        if ($diff > 30) {
+        $mulai = Carbon::parse($validated['tanggal_mulai']);
+        $selesai = Carbon::parse($validated['tanggal_selesai']);
+        if ($mulai->diffInDays($selesai) > 30) {
             return redirect()->back()->with('error', 'Rentang tanggal pengajuan maksimal adalah 30 hari.');
         }
 
-        // Upload bukti jika ada
-        $buktiPath = null;
-        if ($request->hasFile('bukti')) {
-            $buktiPath = $request->file('bukti')->store('bukti_izin', 'public');
-        }
+        $berhasil = $this->izinService->recordIzinMultiDays(
+            'guru',
+            $guru->id,
+            $validated['tanggal_mulai'],
+            $validated['tanggal_selesai'],
+            $validated['status'],
+            $validated['keterangan'],
+            $request->file('bukti'),
+            'pending',
+            null
+        );
 
-        $berhasil = 0;
-        for ($i = 0; $i <= $diff; $i++) {
-            $tgl = $mulai->copy()->addDays($i)->toDateString();
-
-            $existing = Presensi::where('user_type', 'guru')
-                ->where('user_id', $guru->id)
-                ->where('tanggal', $tgl)
-                ->first();
-
-            if ($existing) {
-                $existing->update([
-                    'status' => $request->status,
-                    'keterangan' => $request->keterangan,
-                    'bukti' => $buktiPath ?: $existing->bukti,
-                    'status_approval' => 'pending',
-                    'catatan_approval' => null,
-                ]);
-            } else {
-                Presensi::create([
-                    'user_type' => 'guru',
-                    'user_id' => $guru->id,
-                    'tanggal' => $tgl,
-                    'status' => $request->status,
-                    'keterangan' => $request->keterangan,
-                    'bukti' => $buktiPath,
-                    'status_approval' => 'pending',
-                    'catatan_approval' => null,
-                ]);
-            }
-            $berhasil++;
-        }
-
-        return redirect()->route('guru.izin.index')->with('success', "Permohonan {$request->status} untuk {$berhasil} hari berhasil dikirimkan!");
+        return redirect()->route('guru.izin.index')->with('success', "Permohonan {$validated['status']} untuk {$berhasil} hari berhasil dikirimkan!");
     }
 }

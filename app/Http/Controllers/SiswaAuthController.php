@@ -49,26 +49,31 @@ class SiswaAuthController extends Controller
             ->first();
 
         if (!$siswa) {
+            \App\Services\Security\SecurityLogService::log('auth.login.failed', 'siswa', null, $identifier, ['guard' => 'siswa', 'reason' => 'user_not_found']);
             return back()->withErrors([
                 'username' => 'Data siswa dengan NIS/NISN tersebut tidak ditemukan.',
             ])->onlyInput('username');
         }
 
-        // Cek apakah password cocok
-        if (!Hash::check($password, $siswa->password)) {
-            // Fallback: Jika password belum ter-hash atau masih string biasa 'siswa123'
-            if ($password === 'siswa123' && ($siswa->password === 'siswa123' || empty($siswa->password))) {
-                $siswa->password = Hash::make('siswa123');
-                $siswa->save();
-            } else {
-                return back()->withErrors([
-                    'password' => 'Kata sandi yang Anda masukkan salah. Password awal default adalah "siswa123".',
-                ])->onlyInput('username');
-            }
+        // Cek apakah password valid dan cocok
+        $isPasswordValid = false;
+        try {
+            $isPasswordValid = !empty($siswa->password) && Hash::check($password, $siswa->password);
+        } catch (\Throwable $e) {
+            $isPasswordValid = false;
+        }
+
+        if (!$isPasswordValid) {
+            \App\Services\Security\SecurityLogService::log('auth.login.failed', 'siswa', $siswa->id, $identifier, ['guard' => 'siswa', 'reason' => 'invalid_password']);
+            return back()->withErrors([
+                'password' => 'Kata sandi yang Anda masukkan salah.',
+            ])->onlyInput('username');
         }
 
         Auth::guard('siswa')->login($siswa, $remember);
         $request->session()->regenerate();
+
+        \App\Services\Security\SecurityLogService::log('auth.login.success', 'siswa', $siswa->id, $siswa->nis ?: $siswa->nisn, ['guard' => 'siswa']);
 
         return redirect()->route('siswa.dashboard');
     }
@@ -78,6 +83,11 @@ class SiswaAuthController extends Controller
      */
     public function logout(Request $request)
     {
+        $siswa = Auth::guard('siswa')->user();
+        if ($siswa) {
+            \App\Services\Security\SecurityLogService::log('auth.logout', 'siswa', $siswa->id, $siswa->nis ?: $siswa->nisn, ['guard' => 'siswa']);
+        }
+
         Auth::guard('siswa')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();

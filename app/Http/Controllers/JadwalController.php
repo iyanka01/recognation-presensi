@@ -2,16 +2,21 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Guru;
+use App\Http\Requests\Jadwal\StoreJadwalRequest;
+use App\Http\Requests\Jadwal\UpdateJadwalRequest;
 use App\Models\JadwalPelajaran;
 use App\Models\Kelas;
-use App\Models\MataPelajaran;
+use App\Services\Jadwal\JadwalService;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class JadwalController extends Controller
 {
-    const HARI = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+    protected JadwalService $jadwalService;
+
+    public function __construct(JadwalService $jadwalService)
+    {
+        $this->jadwalService = $jadwalService;
+    }
 
     public function index(Request $request)
     {
@@ -19,73 +24,23 @@ class JadwalController extends Controller
         $kelasId = $request->query('kelas_id');
         $hari = $request->query('hari');
 
-        $departemens = \App\Models\Departemen::orderBy('nama_departemen')->get();
+        $data = $this->jadwalService->getIndexData($departemenId, $kelasId, $hari);
 
-        // Jika departemen belum dipilih, gunakan departemen pertama sebagai default jika ada
-        if (!$departemenId && $departemens->isNotEmpty()) {
-            $departemenId = $departemens->first()->id;
-        }
-
-        // Ambil kelas yang HANYA milik departemen terpilih
-        $kelasList = collect();
-        if ($departemenId && $departemenId !== 'all') {
-            $kelasList = Kelas::where('departemen_id', $departemenId)->orderBy('tingkat')->orderBy('nama_rombel')->get();
-        } else {
-            $kelasList = Kelas::orderBy('tingkat')->orderBy('nama_rombel')->get();
-        }
-
-        // Validasi kelasId: jika kelasId yang dipilih tidak ada di departemen terpilih, reset
-        if ($kelasId && !$kelasList->contains('id', $kelasId)) {
-            $kelasId = null;
-        }
-
-        $jadwals = JadwalPelajaran::with(['kelas.departemen', 'mataPelajaran', 'guru'])
-            ->when($departemenId && $departemenId !== 'all', function ($q) use ($departemenId) {
-                $q->whereHas('kelas', fn($k) => $k->where('departemen_id', $departemenId));
-            })
-            ->when($kelasId, fn($q) => $q->where('kelas_id', $kelasId))
-            ->when($hari, fn($q) => $q->where('hari', $hari))
-            ->orderByRaw("CASE hari WHEN 'Senin' THEN 1 WHEN 'Selasa' THEN 2 WHEN 'Rabu' THEN 3 WHEN 'Kamis' THEN 4 WHEN 'Jumat' THEN 5 WHEN 'Sabtu' THEN 6 ELSE 7 END")
-            ->orderBy('jam_mulai')
-            ->get();
-
-        // Hari aktif default (misal hari ini jika Senin-Sabtu, atau Senin)
-        $namaHariIni = \Carbon\Carbon::now()->locale('id')->dayName;
-        $activeHari = $hari ?: (in_array($namaHariIni, self::HARI) && $namaHariIni !== 'Minggu' ? $namaHariIni : 'Senin');
-
-        return view('jadwal.index', [
-            'jadwals' => $jadwals,
-            'departemens' => $departemens,
-            'filterDepartemen' => $departemenId,
-            'kelasList' => $kelasList,
-            'mapels' => MataPelajaran::orderBy('nama_mapel')->get(),
-            'gurus' => Guru::where('status', 'Aktif')->orderBy('nama_lengkap')->get(),
-            'hariList' => self::HARI,
-            'filterKelas' => $kelasId,
-            'filterHari' => $hari,
-            'activeHari' => $activeHari,
-        ]);
+        return view('jadwal.index', $data);
     }
 
-    public function store(Request $request)
+    public function store(StoreJadwalRequest $request)
     {
-        $validated = $request->validate([
-            'kelas_id' => 'required|exists:kelas,id',
-            'mata_pelajaran_id' => 'required|exists:mata_pelajaran,id',
-            'guru_id' => 'nullable|exists:guru,id',
-            'hari' => ['required', Rule::in(self::HARI)],
-            'jam_mulai' => 'required|date_format:H:i',
-            'jam_selesai' => 'required|date_format:H:i|after:jam_mulai',
-        ]);
+        $validated = $request->validated();
 
-        if ($error = $this->cekBentrok($validated)) {
+        if ($error = $this->jadwalService->cekBentrok($validated)) {
             return back()->withInput()->with('error', $error);
         }
 
         $kelas = Kelas::find($validated['kelas_id']);
         $departemenId = $kelas?->departemen_id;
 
-        JadwalPelajaran::create($validated);
+        $this->jadwalService->store($validated);
 
         return redirect()->route('jadwal.index', array_filter([
             'departemen_id' => $departemenId,
@@ -94,24 +49,16 @@ class JadwalController extends Controller
         ]))->with('success', 'Jadwal pelajaran berhasil ditambahkan!');
     }
 
-    public function update(Request $request, $id)
+    public function update(UpdateJadwalRequest $request, $id)
     {
         $jadwal = JadwalPelajaran::findOrFail($id);
+        $validated = $request->validated();
 
-        $validated = $request->validate([
-            'kelas_id' => 'required|exists:kelas,id',
-            'mata_pelajaran_id' => 'required|exists:mata_pelajaran,id',
-            'guru_id' => 'nullable|exists:guru,id',
-            'hari' => ['required', Rule::in(self::HARI)],
-            'jam_mulai' => 'required|date_format:H:i',
-            'jam_selesai' => 'required|date_format:H:i|after:jam_mulai',
-        ]);
-
-        if ($error = $this->cekBentrok($validated, $jadwal->id)) {
+        if ($error = $this->jadwalService->cekBentrok($validated, $jadwal->id)) {
             return back()->withInput()->with('error', $error);
         }
 
-        $jadwal->update($validated);
+        $this->jadwalService->update($jadwal, $validated);
 
         $kelas = Kelas::find($validated['kelas_id']);
         $departemenId = $kelas?->departemen_id;
@@ -126,43 +73,8 @@ class JadwalController extends Controller
     public function destroy($id)
     {
         $jadwal = JadwalPelajaran::findOrFail($id);
-        $jadwal->delete();
+        $this->jadwalService->delete($jadwal);
 
         return back()->with('success', 'Jadwal pelajaran berhasil dihapus!');
-    }
-
-    // Cek jadwal bentrok: kelas atau guru yang sama pada hari & rentang jam yang tumpang tindih
-    private function cekBentrok(array $data, ?string $ignoreId = null): ?string
-    {
-        $query = JadwalPelajaran::where('hari', $data['hari'])
-            // Rentang jam tumpang tindih
-            ->where('jam_mulai', '<', $data['jam_selesai'])
-            ->where('jam_selesai', '>', $data['jam_mulai'])
-            // Kelas yang sama ATAU guru pengajar yang sama
-            ->where(function ($q) use ($data) {
-                $q->where('kelas_id', $data['kelas_id']);
-                if (!empty($data['guru_id'])) {
-                    $q->orWhere('guru_id', $data['guru_id']);
-                }
-            });
-
-        if ($ignoreId) {
-            $query->where('id', '!=', $ignoreId);
-        }
-
-        $bentrok = $query->with(['kelas', 'mataPelajaran'])->first();
-        if (!$bentrok) {
-            return null;
-        }
-
-        if ($bentrok->guru_id === ($data['guru_id'] ?? null) && $bentrok->kelas_id !== $data['kelas_id']) {
-            $target = 'Guru pengajar tersebut sudah mengajar di kelas lain';
-        } else {
-            $target = "Kelas {$bentrok->kelas->tingkat} {$bentrok->kelas->nama_rombel}";
-        }
-
-        return "{$target} sudah memiliki jadwal {$bentrok->mataPelajaran->nama_mapel} pada hari {$bentrok->hari}, "
-            . substr($bentrok->jam_mulai, 0, 5) . ' - ' . substr($bentrok->jam_selesai, 0, 5)
-            . '. Silakan pilih waktu lain.';
     }
 }

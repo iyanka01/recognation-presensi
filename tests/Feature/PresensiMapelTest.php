@@ -56,17 +56,30 @@ class PresensiMapelTest extends TestCase
         return $kelas;
     }
 
-    private function buatJadwal(Guru $guru): JadwalPelajaran
+    private function buatJadwal(Guru $guru, array $overrides = []): JadwalPelajaran
     {
-        $mapel = MataPelajaran::create(['kode_mapel' => 'MAT', 'nama_mapel' => 'Matematika']);
+        $mapel = MataPelajaran::firstOrCreate(['kode_mapel' => 'MAT'], ['nama_mapel' => 'Matematika']);
+        $now = \Carbon\Carbon::now();
+        $hari = $now->locale('id')->dayName;
 
-        return JadwalPelajaran::create([
+        return JadwalPelajaran::create(array_merge([
             'kelas_id' => Kelas::first()->id,
             'mata_pelajaran_id' => $mapel->id,
             'guru_id' => $guru->id,
-            'hari' => 'Senin',
-            'jam_mulai' => '07:00',
-            'jam_selesai' => '08:30',
+            'hari' => $hari,
+            'jam_mulai' => $now->copy()->subMinutes(30)->format('H:i'),
+            'jam_selesai' => $now->copy()->addMinutes(60)->format('H:i'),
+        ], $overrides));
+    }
+
+    private function catatAbsenMasukGuru(Guru $guru): void
+    {
+        \App\Models\Presensi::create([
+            'user_type' => 'guru',
+            'user_id' => (string) $guru->id,
+            'tanggal' => \Carbon\Carbon::today()->toDateString(),
+            'jam_masuk' => '07:00:00',
+            'status' => 'Hadir',
         ]);
     }
 
@@ -145,14 +158,13 @@ class PresensiMapelTest extends TestCase
             'password' => Hash::make('admin123'),
             'nama_lengkap' => 'Admin Utama',
         ]);
-        $this->post('/login', [
+        $this->post('/admin/login', [
             'username' => 'admin',
             'password' => 'admin123',
-            'role' => 'admin',
         ]);
         $this->assertAuthenticated('web');
 
-        $this->post('/logout')->assertRedirect('/login');
+        $this->post('/admin/logout')->assertRedirect('/admin/login');
         $this->assertGuest('web');
     }
 
@@ -175,7 +187,7 @@ class PresensiMapelTest extends TestCase
             'role' => 'guru',
         ])->assertRedirect(route('dashboard'));
 
-        $this->get('/siswa')->assertRedirect('/login');
+        $this->get('/siswa')->assertRedirect(route('dashboard'));
         $this->get('/mapel')->assertRedirect('/login');
     }
 
@@ -270,7 +282,11 @@ class PresensiMapelTest extends TestCase
 
         $guru = $this->buatAkunGuru();
         $kelas = $this->buatKelasDenganSiswa();
-        $this->buatJadwal($guru); // Senin 07:00-08:30
+        $this->buatJadwal($guru, [
+            'hari' => 'Senin',
+            'jam_mulai' => '07:00',
+            'jam_selesai' => '08:30',
+        ]);
 
         $mapel2 = MataPelajaran::create(['kode_mapel' => 'FIS', 'nama_mapel' => 'Fisika']);
 
@@ -292,6 +308,7 @@ class PresensiMapelTest extends TestCase
     public function test_guru_bisa_input_absen_mata_pelajaran(): void
     {
         $guru = $this->buatAkunGuru();
+        $this->catatAbsenMasukGuru($guru);
         $this->actingAs($guru, 'guru');
 
         $kelas = $this->buatKelasDenganSiswa();
@@ -340,6 +357,7 @@ class PresensiMapelTest extends TestCase
     public function test_input_absen_ditolak_tanpa_data_pembelajaran(): void
     {
         $guru = $this->buatAkunGuru();
+        $this->catatAbsenMasukGuru($guru);
         $this->actingAs($guru, 'guru');
 
         $this->buatKelasDenganSiswa();
@@ -364,6 +382,7 @@ class PresensiMapelTest extends TestCase
     public function test_absensi_bisa_diubah_tanpa_duplikat(): void
     {
         $guru = $this->buatAkunGuru();
+        $this->catatAbsenMasukGuru($guru);
         $this->actingAs($guru, 'guru');
 
         $this->buatKelasDenganSiswa();

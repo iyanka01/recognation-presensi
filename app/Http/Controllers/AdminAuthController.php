@@ -48,8 +48,12 @@ class AdminAuthController extends Controller
             Auth::guard('web')->login($admin, $remember);
             $request->session()->regenerate();
 
+            \App\Services\Security\SecurityLogService::log('auth.login.success', 'admin', $admin->id, $admin->username, ['guard' => 'web']);
+
             return redirect()->intended(route('dashboard'));
         }
+
+        \App\Services\Security\SecurityLogService::log('auth.login.failed', 'admin', null, $username, ['guard' => 'web', 'reason' => 'invalid_credentials']);
 
         return back()->withErrors([
             'username' => 'Username atau kata sandi administrator salah.',
@@ -61,6 +65,11 @@ class AdminAuthController extends Controller
      */
     public function logout(Request $request)
     {
+        $admin = Auth::guard('web')->user();
+        if ($admin) {
+            \App\Services\Security\SecurityLogService::log('auth.logout', 'admin', $admin->id, $admin->username, ['guard' => 'web']);
+        }
+
         Auth::guard('web')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();

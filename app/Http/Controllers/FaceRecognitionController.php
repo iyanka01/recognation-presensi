@@ -7,7 +7,9 @@ use App\Models\HariLibur;
 use App\Models\PengaturanJam;
 use App\Models\PengaturanLembaga;
 use App\Models\Presensi;
-use App\Services\TelegramService;
+use App\Services\Notification\PresensiNotificationService;
+use App\Services\Presensi\GpsValidationService;
+use App\Services\Presensi\PresensiScheduleService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -15,6 +17,12 @@ use Illuminate\Support\Facades\Log;
 
 class FaceRecognitionController extends Controller
 {
+    public function __construct(
+        protected PresensiScheduleService $scheduleService,
+        protected GpsValidationService $gpsService,
+        protected PresensiNotificationService $notificationService
+    ) {}
+
     // Halaman face scan untuk guru (absensi masuk/pulang via wajah)
     public function scan()
     {
@@ -98,8 +106,7 @@ class FaceRecognitionController extends Controller
         $jam_sekarang = $now->format('H:i:s');
 
         // Cek hari libur
-        $hariLibur = HariLibur::where('tanggal', $today)->first();
-        if ($hariLibur) {
+        if ($hariLibur = $this->scheduleService->cekHariLibur($today)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Hari ini adalah hari libur: ' . $hariLibur->keterangan,
@@ -107,17 +114,19 @@ class FaceRecognitionController extends Controller
         }
 
         // Cek Geofencing GPS Radius (Tolak jika di luar radius)
-        $geoCheck = $this->validateGeofence($request);
+        $geoCheck = $this->gpsService->validateRadius(
+            $request->filled('latitude') ? (float) $request->latitude : null,
+            $request->filled('longitude') ? (float) $request->longitude : null
+        );
         if (!$geoCheck['valid']) {
             return response()->json([
                 'success' => false,
-                'message' => $geoCheck['error'],
+                'message' => $geoCheck['message'],
             ]);
         }
 
-        // Ambil pengaturan jam guru (dengan fallback jika hari belum diatur)
-        $pengaturan = PengaturanJam::where('tipe', 'guru')->where('hari', $hariIni)->first()
-            ?: PengaturanJam::where('tipe', 'guru')->first();
+        // Ambil pengaturan jam guru
+        $pengaturan = $this->scheduleService->getPengaturanJam($guru, 'guru', $hariIni);
         if (!$pengaturan) {
             return response()->json([
                 'success' => false,

@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Http\Requests\HariLibur\StoreHariLiburRequest;
 use App\Models\HariLibur;
-use Carbon\Carbon;
+use Illuminate\Http\Request;
 
 class HariLiburController extends Controller
 {
@@ -14,19 +14,9 @@ class HariLiburController extends Controller
         return view('hari-libur.index', compact('liburs'));
     }
 
-    public function store(Request $request)
+    public function store(StoreHariLiburRequest $request)
     {
-        $request->validate([
-            'tanggal' => 'required|date|unique:hari_liburs,tanggal',
-            'keterangan' => 'required|string|max:255'
-        ], [
-            'tanggal.unique' => 'Tanggal ini sudah diatur sebagai hari libur.'
-        ]);
-
-        HariLibur::create([
-            'tanggal' => $request->tanggal,
-            'keterangan' => $request->keterangan
-        ]);
+        HariLibur::create($request->validated());
 
         return redirect()->route('hari-libur.index')->with('success', 'Hari libur berhasil ditambahkan.');
     }
@@ -35,7 +25,7 @@ class HariLiburController extends Controller
     {
         $libur = HariLibur::findOrFail($id);
         $libur->delete();
-        
+
         return redirect()->route('hari-libur.index')->with('success', 'Hari libur berhasil dihapus.');
     }
 }

@@ -42,82 +42,14 @@ Route::get('/pengalihan', function () {
 // Autentikasi Pengguna (Guest)
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
-    Route::post('/login', [AuthController::class, 'login'])->name('login.post');
+    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login')->name('login.post');
 });
 
-// Route inisialisasi darurat untuk Admin (Hanya aktif di mode LOCAL / pengembangan)
-Route::get('/init-admin', function () {
-    if (config('app.env') !== 'local') {
-        abort(404);
-    }
-
-    try {
-        $admin = \App\Models\AdminUser::firstOrNew(['username' => 'admin']);
-        if (!$admin->exists) {
-            $admin->id = (string) \Illuminate\Support\Str::uuid();
-            $admin->nama_lengkap = 'Administrator';
-            $admin->role = 'admin';
-        }
-        $admin->password = \Illuminate\Support\Facades\Hash::make('admin123');
-        $admin->save();
-
-        $totalAdmins = \App\Models\AdminUser::count();
-        $dbName = \Illuminate\Support\Facades\DB::connection()->getDatabaseName();
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Akun admin berhasil dibuat / direset!',
-            'username' => 'admin',
-            'password' => 'admin123',
-            'database' => $dbName,
-            'total_admin_in_db' => $totalAdmins,
-        ]);
-    } catch (\Throwable $e) {
-        return response()->json([
-            'status' => 'error',
-            'error' => $e->getMessage(),
-        ], 500);
-    }
+// Logout Pengguna (Diwajibkan POST dengan CSRF, akses GET dialihkan aman ke login)
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+Route::get('/logout', function () {
+    return redirect()->route('login');
 });
-
-// Route diagnosa sistem (Hanya aktif di mode LOCAL / pengembangan)
-Route::get('/cek', function () {
-    if (config('app.env') !== 'local') {
-        abort(404);
-    }
-
-    $dbOk = false;
-    $dbError = null;
-    $tables = [];
-
-    try {
-        \Illuminate\Support\Facades\DB::connection()->getPdo();
-        $dbOk = true;
-        $tables = \Illuminate\Support\Facades\DB::select('SHOW TABLES');
-    } catch (\Throwable $e) {
-        $dbError = $e->getMessage();
-    }
-
-    return response()->json([
-        'php_version' => PHP_VERSION,
-        'app_env' => config('app.env'),
-        'app_key_set' => !empty(config('app.key')),
-        'app_debug' => config('app.debug'),
-        'session_driver' => config('session.driver'),
-        'database' => [
-            'connected' => $dbOk,
-            'database_name' => config('database.connections.mysql.database'),
-            'host' => config('database.connections.mysql.host'),
-            'port' => config('database.connections.mysql.port'),
-            'username' => config('database.connections.mysql.username'),
-            'error' => $dbError,
-            'tables_count' => count($tables),
-        ],
-    ], $dbOk ? 200 : 500);
-});
-
-// Logout Pengguna (Mendukung GET & POST, aman dipanggil kapan saja)
-Route::match(['get', 'post'], '/logout', [AuthController::class, 'logout'])->name('logout');
 
 // Rute Bersama (Shared Admin & Guru)
 Route::middleware('auth:web,guru')->group(function () {
@@ -133,33 +65,55 @@ Route::middleware('auth:web,guru')->group(function () {
     Route::post('rekap-mapel/send-wa', [RekapMapelController::class, 'sendWhatsApp'])->name('rekap-mapel.send-wa');
 });
 
-// Fallback aman untuk melayani file upload storage jika symlink OS tidak tersedia
+// Fallback aman untuk melayani file upload storage publik jika symlink OS tidak tersedia
 Route::get('/storage/{path}', function ($path) {
-    $filePath = storage_path('app/public/' . $path);
-    if (!file_exists($filePath)) {
+    // Sanitasi dan cegah path traversal
+    $cleanPath = str_replace(['..', '\\'], ['', '/'], $path);
+    $cleanPath = ltrim($cleanPath, '/');
+
+    $publicStorage = realpath(storage_path('app/public'));
+    $filePath = realpath(storage_path('app/public/' . $cleanPath));
+
+    if (!$filePath || !str_starts_with($filePath, $publicStorage) || !file_exists($filePath)) {
         abort(404);
     }
     return response()->file($filePath);
 })->where('path', '.*');
 
-// Endpoint API Ekspor Data Migrasi Sekolah (Dapat diakses dengan Token Rahasia)
-Route::get('/api/export-migrasi-sekolah', function (\Illuminate\Http\Request $request) {
-    $tokenRahasia = 'mayantara-migrasi-2026';
+// Endpoint API Ekspor Data Migrasi Sekolah (Dilindungi Token Env & Rate Limiter)
+Route::middleware('throttle:10,1')->match(['get', 'post'], '/api/export-migrasi-sekolah', function (\Illuminate\Http\Request $request) {
+    $configuredToken = config('services.migration.token', env('MIGRATION_API_TOKEN', 'mayantara-migrasi-2026'));
 
-    if ($request->query('api_token') !== $tokenRahasia) {
+    // Dukung header Authorization: Bearer <token> atau query api_token (backward compatibility)
+    $authHeader = $request->bearerToken();
+    $providedToken = $authHeader ?: $request->input('api_token', $request->query('api_token'));
+
+    if (empty($configuredToken) || !hash_equals($configuredToken, (string) $providedToken)) {
+        \App\Services\Security\SecurityLogService::log('migration.export.denied', 'api', null, 'anonymous', [
+            'reason' => 'invalid_or_missing_token',
+        ], $request);
+
         return response()->json([
             'success' => false,
-            'message' => 'Akses ditolak: Token API tidak valid.'
+            'message' => 'Akses ditolak: Token API tidak valid atau tidak memiliki otoritas.'
         ], 403);
     }
+
+    \App\Services\Security\SecurityLogService::log('migration.export.success', 'api', null, 'migrator', [
+        'action' => 'export_all_records',
+    ], $request);
+
+    // Ambil data tanpa mengekspos hash password siswa & guru
+    $gurus = \App\Models\Guru::all()->makeHidden(['password', 'remember_token']);
+    $siswas = \App\Models\Siswa::all()->makeHidden(['password', 'remember_token']);
 
     return response()->json([
         'success'   => true,
         'timestamp' => now()->toDateTimeString(),
         'data'      => [
             'kelas'           => \App\Models\Kelas::all(),
-            'guru'            => \App\Models\Guru::all(),
-            'siswa'           => \App\Models\Siswa::all(),
+            'guru'            => $gurus,
+            'siswa'           => $siswas,
             'mapel'           => \App\Models\MataPelajaran::all(),
             'jadwal'          => \App\Models\JadwalPelajaran::all(),
             'presensi'        => \App\Models\Presensi::latest()->take(20000)->get(),

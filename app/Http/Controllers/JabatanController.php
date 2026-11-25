@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Jabatan\StoreJabatanRequest;
+use App\Http\Requests\Jabatan\UpdateJabatanRequest;
 use App\Models\Jabatan;
 use Illuminate\Http\Request;
 
@@ -18,15 +20,9 @@ class JabatanController extends Controller
         return view('jabatan.index', compact('jabatans'));
     }
 
-    public function store(Request $request)
+    public function store(StoreJabatanRequest $request)
     {
-        $validated = $request->validate([
-            'nama_jabatan' => ['required', 'string', 'max:255', 'unique:jabatans,nama_jabatan'],
-            'kategori'     => ['required', 'in:guru,staff'],
-            'keterangan'   => ['nullable', 'string'],
-            'urutan'       => ['nullable', 'integer'],
-        ]);
-
+        $validated = $request->validated();
         $validated['urutan'] = $validated['urutan'] ?? 0;
 
         Jabatan::create($validated);
@@ -34,17 +30,10 @@ class JabatanController extends Controller
         return redirect()->route('jabatan.index')->with('success', 'Jabatan baru berhasil ditambahkan!');
     }
 
-    public function update(Request $request, $id)
+    public function update(UpdateJabatanRequest $request, $id)
     {
         $jabatan = Jabatan::findOrFail($id);
-
-        $validated = $request->validate([
-            'nama_jabatan' => ['required', 'string', 'max:255', 'unique:jabatans,nama_jabatan,' . $jabatan->id],
-            'kategori'     => ['required', 'in:guru,staff'],
-            'keterangan'   => ['nullable', 'string'],
-            'urutan'       => ['nullable', 'integer'],
-        ]);
-
+        $validated = $request->validated();
         $validated['urutan'] = $validated['urutan'] ?? 0;
 
         $jabatan->update($validated);
@@ -55,7 +44,7 @@ class JabatanController extends Controller
     public function destroy($id)
     {
         $jabatan = Jabatan::findOrFail($id);
-        
+
         if ($jabatan->gurus()->count() > 0) {
             return redirect()->route('jabatan.index')->with('error', 'Jabatan tidak dapat dihapus karena masih digunakan oleh pegawai!');
         }

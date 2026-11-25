@@ -33,7 +33,7 @@ use App\Http\Controllers\AdminAuthController;
 
 // Halaman Khusus Login Admin (Akses via /admin atau /admin/login)
 Route::get('admin/login', [AdminAuthController::class, 'showLoginForm'])->name('admin.login');
-Route::post('admin/login', [AdminAuthController::class, 'login'])->name('admin.login.post');
+Route::post('admin/login', [AdminAuthController::class, 'login'])->middleware('throttle:login')->name('admin.login.post');
 Route::get('admin', function () {
     if (auth()->guard('web')->check()) {
         return redirect()->route('dashboard');
@@ -42,7 +42,10 @@ Route::get('admin', function () {
 })->name('admin.index');
 
 Route::middleware('auth:web')->group(function () {
-    Route::match(['get', 'post'], 'admin/logout', [AdminAuthController::class, 'logout'])->name('admin.logout');
+    Route::post('admin/logout', [AdminAuthController::class, 'logout'])->name('admin.logout');
+    Route::get('admin/logout', function () {
+        return redirect()->route('admin.login');
+    });
 
     // Master Departemen / Instansi
     Route::resource('departemen', \App\Http\Controllers\DepartemenController::class)->except(['create', 'show']);

@@ -48,12 +48,15 @@ Route::get('/portal-siswa', function () {
 // Autentikasi Siswa (Guest)
 Route::middleware('guest:siswa')->group(function () {
     Route::get('/siswa/login', [SiswaAuthController::class, 'showLoginForm'])->name('siswa.login');
-    Route::post('/siswa/login', [SiswaAuthController::class, 'login'])->name('siswa.login.post');
+    Route::post('/siswa/login', [SiswaAuthController::class, 'login'])->middleware('throttle:login')->name('siswa.login.post');
 });
 
 // Portal Siswa Terproteksi
 Route::middleware('auth:siswa')->prefix('siswa')->name('siswa.')->group(function () {
-    Route::match(['get', 'post'], 'logout', [SiswaAuthController::class, 'logout'])->name('logout');
+    Route::post('logout', [SiswaAuthController::class, 'logout'])->name('logout');
+    Route::get('logout', function () {
+        return redirect()->route('siswa.login');
+    });
 
     // Dashboard Utama
     Route::get('dashboard', [SiswaDashboardController::class, 'index'])->name('dashboard');
