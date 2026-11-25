@@ -52,4 +52,9 @@ Route::middleware('auth:guru')->group(function () {
     // Ubah Password Akun Guru
     Route::get('guru/password', [GuruPasswordController::class, 'index'])->name('guru.password');
     Route::put('guru/password', [GuruPasswordController::class, 'update'])->name('guru.password.update');
+
+    // Pengaturan Akun Guru (Layar Baru: Foto Profil, Data Pribadi, Tanggal Lahir, Password)
+    Route::get('guru/akun', [\App\Http\Controllers\GuruAkunController::class, 'index'])->name('guru.akun');
+    Route::put('guru/akun/profil', [\App\Http\Controllers\GuruAkunController::class, 'updateProfil'])->name('guru.akun.profil');
+    Route::post('guru/akun/foto', [\App\Http\Controllers\GuruAkunController::class, 'updateFoto'])->name('guru.akun.foto');
 });

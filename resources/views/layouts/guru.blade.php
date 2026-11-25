@@ -115,116 +115,14 @@
             </a>
 
             {{-- 5. Akun --}}
-            <button type="button" onclick="openAccountModal()" class="flex-1 flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-emerald-700 font-semibold transition-colors">
+            <a href="{{ route('guru.akun') }}" class="flex-1 flex flex-col items-center justify-center gap-1 {{ request()->routeIs('guru.akun*') || request()->routeIs('guru.password*') ? 'text-emerald-700 font-extrabold' : 'text-slate-400 hover:text-emerald-700 font-semibold' }} transition-colors">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                 </svg>
                 <span class="text-[10px] tracking-tight">Akun</span>
-            </button>
+            </a>
         </div>
     </nav>
-
-    {{-- ============ MODAL AKUN GURU (DENGAN BUTTON LOGOUT) ============ --}}
-    @php $userGuru = Auth::guard('guru')->user(); @endphp
-    <div id="modal-akun-guru" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-        {{-- Backdrop --}}
-        <div class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm transition-opacity" onclick="closeAccountModal()"></div>
-
-        {{-- Dialog Sheet --}}
-        <div class="relative bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-sm sm:max-w-md z-10 shadow-2xl overflow-hidden p-6">
-            {{-- Handle bar mobile --}}
-            <div class="sm:hidden -mt-2 mb-4 flex justify-center">
-                <div class="w-10 h-1.5 bg-slate-200 rounded-full"></div>
-            </div>
-
-            {{-- Close Button --}}
-            <button type="button" onclick="closeAccountModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 transition-colors">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
-            </button>
-
-            {{-- User Profile Card --}}
-            <div class="flex flex-col items-center text-center mt-2 mb-5">
-                <div class="w-20 h-20 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-600 p-0.5 shadow-lg shadow-indigo-300/30 mb-3 overflow-hidden">
-                    @if($userGuru && $userGuru->foto_guru)
-                        <img src="{{ Storage::url($userGuru->foto_guru) }}" class="w-full h-full rounded-2xl object-cover" alt="Foto Profil">
-                    @else
-                        <div class="w-full h-full rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-700 font-black text-2xl">
-                            {{ $userGuru ? strtoupper(substr($userGuru->nama_lengkap, 0, 1)) : 'G' }}
-                        </div>
-                    @endif
-                </div>
-
-                <h3 class="font-extrabold text-slate-900 text-lg leading-snug">{{ $userGuru?->nama_lengkap ?? 'Guru Pengajar' }}</h3>
-                <p class="text-xs text-slate-500 font-semibold mt-0.5">NIP: {{ $userGuru?->nip ?? '-' }}</p>
-                <div class="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-50 text-indigo-800 rounded-full text-xs font-bold mt-2 border border-indigo-100">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                    Guru Aktif
-                </div>
-            </div>
-
-            {{-- Info Details --}}
-            <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-2.5 mb-5 text-xs text-slate-700">
-                <div class="flex items-center justify-between">
-                    <span class="text-slate-500 font-medium">Username</span>
-                    <span class="font-bold text-slate-800">{{ $userGuru?->username ?? '-' }}</span>
-                </div>
-                <div class="flex items-center justify-between">
-                    <span class="text-slate-500 font-medium">Jenis Kelamin</span>
-                    <span class="font-bold text-slate-800">{{ $userGuru?->jenis_kelamin ?? '-' }}</span>
-                </div>
-                <div class="flex items-center justify-between">
-                    <span class="text-slate-500 font-medium">Face Recognition</span>
-                    @if($userGuru && $userGuru->face_descriptor)
-                        <span class="text-emerald-700 font-extrabold inline-flex items-center gap-1">
-                            <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                            Terdaftar
-                        </span>
-                    @else
-                        <span class="text-amber-700 font-extrabold inline-flex items-center gap-1">
-                            ⚠️ Belum Terdaftar
-                        </span>
-                    @endif
-                </div>
-            </div>
-
-            {{-- Tombol Ubah Password --}}
-            <a href="{{ route('guru.password') }}" 
-               class="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-800 font-bold text-xs sm:text-sm border border-indigo-200 transition-all mb-2.5 active:scale-[0.98]">
-                <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
-                </svg>
-                <span>Ubah Password Akun</span>
-            </a>
-
-            {{-- Tombol Logout di Dalam Modal Akun --}}
-            <form action="{{ route('logout') }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin keluar dari akun?')">
-                @csrf
-                <button type="submit" 
-                        class="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-sm shadow-md shadow-rose-200 transition-all active:scale-[0.98]">
-                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-                    </svg>
-                    <span>Keluar dari Akun (Logout)</span>
-                </button>
-            </form>
-        </div>
-    </div>
-
-    <script>
-    function openAccountModal() {
-        const m = document.getElementById('modal-akun-guru');
-        if (m) m.classList.remove('hidden');
-    }
-    function closeAccountModal() {
-        const m = document.getElementById('modal-akun-guru');
-        if (m) m.classList.add('hidden');
-    }
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') closeAccountModal();
-    });
-    </script>
 
     @stack('scripts')
 </body>

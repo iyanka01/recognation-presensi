@@ -12,6 +12,7 @@ use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -211,10 +212,45 @@ class SiswaAndGuruRegressionTest extends TestCase
             'current_password' => 'guru12345',
             'password' => 'newpassword999',
             'password_confirmation' => 'newpassword999',
-        ])->assertRedirect(route('dashboard'))->assertSessionHas('success');
+        ])->assertRedirect(route('guru.akun'))->assertSessionHas('success');
 
         $this->guru->refresh();
         $this->assertTrue(Hash::check('newpassword999', $this->guru->password));
+    }
+
+    public function test_guru_can_view_account_and_update_birthdate_and_photo(): void
+    {
+        Storage::fake('public');
+        $this->actingAs($this->guru, 'guru');
+
+        // 1. View akun page
+        $this->get(route('guru.akun'))
+            ->assertOk()
+            ->assertSee('Pengaturan Profil', false)
+            ->assertSee('Data Profil', false)
+            ->assertSee('Keamanan & Ubah Password', false);
+
+        // 2. Update profil & tanggal lahir
+        $this->put(route('guru.akun.profil'), [
+            'tanggal_lahir' => '1992-05-20',
+            'tempat_lahir'  => 'Surabaya',
+            'no_hp'         => '081234567899',
+        ])->assertRedirect(route('guru.akun'))->assertSessionHas('success');
+
+        $this->guru->refresh();
+        $this->assertEquals('1992-05-20', Carbon::parse($this->guru->tanggal_lahir)->format('Y-m-d'));
+        $this->assertEquals('Surabaya', $this->guru->tempat_lahir);
+        $this->assertEquals('081234567899', $this->guru->no_hp);
+
+        // 3. Update foto profil guru
+        $fakePhoto = \Illuminate\Http\UploadedFile::fake()->image('guru_avatar.jpg', 200, 200);
+        $this->post(route('guru.akun.foto'), [
+            'foto_guru' => $fakePhoto,
+        ])->assertRedirect(route('guru.akun'))->assertSessionHas('success');
+
+        $this->guru->refresh();
+        $this->assertNotNull($this->guru->foto_guru);
+        Storage::disk('public')->assertExists($this->guru->foto_guru);
     }
 
     public function test_guru_manual_checkin_validates_schedule_and_geofence(): void

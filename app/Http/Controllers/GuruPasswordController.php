@@ -14,11 +14,7 @@ class GuruPasswordController extends Controller
      */
     public function index()
     {
-        $guru = Auth::guard('guru')->user();
-        $isDefaultPassword = Hash::check(GuruController::PASSWORD_DEFAULT, $guru->password);
-        $pengaturan = PengaturanLembaga::first();
-
-        return view('guru.password', compact('guru', 'isDefaultPassword', 'pengaturan'));
+        return redirect()->route('guru.akun');
     }
 
     /**
@@ -61,6 +57,6 @@ class GuruPasswordController extends Controller
 
         \App\Services\Security\SecurityLogService::log('password.update.success', 'guru', $guru->id, $guru->username ?: $guru->nip);
 
-        return redirect()->route('dashboard')->with('success', 'Password berhasil diperbarui! Silakan gunakan password baru ini untuk login berikutnya.');
+        return redirect()->route('guru.akun')->with('success', 'Password berhasil diperbarui! Silakan gunakan password baru ini untuk login berikutnya.');
     }
 }
